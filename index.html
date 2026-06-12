@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head> html
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2566,34 +2565,6 @@ try{
   calcE();
 }catch(e){
   console.error("Erro na inicialização:",e);
-}
-  // Inicializar Supabase
-const SUPABASE_URL = "https://yjpfjfmiescgrenbexie.supabase.co";
-const SUPABASE_KEY = "sb_publishable_h9I7_Ro4h7MTdjjLXoQIYA_QwiDUhxN";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// Função para sincronizar dados com o banco
-async function sincronizarVendas() {
-  const vendas = getV();
-  
-  for (const venda of vendas) {
-    try {
-      await supabase.from("vendas").upsert({
-        ...venda,
-        user_id: (await supabase.auth.getUser()).data.user.id
-      });
-    } catch (e) {
-      console.error("Erro ao sincronizar:", e);
-    }
-  }
-  
-  console.log("Vendas sincronizadas!");
-}
-
-// Chamar quando salvar venda
-function lancarVenda() {
-  // ... código existente ...
-  sincronizarVendas(); // Adicione esta linha
 }
 </script>
 </body>
