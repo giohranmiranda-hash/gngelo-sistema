@@ -3950,7 +3950,19 @@ function salvarMetasAnuais(){
 function renderCli(){
   const cs=getCli(),el=document.getElementById("lista-cli");
   if(!cs.length){el.innerHTML='<div class="empty"><i class="ti ti-users"></i>Nenhum cliente cadastrado</div>';return;}
-  el.innerHTML=cs.map(c=>`<div class="item-card"><div style="display:flex;align-items:center;gap:10px"><div style="width:38px;height:38px;border-radius:50%;background:var(--gold-light);border:1px solid var(--gold-border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--gold);flex-shrink:0">${(c.nome||"?")[0].toUpperCase()}</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${c.nome}</div><div style="font-size:11px;color:var(--muted)">${c.tipo||"—"} · ${c.bairro||"—"}</div></div><div style="text-align:right"><div style="font-weight:700;color:var(--success)">${R(c.totalComprado||0)}</div><div style="font-size:10px;color:var(--muted)">${c.ultimaCompra||"—"}</div></div><button class="btn btn-sm btn-danger" style="margin-left:8px" onclick="deletarCliente(${c.id})"><i class="ti ti-trash"></i></button></div></div>`).join("");
+  // Agrega compras por cliente a partir das vendas (nome normalizado).
+  const agg={};
+  getV().forEach(v=>{
+    const k=(v.cliente||"").trim().toLowerCase();
+    if(!k||k==="avulso")return;
+    if(!agg[k])agg[k]={total:0,ultima:""};
+    agg[k].total+=(v.bruto||0);
+    if((v.data||"")>agg[k].ultima)agg[k].ultima=v.data||"";
+  });
+  // Maior comprador primeiro
+  const lista=cs.map(c=>{const d=agg[(c.nome||"").trim().toLowerCase()]||{total:0,ultima:""};return {c,total:d.total,ultima:d.ultima};})
+    .sort((a,b)=>b.total-a.total);
+  el.innerHTML=lista.map(({c,total,ultima})=>`<div class="item-card"><div style="display:flex;align-items:center;gap:10px"><div style="width:38px;height:38px;border-radius:50%;background:var(--gold-light);border:1px solid var(--gold-border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--gold);flex-shrink:0">${(c.nome||"?")[0].toUpperCase()}</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${c.nome}</div><div style="font-size:11px;color:var(--muted)">${c.tipo||"—"} · ${c.bairro||"—"}</div></div><div style="text-align:right"><div style="font-weight:700;color:var(--success)">${R(total)}</div><div style="font-size:10px;color:var(--muted)">${ultima||"—"}</div></div><button class="btn btn-sm btn-danger" style="margin-left:8px" onclick="deletarCliente(${c.id})"><i class="ti ti-trash"></i></button></div></div>`).join("");
 }
 function deletarCliente(id){
   if(!confirm("Tem certeza que quer deletar este cliente?"))return;
