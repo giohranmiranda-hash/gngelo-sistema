@@ -2,12 +2,26 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="GN Gelo">
 <meta name="theme-color" content="#0A0A0A">
+<meta name="description" content="GN Gelo — sistema de gestão de produção, vendas, estoque, comissões e DRE de gelo gourmet. Controle financeiro completo do seu negócio.">
+<!-- Open Graph (pré-visualização ao compartilhar o link) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GN Gelo">
+<meta property="og:title" content="GN Gelo — Sistema de Gestão">
+<meta property="og:description" content="Controle de produção, vendas, estoque, comissões e DRE da GN Gelo.">
+<meta property="og:image" content="./icon.svg">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="GN Gelo — Sistema de Gestão">
+<meta name="twitter:description" content="Controle de produção, vendas, estoque, comissões e DRE da GN Gelo.">
 <link rel="icon" id="favicon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230A0A0A' width='100' height='100'/><text x='50' y='65' font-size='70' font-weight='bold' fill='%23C9A84C' text-anchor='middle'>GN</text></svg>">
+<link rel="apple-touch-icon" href="./icon.svg">
+<link rel="manifest" href="./manifest.json">
 <title>GN Gelo — Sistema de Gestão</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -473,10 +487,10 @@ input.input-warning{
   
   <div id="dash-alertas"></div>
   <div class="metric-grid">
-    <div class="metric"><div class="lbl">Faturamento</div><div class="val gold" id="d-fat">R$ 0,00</div><div class="sub" id="d-un">0 unidades</div></div>
-    <div class="metric"><div class="lbl">Lucro líquido</div><div class="val green" id="d-lucro">R$ 0,00</div><div class="sub" id="d-margem">Margem 0%</div></div>
-    <div class="metric"><div class="lbl">Produzido</div><div class="val" id="d-prod">0 unid.</div><div class="sub" id="d-estq">Estoque: 0</div></div>
-    <div class="metric"><div class="lbl">Gastos</div><div class="val red" id="d-gastos">R$ 0,00</div><div class="sub" id="d-ticket">Ticket: R$ 0</div></div>
+    <div class="metric"><div class="lbl">Faturamento</div><div class="val gold" id="d-fat">R$ 0,00</div><div class="sub" id="d-un">0 unidades</div><div class="sub" id="d-fat-delta" style="font-weight:700"></div></div>
+    <div class="metric"><div class="lbl">Lucro líquido</div><div class="val green" id="d-lucro">R$ 0,00</div><div class="sub" id="d-margem">Margem 0%</div><div class="sub" id="d-lucro-delta" style="font-weight:700"></div></div>
+    <div class="metric"><div class="lbl">Produzido</div><div class="val" id="d-prod">0 unid.</div><div class="sub" id="d-estq">Estoque: 0</div><div class="sub" id="d-prod-delta" style="font-weight:700"></div></div>
+    <div class="metric"><div class="lbl">Gastos</div><div class="val red" id="d-gastos">R$ 0,00</div><div class="sub" id="d-ticket">Ticket: R$ 0</div><div class="sub" id="d-gastos-delta" style="font-weight:700"></div></div>
   </div>
   <div class="card card-gold">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
@@ -491,6 +505,10 @@ input.input-warning{
   <div class="card">
     <div class="section-label">Vendas por dia</div>
     <div class="chart-wrap"><canvas id="cVendas" role="img" aria-label="Vendas por dia">Gráfico de vendas diárias.</canvas></div>
+  </div>
+  <div class="card">
+    <div class="section-label">Tendência mensal — Faturamento × Lucro × Gastos</div>
+    <div class="chart-wrap"><canvas id="cTendencia" role="img" aria-label="Tendência mensal">Gráfico de tendência mensal.</canvas></div>
   </div>
   <div class="card">
     <div class="section-label">Lançamentos do mês (Vendas/Produção/Gastos)</div>
@@ -1142,7 +1160,10 @@ input.input-warning{
     <div id="resultado-analise" style="margin-top:12px;padding:12px;background:var(--gold-light);border-radius:6px;display:none;font-size:12px;font-family:monospace;white-space:pre-wrap;line-height:1.6"></div>
   </div>
   
-  <button class="btn btn-primary btn-full" style="margin-top:10px" onclick="exportarRelatorio()"><i class="ti ti-download"></i> Exportar relatório (.txt)</button>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+    <button class="btn btn-primary btn-full" style="margin:0" onclick="gerarPDF()"><i class="ti ti-file-type-pdf"></i> Relatório em PDF</button>
+    <button class="btn btn-full" style="margin:0" onclick="exportarRelatorio()"><i class="ti ti-download"></i> Exportar (.txt)</button>
+  </div>
   
   <div class="card" style="margin-top:16px;border:2px solid var(--gold)">
     <div class="section-label" style="color:var(--gold)">📊 Exportar dados em CSV</div>
@@ -1197,13 +1218,29 @@ input.input-warning{
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
 // Fallback: se o Chart.js (CDN) não carregar (offline/sem internet),
 // evita que os gráficos derrubem o restante do sistema.
 if(typeof Chart==="undefined"){
   window.Chart=function(){return{destroy:function(){},update:function(){},resize:function(){},data:{},options:{}};};
+  window.Chart.register=function(){};
+  window.Chart.defaults={font:{},plugins:{}};
   console.warn("⚠️ Chart.js não carregou (sem internet?). Gráficos desativados; demais funções operam normalmente.");
 }
+// Registra o plugin de rótulos (gráficos avançados), sem aplicá-lo a todos por padrão.
+try{
+  if(typeof Chart!=="undefined" && Chart.register && typeof ChartDataLabels!=="undefined"){
+    Chart.register(ChartDataLabels);
+    Chart.defaults.set("plugins.datalabels",{display:false});
+  }
+}catch(e){console.warn("Plugin datalabels indisponível:",e);}
+// Paleta/tema padrão dos gráficos
+try{ if(typeof Chart!=="undefined" && Chart.defaults && Chart.defaults.font){ Chart.defaults.font.family="-apple-system,Segoe UI,Roboto,sans-serif"; Chart.defaults.color="#6B6B6B"; } }catch(e){}
+// Tooltip padrão formatado em R$
+const _tipBRL={callbacks:{label:ctx=>{const v=ctx.parsed.y!=null?ctx.parsed.y:ctx.parsed;return (ctx.dataset.label?ctx.dataset.label+": ":"")+R(v);}}};
 const SB={coco:"Coco",morango:"Morango",maracuja:"Maracujá",maca:"Maçã Verde",manga:"Manga",melancia:"Melancia",limao:"Limão",iceblue:"Ice Blue",energetico:"Energético",frutas:"Frutas Vermelhas",amora:"Blackberry (Amora)",abacaxi:"Abacaxi",salLimao:"Sal e Limão",uva:"Uva Verde",chiclete:"Chiclete",cereja:"Cereja",morPessego:"Morango c/ Pêssego",brasil:"Brasil",bobMarley:"Bob Marley",laranja:"Laranja",balaHouse:"Bala House",combo10:"Combo 10",combo20:"Combo 20",combo50:"Combo 50",combo100:"Combo 100"};
 const SC={coco:"fl-coco",morango:"fl-morango",maracuja:"fl-maracuja",maca:"fl-maca",manga:"fl-manga",melancia:"fl-melancia",limao:"fl-limao",iceblue:"fl-iceblue",energetico:"fl-energetico",frutas:"fl-frutas",amora:"fl-amora",abacaxi:"fl-abacaxi",salLimao:"fl-salLimao",uva:"fl-uva",chiclete:"fl-chiclete",cereja:"fl-cereja",morPessego:"fl-morPessego",brasil:"fl-brasil",bobMarley:"fl-bobMarley",laranja:"fl-laranja",balaHouse:"fl-balaHouse",combo10:"fl-combo",combo20:"fl-combo",combo50:"fl-combo",combo100:"fl-combo"};
 const CC={coco:"#92400E",morango:"#9D174D",maracuja:"#C2410C",maca:"#166534",manga:"#FF8C00",melancia:"#E91E63",limao:"#FFEB3B",iceblue:"#00BCD4",energetico:"#FF5722",frutas:"#D32F2F",amora:"#4A148C",abacaxi:"#FFC107",salLimao:"#76FF03",uva:"#7C4DFF",chiclete:"#FF1493",cereja:"#F50057",morPessego:"#E91E63",brasil:"#FFD700",bobMarley:"#FFD700",laranja:"#FF6F00",balaHouse:"#FF69B4",combo10:"#4C1D95",combo20:"#4C1D95",combo50:"#4C1D95",combo100:"#4C1D95"};
@@ -2780,7 +2817,18 @@ function mostrarAlertas(){
   alert(`⚠️ ${quantidade} ALERTA(S):\n\n${lista.join('\n')}`);
 }
 
-let cVI=null,cSI=null,cLC=null;
+let cVI=null,cSI=null,cLC=null,cTI=null;
+// Helper BI: mostra variação % vs período anterior num elemento (verde sobe / vermelho desce).
+function setDelta(elId,atual,anterior,inverter){
+  const el=document.getElementById(elId);if(!el)return;
+  if(!anterior||anterior===0){el.textContent=atual>0?"novo":"";el.style.color="var(--muted)";return;}
+  const v=(atual-anterior)/Math.abs(anterior)*100;
+  const sobe=v>=0;
+  // inverter=true para gastos (subir é ruim)
+  const bom=inverter?!sobe:sobe;
+  el.textContent=(sobe?"▲ ":"▼ ")+Math.abs(v).toFixed(1)+"% vs ant.";
+  el.style.color=Math.abs(v)<0.05?"var(--muted)":(bom?"var(--success)":"var(--danger)");
+}
 Date.prototype.addDays=function(days){const d=new Date(this);d.setDate(d.getDate()+days);return d;};
 
 // ===== FUNÇÃO DE DEMO - Cria dados automáticos na primeira vez =====
@@ -2869,6 +2917,29 @@ function renderDashboard(){
   document.getElementById("d-lucro").textContent=R(lucro);document.getElementById("d-margem").textContent=`Margem ${P(marg)}`;
   document.getElementById("d-prod").textContent=`${prod} unid.`;document.getElementById("d-estq").textContent=`Estoque: ${estTotal}`;
   document.getElementById("d-gastos").textContent=R(gastos);document.getElementById("d-ticket").textContent=`Ticket: ${R(ticket)}`;
+
+  // ===== BI: variação vs período anterior =====
+  let prevAno=anoFilter, prevMes=mesFilter;
+  if(periodo==="acumulado"){ prevAno=""; prevMes=""; }
+  else if(mesFilter){ // mês anterior (rola o ano em janeiro)
+    let m=parseInt(mesFilter)-1, a=parseInt(anoFilter);
+    if(m<1){m=12;a--;} prevMes=String(m).padStart(2,"0"); prevAno=String(a);
+  }else{ prevMes=""; prevAno=String(parseInt(anoFilter)-1); } // ano anterior
+  if(periodo!=="acumulado"){
+    const filtra=(arr)=>arr.filter(x=>x.data&&(!prevAno||x.data.startsWith(prevAno))&&(!prevMes||x.data.includes("-"+prevMes+"-")));
+    const pv=filtra(getV()), pg=filtra(getG());
+    const pFat=pv.reduce((s,v)=>s+v.bruto,0), pLucro=pv.reduce((s,v)=>s+v.lucro,0);
+    const pGastos=pg.reduce((s,g)=>s+g.valor,0);
+    const pProdParam=prevMes?prevAno+"-"+prevMes:prevAno+"-";
+    const pProd=getPr().filter(p=>p.data&&p.data.startsWith(pProdParam)).reduce((s,p)=>s+p.qtd,0);
+    setDelta("d-fat-delta",fat,pFat,false);
+    setDelta("d-lucro-delta",lucro,pLucro,false);
+    setDelta("d-prod-delta",prod,pProd,false);
+    setDelta("d-gastos-delta",gastos,pGastos,true);
+  }else{
+    ["d-fat-delta","d-lucro-delta","d-prod-delta","d-gastos-delta"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="";});
+  }
+
   const pct=metas.fat>0?Math.min(100,fat/metas.fat*100):0;
   const bEl=document.getElementById("d-meta-bar");
   bEl.style.width=pct+"%";bEl.style.background=pct>=100?"var(--success)":pct>=70?"var(--gold)":"var(--danger)";
@@ -2902,9 +2973,24 @@ function renderDashboard(){
   if(cVI)cVI.destroy();
   const cVendas=document.getElementById("cVendas");
   if(cVendas){
-    cVI=new Chart(cVendas,{type:"bar",data:{labels:Array.from({length:dias},(_,i)=>i+1),datasets:[{data:vpd,backgroundColor:"rgba(201,168,76,.8)",borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},color:"#888",maxTicksLimit:10}},y:{ticks:{font:{size:10},color:"#888",callback:v=>"R$"+v}}}}});
+    cVI=new Chart(cVendas,{type:"bar",data:{labels:Array.from({length:dias},(_,i)=>i+1),datasets:[{label:"Vendas",data:vpd,backgroundColor:"rgba(201,168,76,.8)",borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:_tipBRL,datalabels:{display:false}},scales:{x:{ticks:{font:{size:9},color:"#888",maxTicksLimit:10}},y:{ticks:{font:{size:10},color:"#888",callback:v=>"R$"+v}}}}});
   }
-  
+
+  // ===== Gráfico de TENDÊNCIA MENSAL (Faturamento × Lucro × Gastos no ano) =====
+  const anoTend=anoFilter||now.getFullYear().toString();
+  const fatMes=Array(12).fill(0),lucMes=Array(12).fill(0),gasMes=Array(12).fill(0);
+  getV().filter(v=>v.data&&v.data.startsWith(anoTend)).forEach(v=>{const m=parseInt(v.data.split("-")[1])-1;if(m>=0&&m<12){fatMes[m]+=v.bruto;lucMes[m]+=v.lucro;}});
+  getG().filter(g=>g.data&&g.data.startsWith(anoTend)).forEach(g=>{const m=parseInt(g.data.split("-")[1])-1;if(m>=0&&m<12)gasMes[m]+=g.valor;});
+  if(cTI)cTI.destroy();
+  const cTend=document.getElementById("cTendencia");
+  if(cTend){
+    cTI=new Chart(cTend,{type:"line",data:{labels:["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"],datasets:[
+      {label:"Faturamento",data:fatMes,borderColor:"#C9A84C",backgroundColor:"rgba(201,168,76,.12)",fill:true,tension:.3,borderWidth:2,pointRadius:2},
+      {label:"Lucro",data:lucMes,borderColor:"#15803D",backgroundColor:"transparent",tension:.3,borderWidth:2,pointRadius:2},
+      {label:"Gastos",data:gasMes,borderColor:"#B91C1C",backgroundColor:"transparent",tension:.3,borderWidth:2,pointRadius:2,borderDash:[4,3]}
+    ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,labels:{font:{size:10},boxWidth:12}},tooltip:_tipBRL,datalabels:{display:false}},scales:{x:{ticks:{font:{size:9},color:"#888"}},y:{ticks:{font:{size:10},color:"#888",callback:v=>"R$"+v}}}}});
+  }
+
   // Gráfico de Lançamentos (Vendas/Produção/Gastos)
   const totalVendas=mv.reduce((s,v)=>s+v.bruto,0);
   const totalProducao=getPr().filter(p=>p.data&&p.data.startsWith(mesParam)).length;
@@ -2913,7 +2999,7 @@ function renderDashboard(){
   if(cLC)cLC.destroy();
   const cLanc=document.getElementById("cLancamentos");
   if(cLanc){
-    cLC=new Chart(cLanc,{type:"bar",data:{labels:["Vendas (R$)","Produções (un×100)","Gastos (R$)"],datasets:[{data:lancamentosData,backgroundColor:["rgba(34,197,94,.8)","rgba(59,130,246,.8)","rgba(239,68,68,.8)"],borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},color:"#888"}},y:{ticks:{font:{size:10},color:"#888",callback:v=>"R$"+v}}}}});
+    cLC=new Chart(cLanc,{type:"bar",data:{labels:["Vendas (R$)","Produções (un×100)","Gastos (R$)"],datasets:[{data:lancamentosData,backgroundColor:["rgba(34,197,94,.8)","rgba(59,130,246,.8)","rgba(239,68,68,.8)"],borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:true,anchor:"end",align:"top",color:"#555",font:{size:9,weight:"bold"},formatter:v=>v>0?Math.round(v):""}},scales:{x:{ticks:{font:{size:10},color:"#888"}},y:{ticks:{font:{size:10},color:"#888",callback:v=>"R$"+v}}}}});
   }
   
   const sqtd={};mv.forEach(v=>{sqtd[v.produto]=(sqtd[v.produto]||0)+v.qtd;});
@@ -5278,6 +5364,104 @@ function renderRel(){
     document.getElementById("rel-insumos").innerHTML='<div style="font-size:12px;color:var(--muted)">Sem gastos com insumos neste período</div>';
   }
 }
+
+// ===== RELATÓRIO EM PDF (jsPDF + autoTable) =====
+function gerarPDF(){
+  if(!(window.jspdf&&window.jspdf.jsPDF)){
+    alert("⚠️ A biblioteca de PDF não carregou. Conecte-se à internet uma vez para baixá-la (depois funciona offline).");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"pt",format:"a4"});
+  const now=new Date();
+  const mes=document.getElementById("rel-mes-sel").value||String(now.getMonth()+1).padStart(2,"0");
+  const ano=document.getElementById("rel-ano-sel").value||now.getFullYear();
+  const mesNome=MESES[parseInt(mes)-1];
+  const mv=getV().filter(v=>v.data&&v.data.startsWith(ano+"-"+mes));
+  const mg=getG().filter(g=>g.data&&g.data.startsWith(ano+"-"+mes));
+  const fat=mv.reduce((s,v)=>s+v.bruto,0),lucro=mv.reduce((s,v)=>s+v.lucro,0);
+  const unid=mv.reduce((s,v)=>s+v.qtd,0),gastos=mg.reduce((s,g)=>s+g.valor,0);
+  const ticket=mv.length>0?fat/mv.length:0,marg=fat>0?lucro/fat*100:0;
+  const W=doc.internal.pageSize.getWidth();
+
+  // Cabeçalho
+  doc.setFillColor(10,10,10);doc.rect(0,0,W,70,"F");
+  doc.setTextColor(201,168,76);doc.setFont("helvetica","bold");doc.setFontSize(22);
+  doc.text("GN GELO",40,38);
+  doc.setFontSize(11);doc.setFont("helvetica","normal");
+  doc.text("Relatório de Gestão",40,55);
+  doc.setTextColor(180,180,180);doc.setFontSize(9);
+  doc.text(`${mesNome} de ${ano}`,W-40,38,{align:"right"});
+  doc.text("Emitido em "+now.toLocaleDateString("pt-BR"),W-40,52,{align:"right"});
+
+  // Indicadores
+  doc.setTextColor(10,10,10);doc.setFont("helvetica","bold");doc.setFontSize(13);
+  doc.text("Indicadores do período",40,100);
+  doc.autoTable({
+    startY:110,
+    theme:"grid",
+    headStyles:{fillColor:[201,168,76],textColor:[10,10,10]},
+    styles:{fontSize:10,cellPadding:6},
+    head:[["Indicador","Valor"]],
+    body:[
+      ["Faturamento",R(fat)],
+      ["Lucro líquido",R(lucro)],
+      ["Margem",P(marg)],
+      ["Unidades vendidas",String(unid)],
+      ["Ticket médio",R(ticket)],
+      ["Gastos",R(gastos)],
+      ["Resultado (Lucro - Gastos)",R(lucro-gastos)]
+    ]
+  });
+
+  // Por canal
+  const ca={};mv.forEach(v=>{if(!ca[v.canal])ca[v.canal]={fat:0,lucro:0,qtd:0};ca[v.canal].fat+=v.bruto;ca[v.canal].lucro+=v.lucro;ca[v.canal].qtd+=v.qtd;});
+  if(Object.keys(ca).length){
+    doc.setFontSize(13);doc.text("Vendas por canal",40,doc.lastAutoTable.finalY+28);
+    doc.autoTable({
+      startY:doc.lastAutoTable.finalY+36,theme:"striped",
+      headStyles:{fillColor:[26,26,26]},styles:{fontSize:9,cellPadding:5},
+      head:[["Canal","Qtd","Faturamento","Margem"]],
+      body:Object.entries(ca).sort((a,b)=>b[1].fat-a[1].fat).map(([c,d])=>[c,d.qtd,R(d.fat),d.fat>0?P(d.lucro/d.fat*100):"-"])
+    });
+  }
+
+  // Por sabor
+  const sa={};mv.forEach(v=>{if(!sa[v.produto])sa[v.produto]={fat:0,lucro:0,qtd:0};sa[v.produto].fat+=v.bruto;sa[v.produto].lucro+=v.lucro;sa[v.produto].qtd+=v.qtd;});
+  if(Object.keys(sa).length){
+    doc.setFontSize(13);doc.text("Vendas por sabor",40,doc.lastAutoTable.finalY+28);
+    doc.autoTable({
+      startY:doc.lastAutoTable.finalY+36,theme:"striped",
+      headStyles:{fillColor:[26,26,26]},styles:{fontSize:9,cellPadding:5},
+      head:[["Sabor","Qtd","Faturamento","Margem"]],
+      body:Object.entries(sa).sort((a,b)=>b[1].fat-a[1].fat).map(([k,d])=>[SB[k]||k,d.qtd,R(d.fat),d.fat>0?P(d.lucro/d.fat*100):"-"])
+    });
+  }
+
+  // Gastos com insumos
+  const gi=mg.filter(g=>g.insumo);
+  if(gi.length){
+    const porIns={};gi.forEach(g=>{if(!porIns[g.insumo])porIns[g.insumo]={valor:0,qtd:0};porIns[g.insumo].valor+=g.valor||0;porIns[g.insumo].qtd+=g.quantidade||0;});
+    doc.setFontSize(13);doc.text("Gastos com insumos",40,doc.lastAutoTable.finalY+28);
+    doc.autoTable({
+      startY:doc.lastAutoTable.finalY+36,theme:"striped",
+      headStyles:{fillColor:[185,28,28]},styles:{fontSize:9,cellPadding:5},
+      head:[["Insumo","Qtd","Valor"]],
+      body:Object.entries(porIns).sort((a,b)=>b[1].valor-a[1].valor).map(([n,d])=>[n,d.qtd,R(d.valor)])
+    });
+  }
+
+  // Rodapé
+  const pages=doc.internal.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);doc.setFontSize(8);doc.setTextColor(150,150,150);
+    doc.text("GN Gelo — Sistema de Gestão",40,doc.internal.pageSize.getHeight()-20);
+    doc.text(`Página ${i} de ${pages}`,W-40,doc.internal.pageSize.getHeight()-20,{align:"right"});
+  }
+
+  doc.save(`GN_Gelo_Relatorio_${ano}-${mes}.pdf`);
+}
+
 function exportarRelatorio(){
   // Pegar seletores de mês e ano
   const mesSel=document.getElementById("rel-mes-sel").value;
@@ -5466,6 +5650,15 @@ try{
   console.log("✅ Sincronização entre abas ativada");
 }catch(err){
   console.log("⚠️ BroadcastChannel não disponível neste navegador");
+}
+
+// ===== PWA: registra o Service Worker (app instalável + offline) =====
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw.js")
+      .then(()=>console.log("✅ Service Worker registrado (PWA ativo)"))
+      .catch(err=>console.log("⚠️ Falha ao registrar Service Worker:",err));
+  });
 }
 </script>
 </body>
