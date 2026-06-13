@@ -715,7 +715,7 @@ input.input-warning{
     <div id="filtro-gastos-avancado" style="display:none;background:var(--gold-light);padding:12px;border-radius:6px;margin-bottom:12px;border:1px solid var(--gold-border)">
       <div class="form-row">
         <div class="fg"><label style="font-size:12px">Mês</label><select id="filtro-gasto-mes" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
-        <div class="fg"><label style="font-size:12px">Categoria</label><select id="filtro-gasto-cat" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todas</option><option value="Insumo">Insumo</option><option value="Embalagem">Embalagem</option><option value="Entrega">Entrega</option><option value="Marketing">Marketing</option><option value="Funcionário">Funcionário</option><option value="Aluguel">Aluguel</option><option value="Água/Luz">Água/Luz</option><option value="Internet">Internet</option><option value="Outros">Outros</option></select></div>
+        <div class="fg"><label style="font-size:12px">Categoria</label><select id="filtro-gasto-cat" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todas</option><option value="Ingredientes">Ingredientes</option><option value="Embalagens">Embalagens</option><option value="Gás">Gás</option><option value="Energia elétrica">Energia elétrica</option><option value="Água">Água</option><option value="Frete">Frete</option><option value="Combustível">Combustível</option><option value="Marketing">Marketing</option><option value="Tráfego pago">Tráfego pago</option><option value="Comissão">Comissão</option><option value="Manutenção">Manutenção</option><option value="Equipamentos">Equipamentos</option><option value="Taxas bancárias">Taxas bancárias</option><option value="Taxas iFood">Taxas iFood</option><option value="Contabilidade">Contabilidade</option><option value="Administrativo">Administrativo</option><option value="Outros">Outros</option></select></div>
       </div>
       <button class="btn btn-primary" style="width:100%;font-size:12px" onclick="filtrarGastosAvancado()">🔍 Filtrar</button>
     </div>
@@ -2479,7 +2479,7 @@ function renderLG(){
   const mg=getG().filter(g=>g.data.startsWith(ano+"-"+mes)).slice().reverse();
   const el=document.getElementById("lista-gastos");
   if(!mg.length){el.innerHTML='<div class="empty"><i class="ti ti-receipt"></i>Nenhum gasto neste período</div>';renderTabelaInsumosGastos();return;}
-  el.innerHTML=mg.slice(0,15).map(g=>`<div class="item-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">${g.cat||g.tipo}</span><span style="font-weight:700;color:var(--danger)">${R(g.valor)}</span></div><div style="font-size:11px;color:var(--muted);margin-top:3px">${g.desc||"—"} · ${g.data} · <span class="badge ${g.status==="Pago"?"b-green":"b-gold"}">${g.status}</span></div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-sm" onclick="editarGasto(${g.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarGasto(${g.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
+  el.innerHTML=mg.slice(0,15).map(g=>`<div class="item-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">${g.cat||g.tipo||"—"}</span><span style="font-weight:700;color:var(--danger)">${R(g.valor)}</span></div><div style="font-size:11px;color:var(--muted);margin-top:3px">${g.desc||g.descricao||"—"} · ${g.data} · <span class="badge ${g.status==="Pago"?"b-green":"b-gold"}">${g.status||"—"}</span></div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-sm" onclick="editarGasto(${g.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarGasto(${g.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
   
   // Renderizar tabela detalhada de insumos
   renderTabelaInsumosGastos();
@@ -2725,7 +2725,7 @@ function filtrarGastosAvancado(){
     return;
   }
   
-  el.innerHTML=gs.slice(0,50).map(g=>`<div class="item-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">${g.desc}</span><span style="color:var(--danger)">${R(g.valor)}</span></div><div style="font-size:11px;color:var(--muted);margin-top:4px">${g.data} · ${g.cat} · ${g.status}</div></div>`).join("");
+  el.innerHTML=gs.slice(0,50).map(g=>`<div class="item-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">${g.desc||g.descricao||"—"}</span><span style="color:var(--danger)">${R(g.valor)}</span></div><div style="font-size:11px;color:var(--muted);margin-top:4px">${g.data} · ${g.cat||g.tipo||"—"} · ${g.status||"—"}</div></div>`).join("");
 }
 
 function renderLE(){
@@ -4762,46 +4762,46 @@ function updateComVendedor(){
   el.innerHTML='<option value="">Todos os vendedores</option>'+vs.map(v=>`<option value="${v.id}">${v.nome}</option>`).join("");
 }
 function renderComissoes(){
-  const cs=getCom(),vs=getVend(),vendSel=document.getElementById("com-vendedor").value,periodoSel=document.getElementById("com-periodo").value;
-  let filtered=cs;
-  if(vendSel)filtered=filtered.filter(c=>c.vendedor===parseInt(vendSel));
-  
-  const hoje=today(),mes=curM();
-  if(periodoSel==="mes")filtered=filtered.filter(c=>c.data.startsWith(mes));
-  else if(periodoSel==="ano"){
-    const ano=new Date().getFullYear().toString();
-    filtered=filtered.filter(c=>c.data.startsWith(ano));
-  }
-  
-  if(!filtered.length){
-    document.getElementById("lista-comissoes").innerHTML='<div class="empty"><i class="ti ti-cash"></i>Nenhuma comissão para este período</div>';
+  const vs=getVend();
+  const vendSel=document.getElementById("com-vendedor").value;
+  const periodoSel=document.getElementById("com-periodo").value;
+  const mes=curM(), ano=new Date().getFullYear().toString();
+
+  // Comissões calculadas a partir das vendas (vendedor cadastrado + regra do vendedor)
+  let vendas=getV().filter(v=>v.vendedor);
+  if(periodoSel==="mes")vendas=vendas.filter(v=>v.data&&v.data.startsWith(mes));
+  else if(periodoSel==="ano")vendas=vendas.filter(v=>v.data&&v.data.startsWith(ano));
+  if(vendSel)vendas=vendas.filter(v=>String(v.vendedor)===String(vendSel));
+
+  const porVend={};
+  vendas.forEach(v=>{
+    const vend=vs.find(x=>String(x.id)===String(v.vendedor));
+    if(!vend||vend.status==="inativo")return;
+    // Modo "primeira venda": comissão só na 1ª compra de cada cliente para este vendedor
+    if(vend.modo==="primeira"){
+      const doVend=getV().filter(x=>String(x.vendedor)===String(v.vendedor)&&(x.cliente||"")===(v.cliente||""));
+      const primeira=doVend.reduce((a,b)=>(a&&(a.data||"")<=(b.data||"")?a:b),doVend[0]);
+      if(primeira&&primeira.id!==v.id)return;
+    }
+    const com=vend.tipo==="fixo"?(vend.valor||0):(v.bruto||0)*(vend.valor||0)/100;
+    if(!porVend[v.vendedor])porVend[v.vendedor]={nome:vend.nome,regra:vend.tipo==="fixo"?`R$ ${vend.valor}/venda`:`${vend.valor}%`,total:0,vendas:0,itens:[]};
+    porVend[v.vendedor].total+=com;
+    porVend[v.vendedor].vendas+=(v.bruto||0);
+    porVend[v.vendedor].itens.push({data:v.data,cliente:v.cliente||"Avulso",bruto:v.bruto||0,com});
+  });
+
+  const el=document.getElementById("lista-comissoes");
+  const grupos=Object.values(porVend);
+  if(!grupos.length){
+    el.innerHTML='<div class="empty"><i class="ti ti-cash"></i>Nenhuma comissão para este período.<br><span style="font-size:11px">Cadastre vendedores e registre vendas com vendedor.</span></div>';
     return;
   }
-  
+  const totalCom=grupos.reduce((s,g)=>s+g.total,0);
+  const totalVendas=grupos.reduce((s,g)=>s+g.vendas,0);
   let html="<div style='font-size:12px;font-weight:700;margin-bottom:12px;text-transform:uppercase;color:#6B6B6B'>Resumo de comissões</div>";
-  const totalCom=filtered.reduce((s,c)=>s+c.valor,0);
-  const totalVendas=filtered.reduce((s,c)=>s+c.valorVenda,0);
-  
-  html+=`<div class="metric-grid" style="margin-bottom:12px">
-    <div class="metric"><div class="lbl">Total em vendas</div><div class="val gold">${R(totalVendas)}</div></div>
-    <div class="metric"><div class="lbl">Total em comissões</div><div class="val green">${R(totalCom)}</div></div>
-  </div>`;
-  
-  const porVend={};
-  filtered.forEach(c=>{
-    if(!porVend[c.vendedor])porVend[c.vendedor]={comissoes:[],total:0};
-    porVend[c.vendedor].comissoes.push(c);
-    porVend[c.vendedor].total+=c.valor;
-  });
-  
-  html+=Object.entries(porVend).map(([vendId,d])=>{
-    const vend=vs.find(v=>v.id===parseInt(vendId));
-    const nomVend=vend?vend.nome:"Desconhecido";
-    return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:700">${nomVend}</span><span style="font-size:14px;font-weight:700;color:#15803D">${R(d.total)}</span></div>
-      ${d.comissoes.map(c=>`<div class="dre-row" style="padding:6px 0"><span style="font-size:11px">${c.data} · ${c.pedido}</span><span style="font-size:12px">${R(c.valor)}</span></div>`).join("")}</div>`;
-  }).join("");
-  
-  document.getElementById("lista-comissoes").innerHTML=html;
+  html+=`<div class="metric-grid" style="margin-bottom:12px"><div class="metric"><div class="lbl">Total em vendas</div><div class="val gold">${R(totalVendas)}</div></div><div class="metric"><div class="lbl">Total em comissões</div><div class="val green">${R(totalCom)}</div></div></div>`;
+  html+=grupos.sort((a,b)=>b.total-a.total).map(g=>`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:700">${g.nome} <span style="font-size:10px;color:var(--muted);font-weight:400">(${g.regra})</span></span><span style="font-size:14px;font-weight:700;color:#15803D">${R(g.total)}</span></div>${g.itens.sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(i=>`<div class="dre-row" style="padding:6px 0"><span style="font-size:11px">${i.data} · ${i.cliente} · ${R(i.bruto)}</span><span style="font-size:12px;font-weight:700">${R(i.com)}</span></div>`).join("")}</div>`).join("");
+  el.innerHTML=html;
 }
 
 function getRec(){
