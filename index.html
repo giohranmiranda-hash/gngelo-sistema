@@ -3392,9 +3392,11 @@ function renderDRE(){
   const fat=mv.reduce((s,v)=>s+v.bruto,0),unid=mv.reduce((s,v)=>s+v.qtd,0);
   const imp=mv.reduce((s,v)=>s+v.imp,0),taxa=mv.reduce((s,v)=>s+v.taxa,0),desc=mv.reduce((s,v)=>s+v.desc,0);
   const liq=fat-imp-taxa-desc,cpv=mv.reduce((s,v)=>s+v.cpv,0),lucroB=liq-cpv;
-  const gf=mg.filter(g=>g.tipo==="Custo fixo"||g.tipo==="Despesa fixa").reduce((s,g)=>s+g.valor,0);
-  const gv=mg.filter(g=>g.tipo==="Custo variável"||g.tipo==="Despesa variável").reduce((s,g)=>s+g.valor,0);
-  const gtotal=mg.reduce((s,g)=>s+g.valor,0),lucroL=lucroB-gtotal;
+  const gf=mg.filter(g=>(g.tipo==="Custo fixo"||g.tipo==="Despesa fixa")&&!isInvestimento(g)).reduce((s,g)=>s+g.valor,0);
+  const gv=mg.filter(g=>(g.tipo==="Custo variável"||g.tipo==="Despesa variável")&&!isInvestimento(g)).reduce((s,g)=>s+g.valor,0);
+  const invest=mg.filter(isInvestimento).reduce((s,g)=>s+g.valor,0);
+  const gtotal=mg.filter(g=>!isInvestimento(g)).reduce((s,g)=>s+g.valor,0),lucroL=lucroB-gtotal;
+  const resultadoFinal=lucroL-invest;
   const mB=liq>0?lucroB/liq*100:0,mL=fat>0?lucroL/fat*100:0;
   
   // Atualiza título
@@ -3402,7 +3404,7 @@ function renderDRE(){
   document.getElementById("dre-mes").textContent=MESES[parseInt(mes)-1]+" de "+ano;
   
   const dr=(l,v,pct,tipo)=>`<div class="dre-row"><span>${l}</span><div style="text-align:right"><div>${R(v)}</div><div class="dre-sub">${P(pct)} · ${tipo}</div></div></div>`;
-  document.getElementById("dre-mensal").innerHTML=`<div class="dre-sec">Receita</div>${dr("Receita bruta",fat,100,"—")}${dr("(−) Impostos",-imp,fat?imp/fat*100:0,"Variável")}${dr("(−) Taxas plataforma",-taxa,fat?taxa/fat*100:0,"Variável")}${dr("(−) Descontos",-desc,fat?desc/fat*100:0,"Variável")}<div class="dre-row dre-total"><span>Receita líquida</span><span>${R(liq)}</span></div><div class="dre-sec">Custos</div>${dr("(−) CPV",-cpv,fat?cpv/fat*100:0,"Variável")}<div class="dre-row dre-total dre-pos"><span>Lucro bruto</span><span>${R(lucroB)}</span></div><div style="font-size:11px;color:var(--muted);text-align:right;padding:3px 0">Margem bruta: ${P(mB)}</div><div class="dre-sec">Despesas</div>${dr("(−) Despesas fixas",-gf,fat?gf/fat*100:0,"Fixo")}${dr("(−) Despesas variáveis",-gv,fat?gv/fat*100:0,"Variável")}<div class="dre-row dre-total ${lucroL>=0?"dre-pos":"dre-neg"}"><span>Lucro líquido</span><span>${R(lucroL)}</span></div><div style="font-size:11px;color:var(--muted);text-align:right">Margem líquida: ${P(mL)}</div>`;
+  document.getElementById("dre-mensal").innerHTML=`<div class="dre-sec">Receita</div>${dr("Receita bruta",fat,100,"—")}${dr("(−) Impostos",-imp,fat?imp/fat*100:0,"Variável")}${dr("(−) Taxas plataforma",-taxa,fat?taxa/fat*100:0,"Variável")}${dr("(−) Descontos",-desc,fat?desc/fat*100:0,"Variável")}<div class="dre-row dre-total"><span>Receita líquida</span><span>${R(liq)}</span></div><div class="dre-sec">Custos</div>${dr("(−) CPV",-cpv,fat?cpv/fat*100:0,"Variável")}<div class="dre-row dre-total dre-pos"><span>Lucro bruto</span><span>${R(lucroB)}</span></div><div style="font-size:11px;color:var(--muted);text-align:right;padding:3px 0">Margem bruta: ${P(mB)}</div><div class="dre-sec">Despesas</div>${dr("(−) Despesas fixas",-gf,fat?gf/fat*100:0,"Fixo")}${dr("(−) Despesas variáveis",-gv,fat?gv/fat*100:0,"Variável")}<div class="dre-row dre-total ${lucroL>=0?"dre-pos":"dre-neg"}"><span>Lucro líquido (operacional)</span><span>${R(lucroL)}</span></div><div style="font-size:11px;color:var(--muted);text-align:right">Margem líquida: ${P(mL)}</div>${invest>0?`<div class="dre-sec">Investimentos (não recorrente)</div>${dr("(−) Investimentos / CAPEX",-invest,fat?invest/fat*100:0,"Não recorrente")}<div class="dre-row dre-total ${resultadoFinal>=0?"dre-pos":"dre-neg"}"><span>Resultado após investimentos</span><span>${R(resultadoFinal)}</span></div><div style="font-size:11px;color:var(--muted);text-align:right;padding-top:2px">Equipamentos e compras únicas não entram no lucro operacional.</div>`:""}`;
   const cF=par.gas+par.en+par.ag+par.of+gf,cV=cpv+imp+taxa+gv;
   const mcU=fat>0&&unid>0?(liq-cV)/unid:0,pe=mcU>0?Math.ceil(cF/mcU):0;
   const pMed=unid>0?fat/unid:par.p1,peR=pMed>0&&mcU>0?cF*pMed/mcU:0;
@@ -3463,13 +3465,14 @@ function renderDREAnual(){
     const liq=fat-imp-taxa-desc;
     const cpv=mv.reduce((s,v)=>s+v.cpv,0);
     const lucroB=liq-cpv;
-    const gf=mg.filter(g=>g.tipo==="Custo fixo"||g.tipo==="Despesa fixa").reduce((s,g)=>s+g.valor,0);
-    const gv=mg.filter(g=>g.tipo==="Custo variável"||g.tipo==="Despesa variável").reduce((s,g)=>s+g.valor,0);
-    const gtotal=mg.reduce((s,g)=>s+g.valor,0);
+    const gf=mg.filter(g=>(g.tipo==="Custo fixo"||g.tipo==="Despesa fixa")&&!isInvestimento(g)).reduce((s,g)=>s+g.valor,0);
+    const gv=mg.filter(g=>(g.tipo==="Custo variável"||g.tipo==="Despesa variável")&&!isInvestimento(g)).reduce((s,g)=>s+g.valor,0);
+    const invest=mg.filter(isInvestimento).reduce((s,g)=>s+g.valor,0);
+    const gtotal=mg.filter(g=>!isInvestimento(g)).reduce((s,g)=>s+g.valor,0);
     const lucroL=lucroB-gtotal;
     const marg=fat>0?lucroL/fat*100:0;
-    
-    meses[m]={fat,unid,cpv,lucroB,lucroL,marg,gf,gtotal};
+
+    meses[m]={fat,unid,cpv,lucroB,lucroL,marg,gf,gtotal,invest};
   }
   
   // Calcula totais anuais
@@ -3478,6 +3481,7 @@ function renderDREAnual(){
   const totCpv=Object.values(meses).reduce((s,m)=>s+m.cpv,0);
   const totLucroL=Object.values(meses).reduce((s,m)=>s+m.lucroL,0);
   const totGastos=Object.values(meses).reduce((s,m)=>s+m.gtotal,0);
+  const totInvest=Object.values(meses).reduce((s,m)=>s+(m.invest||0),0);
   const margAnual=totFat>0?totLucroL/totFat*100:0;
   
   // Encontra melhor e pior mês
@@ -3490,6 +3494,7 @@ function renderDREAnual(){
       <div class="metric"><div class="lbl">Lucro anual</div><div class="val green">${R(totLucroL)}</div></div>
       <div class="metric"><div class="lbl">Unidades vendidas</div><div class="val">${totUnid}</div></div>
       <div class="metric"><div class="lbl">Margem líquida</div><div class="val">${P(margAnual)}</div></div>
+      ${totInvest>0?`<div class="metric"><div class="lbl">Investimentos (ano)</div><div class="val red">${R(totInvest)}</div><div class="sub">Não recorrente</div></div>`:""}
     </div>
     <div class="card">
       <div class="section-label">Destaques</div>
@@ -3613,9 +3618,11 @@ function renderGerencial(){
   const fat=mv.reduce((s,v)=>s+v.bruto,0),unid=mv.reduce((s,v)=>s+v.qtd,0);
   const imp=mv.reduce((s,v)=>s+v.imp,0),taxa=mv.reduce((s,v)=>s+v.taxa,0),desc=mv.reduce((s,v)=>s+v.desc,0);
   const liq=fat-imp-taxa-desc,cpv=mv.reduce((s,v)=>s+v.cpv,0),lucroB=liq-cpv;
-  const gf=mg.filter(g=>g.tipo==="Custo fixo"||g.tipo==="Despesa fixa").reduce((s,g)=>s+g.valor,0);
-  const gv=mg.filter(g=>g.tipo==="Custo variável"||g.tipo==="Despesa variável").reduce((s,g)=>s+g.valor,0);
-  const gtotal=mg.reduce((s,g)=>s+g.valor,0),lucroL=lucroB-gtotal;
+  const gf=mg.filter(g=>(g.tipo==="Custo fixo"||g.tipo==="Despesa fixa")&&!isInvestimento(g)).reduce((s,g)=>s+g.valor,0);
+  const gv=mg.filter(g=>(g.tipo==="Custo variável"||g.tipo==="Despesa variável")&&!isInvestimento(g)).reduce((s,g)=>s+g.valor,0);
+  const invest=mg.filter(isInvestimento).reduce((s,g)=>s+g.valor,0);
+  const gtotal=mg.filter(g=>!isInvestimento(g)).reduce((s,g)=>s+g.valor,0),lucroL=lucroB-gtotal;
+  const resultadoFinal=lucroL-invest;
   const cF=par.gas*12+par.en*12+par.ag*12+par.of*12+gf,cV=cpv+imp+taxa+gv;
   const mcU=fat>0&&unid>0?(liq-cV)/unid:0,pe=mcU>0?Math.ceil(cF/mcU):0;
   const pMed=unid>0?fat/unid:par.p1,peR=pMed>0&&mcU>0?cF*pMed/mcU:0;
@@ -3656,8 +3663,9 @@ function renderGerencial(){
       <div class="dre-row"><span>Faturamento</span><span style="font-weight:700">${R(fat)}</span></div>
       <div class="dre-row"><span>Custo produto vendido</span><span style="color:#B91C1C;font-weight:700">-${R(cpv)}</span></div>
       <div class="dre-row dre-total" style="margin-bottom:8px"><span>Lucro bruto</span><span style="color:#15803D;font-weight:700">${R(lucroB)}</span></div>
-      <div class="dre-row"><span>Custos + Despesas</span><span style="color:#B91C1C;font-weight:700">-${R(gtotal)}</span></div>
-      <div class="dre-row dre-total"><span>Lucro líquido</span><span style="color:#15803D;font-weight:700;font-size:16px">${R(lucroL)}</span></div>
+      <div class="dre-row"><span>Custos + Despesas (recorrentes)</span><span style="color:#B91C1C;font-weight:700">-${R(gtotal)}</span></div>
+      <div class="dre-row dre-total"><span>Lucro líquido (operacional)</span><span style="color:${lucroL>=0?'#15803D':'#B91C1C'};font-weight:700;font-size:16px">${R(lucroL)}</span></div>
+      ${invest>0?`<div class="dre-row" style="margin-top:8px"><span>Investimentos (não recorrente)</span><span style="color:#B91C1C;font-weight:700">-${R(invest)}</span></div><div class="dre-row dre-total"><span>Resultado após investimentos</span><span style="color:${resultadoFinal>=0?'#15803D':'#B91C1C'};font-weight:700;font-size:16px">${R(resultadoFinal)}</span></div>`:""}
     </div>
     <div class="card">
       <div class="section-label">Índices de rentabilidade</div>
