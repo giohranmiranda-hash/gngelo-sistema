@@ -1,12 +1,15 @@
 // Service Worker — GN Gelo
 // Versione o cache (v1 -> v2 ...) sempre que publicar uma atualização,
 // para que os usuários recebam a nova versão.
-const CACHE = "gngelo-v1";
+const CACHE = "gngelo-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./icon.svg"
+  "./icon.svg",
+  "./icon-180.png",
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
 // Instala: pré-armazena o "esqueleto" do app.
