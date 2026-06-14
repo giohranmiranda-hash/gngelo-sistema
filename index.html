@@ -1289,7 +1289,7 @@ const SC={coco:"fl-coco",morango:"fl-morango",maracuja:"fl-maracuja",maca:"fl-ma
 const CC={coco:"#92400E",morango:"#9D174D",maracuja:"#C2410C",maca:"#166534",manga:"#FF8C00",melancia:"#E91E63",limao:"#FFEB3B",iceblue:"#00BCD4",energetico:"#FF5722",frutas:"#D32F2F",amora:"#4A148C",abacaxi:"#FFC107",salLimao:"#76FF03",uva:"#7C4DFF",chiclete:"#FF1493",cereja:"#F50057",morPessego:"#E91E63",brasil:"#FFD700",bobMarley:"#FFD700",laranja:"#FF6F00",balaHouse:"#FF69B4",combo10:"#4C1D95",combo20:"#4C1D95",combo50:"#4C1D95",combo100:"#4C1D95"};
 const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const get=(k,d)=>{try{const v=localStorage.getItem("gng_"+k);return v?JSON.parse(v):d;}catch{return d;}};
-const set=(k,v)=>{try{localStorage.setItem("gng_"+k,JSON.stringify(v));agendarSync();}catch{}};
+const set=(k,v)=>{try{localStorage.setItem("gng_"+k,JSON.stringify(v));localStorage.setItem("gng__local_updated",new Date().toISOString());agendarSync();}catch{}};
 
 // ===== SUPABASE (login + sincronização na nuvem) =====
 const SUPABASE_URL="https://wuqymzfzkxnxnddnrefa.supabase.co";
@@ -1306,7 +1306,7 @@ function _chavesDados(){
   const out={};
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
-    if(k&&k.indexOf("gng_")===0 && k!=="gng_backup_seeded" && k!=="gng_demo_ja_criado" && k!=="gng__cloud_updated" && k!=="gng__owner"){
+    if(k&&k.indexOf("gng_")===0 && k!=="gng_backup_seeded" && k!=="gng_demo_ja_criado" && k!=="gng__cloud_updated" && k!=="gng__owner" && k!=="gng__local_updated"){
       out[k]=localStorage.getItem(k);
     }
   }
@@ -1321,26 +1321,41 @@ function agendarSync(){
 async function nuvemEnviar(silencioso){
   if(!sb||!sbUser)return false;
   try{
+    // Anti-sobrescrita: não enviar se a nuvem estiver MAIS NOVA que a nossa base
+    const {data:atual}=await sb.from("app_state").select("updated_at").eq("user_id",sbUser.id).maybeSingle();
+    const baseTs=localStorage.getItem("gng__cloud_updated")||"";
+    if(atual && atual.updated_at && baseTs && atual.updated_at>baseTs){
+      if(!silencioso)_msgNuvem("⚠️ A nuvem tem dados mais recentes. Toque em 'Baixar da nuvem' antes de enviar.");
+      return false;
+    }
     const ts=new Date().toISOString();
     const {error}=await sb.from("app_state").upsert({user_id:sbUser.id,data:_chavesDados(),updated_at:ts});
     if(error)throw error;
     localStorage.setItem("gng__cloud_updated",ts);
+    localStorage.setItem("gng__local_updated",ts); // local agora está alinhado com a nuvem
     if(!silencioso)_msgNuvem("✅ Enviado à nuvem");
     return true;
   }catch(e){ console.warn("Erro ao enviar:",e); if(!silencioso)_msgNuvem("⚠️ Falha ao enviar: "+(e.message||e)); return false; }
+}
+// Aplica os dados da nuvem no localStorage (substitui) e alinha timestamps
+function _aplicarCloud(row){
+  limparDadosLocais();
+  Object.entries(row.data).forEach(([k,v])=>localStorage.setItem(k, typeof v==="string"?v:JSON.stringify(v)));
+  localStorage.setItem("gng__cloud_updated",row.updated_at||"");
+  localStorage.setItem("gng__local_updated",row.updated_at||"");
 }
 async function nuvemBaixar(silencioso){
   if(!sb||!sbUser)return false;
   try{
     const {data,error}=await sb.from("app_state").select("data,updated_at").eq("user_id",sbUser.id).maybeSingle();
     if(error)throw error;
-    if(data&&data.data){
-      Object.entries(data.data).forEach(([k,v])=>localStorage.setItem(k, typeof v==="string"?v:JSON.stringify(v)));
-      localStorage.setItem("gng__cloud_updated",data.updated_at||"");
+    if(data&&data.data&&Object.keys(data.data).length>0){
+      _aplicarCloud(data);
       if(!silencioso){ _msgNuvem("✅ Dados baixados! Atualizando a tela…"); setTimeout(()=>location.reload(),900); }
       return true;
     }
-    return false; // sem dados na nuvem ainda
+    if(!silencioso)_msgNuvem("ℹ️ A nuvem ainda está vazia para esta conta.");
+    return false;
   }catch(e){ console.warn("Erro ao baixar:",e); if(!silencioso)_msgNuvem("⚠️ Falha ao baixar: "+(e.message||e)); return false; }
 }
 function _msgNuvem(t){ const el=document.getElementById("sync-msg"); if(el)el.textContent=t; const l=document.getElementById("login-msg"); if(l)l.textContent=t; }
@@ -1369,15 +1384,18 @@ async function loginNuvem(){
     const trocouUsuario = owner && owner!==sbUser.id;
     const {data:row}=await sb.from("app_state").select("data,updated_at").eq("user_id",sbUser.id).maybeSingle();
     const temNuvem = row && row.data && Object.keys(row.data).length>0;
-    if(temNuvem){
-      // Carrega os dados DESTA conta (substitui o que estiver local)
-      limparDadosLocais();
-      Object.entries(row.data).forEach(([k,v])=>localStorage.setItem(k, typeof v==="string"?v:JSON.stringify(v)));
-      localStorage.setItem("gng__cloud_updated", row.updated_at||"");
+    const cloudTs = (row && row.updated_at) ? row.updated_at : "";
+    const localTs = localStorage.getItem("gng__local_updated") || "";
+
+    if(trocouUsuario){
+      // Conta diferente neste aparelho: usa SEMPRE a nuvem desta conta (ou começa vazio)
+      if(temNuvem) _aplicarCloud(row); else limparDadosLocais();
+    } else if(temNuvem && (!localTs || cloudTs > localTs)){
+      // Mesma conta e a NUVEM está mais nova → baixa
+      _aplicarCloud(row);
     } else {
-      // Conta ainda sem dados na nuvem
-      if(trocouUsuario) limparDadosLocais(); // não herda dados de outra conta
-      await nuvemEnviar(true); // cria a linha desta conta com o estado atual
+      // Local está mais novo (ou nuvem vazia) → mantém o local e envia (sem perder nada)
+      await nuvemEnviar(true);
     }
     localStorage.setItem("gng__owner", sbUser.id);
     if(msg)msg.textContent="✅ Conectado!";
