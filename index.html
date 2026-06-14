@@ -362,6 +362,41 @@ input.input-warning{
   background-color: rgba(146, 64, 14, 0.05) !important;
 }
 
+/* ===== BARRA INFERIOR (MOBILE) ===== */
+.bottomnav{display:none}
+.atalhos-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.atalho{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  background:var(--gold-light);border:1px solid var(--gold-border);border-radius:10px;
+  padding:12px 4px;color:var(--black);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;line-height:1.2;text-align:center}
+.atalho i{font-size:22px;color:var(--gold)}
+.atalho:active{transform:scale(.96)}
+/* Menu lateral deslizante (drawer) estilo app */
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200}
+.drawer-overlay.open{display:block}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:84%;max-width:300px;background:var(--surface);
+  z-index:201;transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto;box-shadow:2px 0 24px rgba(0,0,0,.25)}
+.drawer-overlay.open .drawer{transform:translateX(0)}
+.drawer-header{background:var(--black);color:var(--gold);padding:18px 16px;display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.04em;position:sticky;top:0}
+.drawer-sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:14px 16px 4px}
+.drawer-item{display:flex;align-items:center;gap:14px;width:100%;background:none;border:none;border-bottom:1px solid var(--border);
+  padding:14px 16px;font-family:inherit;font-size:14px;color:var(--text);cursor:pointer;text-align:left}
+.drawer-item i{font-size:20px;color:var(--gold);width:22px;text-align:center}
+.drawer-item:active{background:var(--gold-light)}
+@media(min-width:1024px){ .atalhos-grid{display:none} } /* atalhos só no mobile; desktop tem a navbar */
+@media(max-width:1023px){
+  .nav .nav-btn{display:none}
+  .bottomnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:100;
+    background:var(--black);border-top:1.5px solid var(--gold);
+    padding:4px 2px;padding-bottom:calc(4px + env(safe-area-inset-bottom));
+    justify-content:space-around;align-items:stretch}
+  .bnav-btn{flex:1;background:none;border:none;color:rgba(255,255,255,.55);
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-size:10px;font-family:inherit;letter-spacing:.02em;padding:7px 2px;cursor:pointer}
+  .bnav-btn i{font-size:21px}
+  .bnav-btn.active{color:var(--gold)}
+  .screen{padding-bottom:88px}
+}
+
 /* PONTO 10: Mobile UX - Botão flutuante Venda Rápida */
 .btn-venda-rapida{
   position: fixed;
@@ -370,8 +405,8 @@ input.input-warning{
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
-  color: #000;
+  background: linear-gradient(135deg, var(--gold2) 0%, var(--gold) 100%);
+  color: var(--black);
   border: none;
   font-size: 11px;
   font-weight: 700;
@@ -399,6 +434,7 @@ input.input-warning{
 @media(max-width: 768px){
   .btn-venda-rapida{
     display: flex;
+    bottom: 84px; /* acima da barra inferior */
   }
   
   .btn{
@@ -477,6 +513,36 @@ input.input-warning{
   <button class="nav-btn" onclick="mostrarAlertas()" style="position:relative"><i class="ti ti-alert-circle"></i><span>Alertas</span><span class="alert-badge" style="position:absolute;top:-5px;right:-5px;background:var(--danger);color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;display:none">0</span></button>
 </nav>
 
+<!-- BARRA INFERIOR (MOBILE) -->
+<nav class="bottomnav">
+  <button class="bnav-btn active" data-screen="dashboard" onclick="nav('dashboard',this)"><i class="ti ti-home"></i><span>Início</span></button>
+  <button class="bnav-btn" data-screen="lancamentos" onclick="atalho('lancamentos','t-venda')"><i class="ti ti-shopping-cart"></i><span>Venda</span></button>
+  <button class="bnav-btn" data-screen="estoque" onclick="nav('estoque',this)"><i class="ti ti-package"></i><span>Estoque</span></button>
+  <button class="bnav-btn" data-screen="dre" onclick="nav('dre',this)"><i class="ti ti-chart-bar"></i><span>Financeiro</span></button>
+  <button class="bnav-btn" onclick="abrirMais()"><i class="ti ti-menu-2"></i><span>Mais</span></button>
+</nav>
+
+<!-- MENU LATERAL "MAIS" (MOBILE) -->
+<div id="sheet-mais" class="drawer-overlay" onclick="if(event.target===this)fecharMais()">
+  <aside class="drawer">
+    <div class="drawer-header"><i class="ti ti-menu-2"></i> GN GELO — Menu</div>
+    <div class="drawer-sec">Operação</div>
+    <button class="drawer-item" onclick="navMais('lancamentos')"><i class="ti ti-plus"></i> Lançar</button>
+    <button class="drawer-item" onclick="navMais('estoque')"><i class="ti ti-package"></i> Estoque</button>
+    <button class="drawer-item" onclick="navMais('clientes')"><i class="ti ti-users"></i> Clientes</button>
+    <div class="drawer-sec">Financeiro</div>
+    <button class="drawer-item" onclick="navMais('dre')"><i class="ti ti-chart-bar"></i> DRE</button>
+    <button class="drawer-item" onclick="navMais('fluxo')"><i class="ti ti-cash"></i> Fluxo de caixa</button>
+    <button class="drawer-item" onclick="navMais('comissoes')"><i class="ti ti-percentage"></i> Comissões</button>
+    <button class="drawer-item" onclick="navMais('metas')"><i class="ti ti-target"></i> Metas</button>
+    <div class="drawer-sec">Análise</div>
+    <button class="drawer-item" onclick="navMais('relatorios')"><i class="ti ti-file-text"></i> Relatórios</button>
+    <button class="drawer-item" onclick="navMais('calendario')"><i class="ti ti-calendar"></i> Calendário</button>
+    <div class="drawer-sec">Sistema</div>
+    <button class="drawer-item" onclick="navMais('parametros')"><i class="ti ti-settings"></i> Parâmetros / Backup</button>
+  </aside>
+</div>
+
 <!-- DASHBOARD -->
 <div id="screen-dashboard" class="screen active">
   <div class="page-header">
@@ -491,6 +557,14 @@ input.input-warning{
     <select id="dash-periodo" onchange="renderDashboard()"><option value="mes">Mês</option><option value="ano">Ano</option><option value="acumulado">Acumulado</option></select>
   </div>
   
+  <!-- ATALHOS RÁPIDOS (mobile) -->
+  <div class="atalhos-grid">
+    <button class="atalho" onclick="atalho('lancamentos','t-venda')"><i class="ti ti-shopping-cart"></i><span>Nova venda</span></button>
+    <button class="atalho" onclick="atalho('lancamentos','t-prod')"><i class="ti ti-snowflake"></i><span>Produzir gelo</span></button>
+    <button class="atalho" onclick="atalho('estoque')"><i class="ti ti-package"></i><span>Ver estoque</span></button>
+    <button class="atalho" onclick="atalho('dre')"><i class="ti ti-chart-bar"></i><span>DRE</span></button>
+  </div>
+
   <div id="dash-alertas"></div>
   <div class="metric-grid">
     <div class="metric"><div class="lbl">Faturamento</div><div class="val gold" id="d-fat">R$ 0,00</div><div class="sub" id="d-un">0 unidades</div><div class="sub" id="d-fat-delta" style="font-weight:700"></div></div>
@@ -1481,12 +1555,29 @@ function entrar(){
 
 function nav(id,el){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".nav-btn,.bnav-btn").forEach(b=>b.classList.remove("active"));
   document.getElementById("screen-"+id).classList.add("active");
-  el.classList.add("active");
+  if(el)el.classList.add("active");
+  // sincroniza o destaque na barra inferior (mesmo navegando por atalho/menu)
+  const bb=document.querySelector('.bnav-btn[data-screen="'+id+'"]'); if(bb)bb.classList.add("active");
+  try{window.scrollTo(0,0);}catch(e){}
   const r={dashboard:renderDashboard,estoque:renderEst,dre:()=>{renderDRE();renderDREAnual();renderGerencial();renderDREInsumos();},metas:()=>{renderMetas();renderMetasAnuais();renderMetasProgresso();},clientes:renderCli,relatorios:renderRel,parametros:()=>{renderReceitas();renderCF();atualizarStatusNuvem();},comissoes:()=>{renderVendedores();updateComVendedor();renderComissoes();},fluxo:()=>{renderFluxo();renderFluxoPeriodo();renderFluxoPrevisao();renderFluxoVendas();},calendario:renderCalendario,lancamentos:()=>{renderLV();renderLG();renderLP();renderLE();updateComVendedor();}};
   if(r[id])r[id]();
 }
+// Atalho: navega para uma tela e (opcional) abre uma aba específica
+function atalho(screen, tabId){
+  const bb=document.querySelector('.bnav-btn[data-screen="'+screen+'"]');
+  nav(screen, bb||null);
+  if(tabId){
+    const tb=[...document.querySelectorAll('#screen-'+screen+' .tab-btn')]
+      .find(b=>(b.getAttribute('onclick')||'').includes("'"+tabId+"'"));
+    if(tb)tb.click();
+  }
+}
+// Menu "Mais"
+function abrirMais(){ document.getElementById('sheet-mais').classList.add('open'); }
+function fecharMais(){ document.getElementById('sheet-mais').classList.remove('open'); }
+function navMais(id){ fecharMais(); nav(id, null); }
 function tab(id,el){
   const scr=document.getElementById(id).closest(".screen");
   scr.querySelectorAll("[id^='t-']").forEach(t=>{if(t.parentElement===scr||t.closest(".screen")===scr)t.style.display="none";});
