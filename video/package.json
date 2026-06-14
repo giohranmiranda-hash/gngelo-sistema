@@ -1,0 +1,23 @@
+{
+  "name": "gngelo-video",
+  "version": "1.0.0",
+  "description": "Vídeos promocionais da GN Gelo para Instagram (Reels e Feed), feitos com Remotion.",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "build:reel": "remotion render PromoReel out/gngelo-reel.mp4",
+    "build:feed": "remotion render PromoFeed out/gngelo-feed.mp4",
+    "build:all": "npm run build:reel && npm run build:feed",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.4.0"
+  }
+}
