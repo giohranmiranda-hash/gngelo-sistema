@@ -1333,6 +1333,7 @@ async function nuvemEnviar(silencioso){
     if(error)throw error;
     localStorage.setItem("gng__cloud_updated",ts);
     localStorage.setItem("gng__local_updated",ts); // local agora está alinhado com a nuvem
+    marcarAtivo();
     if(!silencioso)_msgNuvem("✅ Enviado à nuvem");
     return true;
   }catch(e){ console.warn("Erro ao enviar:",e); if(!silencioso)_msgNuvem("⚠️ Falha ao enviar: "+(e.message||e)); return false; }
@@ -1368,6 +1369,34 @@ function limparDadosLocais(){
   localStorage.setItem("gng_demo_ja_criado","true");
 }
 
+// Timeout de sessão: pede login de novo após este tempo fechado/inativo
+const SESSAO_MAX_MS = 5*60*1000; // 5 minutos
+function marcarAtivo(){ try{ localStorage.setItem("gng__last_active", String(Date.now())); }catch(e){} }
+function sessaoFresca(){
+  const la=parseInt(localStorage.getItem("gng__last_active")||"0",10);
+  return la>0 && (Date.now()-la) < SESSAO_MAX_MS;
+}
+
+// Decide baixar/enviar e entra no app (usado no login e na retomada de sessão)
+async function sincronizarEEntrar(){
+  const owner=localStorage.getItem("gng__owner");
+  const trocouUsuario = owner && owner!==sbUser.id;
+  const {data:row}=await sb.from("app_state").select("data,updated_at").eq("user_id",sbUser.id).maybeSingle();
+  const temNuvem = row && row.data && Object.keys(row.data).length>0;
+  const cloudTs = (row && row.updated_at) ? row.updated_at : "";
+  const localTs = localStorage.getItem("gng__local_updated") || "";
+  if(trocouUsuario){
+    if(temNuvem) _aplicarCloud(row); else limparDadosLocais();
+  } else if(temNuvem && (!localTs || cloudTs > localTs)){
+    _aplicarCloud(row);
+  } else {
+    await nuvemEnviar(true);
+  }
+  localStorage.setItem("gng__owner", sbUser.id);
+  marcarAtivo();
+  entrar();
+}
+
 // Login pela tela inicial
 async function loginNuvem(){
   const email=userParaEmail(document.getElementById("login-email").value);
@@ -1380,26 +1409,8 @@ async function loginNuvem(){
     const {data,error}=await sb.auth.signInWithPassword({email,password:senha});
     if(error)throw error;
     sbUser=data.user;
-    const owner=localStorage.getItem("gng__owner");
-    const trocouUsuario = owner && owner!==sbUser.id;
-    const {data:row}=await sb.from("app_state").select("data,updated_at").eq("user_id",sbUser.id).maybeSingle();
-    const temNuvem = row && row.data && Object.keys(row.data).length>0;
-    const cloudTs = (row && row.updated_at) ? row.updated_at : "";
-    const localTs = localStorage.getItem("gng__local_updated") || "";
-
-    if(trocouUsuario){
-      // Conta diferente neste aparelho: usa SEMPRE a nuvem desta conta (ou começa vazio)
-      if(temNuvem) _aplicarCloud(row); else limparDadosLocais();
-    } else if(temNuvem && (!localTs || cloudTs > localTs)){
-      // Mesma conta e a NUVEM está mais nova → baixa
-      _aplicarCloud(row);
-    } else {
-      // Local está mais novo (ou nuvem vazia) → mantém o local e envia (sem perder nada)
-      await nuvemEnviar(true);
-    }
-    localStorage.setItem("gng__owner", sbUser.id);
+    await sincronizarEEntrar();
     if(msg)msg.textContent="✅ Conectado!";
-    entrar();
   }catch(e){
     if(msg)msg.textContent="❌ "+(e.message==="Invalid login credentials"?"Usuário ou senha incorretos":(e.message||e));
   }
@@ -5908,20 +5919,31 @@ if("serviceWorker" in navigator){
   });
 }
 
-// ===== Restaura sessão do Supabase ao abrir (se já estava logado) =====
+// ===== Retoma a sessão ao abrir/atualizar (sem pedir login), com timeout de 5 min =====
 (async function(){
   try{
     if(!sb)return;
     const { data } = await sb.auth.getSession();
     if(data && data.session){
       sbUser = data.session.user;
-      // Pré-preenche o e-mail e ajusta a tela inicial
       const em=document.getElementById("login-email"); if(em)em.value=emailParaUser(sbUser.email)||"";
-      const msg=document.getElementById("login-msg"); if(msg)msg.textContent="✅ Sessão ativa — toque em Entrar (nuvem)";
-      atualizarStatusNuvem();
+      if(sessaoFresca()){
+        // Esteve ativo nos últimos 5 min → entra direto, sem pedir login de novo
+        try{ await sincronizarEEntrar(); }
+        catch(e){ const msg=document.getElementById("login-msg"); if(msg)msg.textContent="Toque em Entrar (nuvem)"; }
+      }else{
+        // Ficou +5 min fechado/inativo → pede login novamente
+        const msg=document.getElementById("login-msg"); if(msg)msg.textContent="Sessão expirada (5 min). Entre novamente.";
+        atualizarStatusNuvem();
+      }
     }
   }catch(e){ console.warn("Sessão Supabase:",e); }
 })();
+
+// Mantém a sessão "ativa" enquanto o app está aberto (heartbeat) e ao interagir,
+// para não expirar enquanto está em uso (só expira após 5 min fechado/inativo).
+setInterval(()=>{ if(sbUser) marcarAtivo(); }, 60000);
+["click","keydown","visibilitychange"].forEach(ev=>document.addEventListener(ev,()=>{ if(sbUser && document.visibilityState!=="hidden") marcarAtivo(); }, {passive:true}));
 </script>
 </body>
 </html>
