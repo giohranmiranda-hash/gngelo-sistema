@@ -1306,7 +1306,7 @@ function _chavesDados(){
   const out={};
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
-    if(k&&k.indexOf("gng_")===0 && k!=="gng_backup_seeded" && k!=="gng_demo_ja_criado" && k!=="gng__cloud_updated"){
+    if(k&&k.indexOf("gng_")===0 && k!=="gng_backup_seeded" && k!=="gng_demo_ja_criado" && k!=="gng__cloud_updated" && k!=="gng__owner"){
       out[k]=localStorage.getItem(k);
     }
   }
@@ -1344,6 +1344,14 @@ async function nuvemBaixar(silencioso){
   }catch(e){ console.warn("Erro ao baixar:",e); if(!silencioso)_msgNuvem("⚠️ Falha ao baixar: "+(e.message||e)); return false; }
 }
 function _msgNuvem(t){ const el=document.getElementById("sync-msg"); if(el)el.textContent=t; const l=document.getElementById("login-msg"); if(l)l.textContent=t; }
+// Limpa os dados locais (ao trocar de conta ou sair), preservando flags de seed
+function limparDadosLocais(){
+  const remover=[];
+  for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf("gng_")===0 && k!=="gng_backup_seeded") remover.push(k); }
+  remover.forEach(k=>localStorage.removeItem(k));
+  localStorage.setItem("gng_backup_seeded","true"); // não recarrega o backup embutido p/ outra conta
+  localStorage.setItem("gng_demo_ja_criado","true");
+}
 
 // Login pela tela inicial
 async function loginNuvem(){
@@ -1357,11 +1365,21 @@ async function loginNuvem(){
     const {data,error}=await sb.auth.signInWithPassword({email,password:senha});
     if(error)throw error;
     sbUser=data.user;
-    // Decide: nuvem mais nova → baixa; senão envia o que está local
-    const {data:row}=await sb.from("app_state").select("updated_at").eq("user_id",sbUser.id).maybeSingle();
-    const localTs=localStorage.getItem("gng__cloud_updated")||"";
-    if(row&&row.updated_at&&row.updated_at>localTs){ await nuvemBaixar(true); }
-    else { await nuvemEnviar(true); }
+    const owner=localStorage.getItem("gng__owner");
+    const trocouUsuario = owner && owner!==sbUser.id;
+    const {data:row}=await sb.from("app_state").select("data,updated_at").eq("user_id",sbUser.id).maybeSingle();
+    const temNuvem = row && row.data && Object.keys(row.data).length>0;
+    if(temNuvem){
+      // Carrega os dados DESTA conta (substitui o que estiver local)
+      limparDadosLocais();
+      Object.entries(row.data).forEach(([k,v])=>localStorage.setItem(k, typeof v==="string"?v:JSON.stringify(v)));
+      localStorage.setItem("gng__cloud_updated", row.updated_at||"");
+    } else {
+      // Conta ainda sem dados na nuvem
+      if(trocouUsuario) limparDadosLocais(); // não herda dados de outra conta
+      await nuvemEnviar(true); // cria a linha desta conta com o estado atual
+    }
+    localStorage.setItem("gng__owner", sbUser.id);
     if(msg)msg.textContent="✅ Conectado!";
     entrar();
   }catch(e){
@@ -1370,7 +1388,9 @@ async function loginNuvem(){
 }
 async function logoutNuvem(){
   try{ if(sb)await sb.auth.signOut(); }catch(e){}
-  sbUser=null; location.reload();
+  sbUser=null;
+  limparDadosLocais(); // limpa os dados deste aparelho ao sair (privacidade)
+  location.reload();
 }
 function atualizarStatusNuvem(){
   const el=document.getElementById("sync-status"); if(!el)return;
