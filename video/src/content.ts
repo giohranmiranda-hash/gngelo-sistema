@@ -9,11 +9,11 @@ export const content = {
   // Frase de impacto (cena principal)
   headline: ["Gelo que", "eleva", "o seu drink"],
 
-  // Foto do produto em destaque.
-  // Coloque o arquivo em `video/public/` e escreva só o nome aqui
-  // (ex: "produto.jpg"). Deixe "" para mostrar um espaço reservado.
-  productPhoto: "",
-  productCaption: "Gelo gourmet GN",
+  // Fotos do produto em destaque (carrossel com zoom suave).
+  // Coloque os arquivos em `video/public/` e liste os nomes aqui.
+  // Deixe a lista vazia ([]) para mostrar um espaço reservado.
+  productPhotos: ["embalagem-maracuja.jpg", "gelo-maracuja.jpg"],
+  productCaption: "Gelo para Drinks • Maracujá",
 
   // Diferenciais — aparecem um a um
   features: [

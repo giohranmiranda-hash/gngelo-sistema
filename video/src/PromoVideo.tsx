@@ -233,14 +233,14 @@ export const PromoVideo: React.FC = () => {
       <Sequence from={75} durationInFrames={105}>
         <HeadlineScene />
       </Sequence>
-      {/* Foto do produto tem fundo próprio, então cobre o Background */}
-      <Sequence from={180} durationInFrames={120}>
+      {/* Fotos do produto têm fundo próprio, então cobrem o Background */}
+      <Sequence from={180} durationInFrames={180}>
         <ProductScene />
       </Sequence>
-      <Sequence from={300} durationInFrames={150}>
+      <Sequence from={360} durationInFrames={150}>
         <FeaturesScene />
       </Sequence>
-      <Sequence from={450} durationInFrames={120}>
+      <Sequence from={510} durationInFrames={120}>
         <CtaScene />
       </Sequence>
     </AbsoluteFill>
@@ -248,4 +248,4 @@ export const PromoVideo: React.FC = () => {
 };
 
 // Duração total em frames (usada pelas duas composições).
-export const PROMO_DURATION = 570;
+export const PROMO_DURATION = 630;

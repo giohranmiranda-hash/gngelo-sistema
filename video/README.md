@@ -63,14 +63,17 @@ video/
 └── tsconfig.json
 ```
 
-## Foto do produto
+## Fotos do produto
 
-Há uma cena dedicada à foto do produto em destaque (com zoom suave). Para usar:
+Há uma cena dedicada às fotos do produto (carrossel com zoom suave). Já vêm
+duas fotos da marca em `public/`. Para trocar:
 
-1. Copie a foto para `public/` (ex: `produto.jpg`).
-2. Em `src/content.ts`, defina `productPhoto: "produto.jpg"`.
+1. Copie a(s) foto(s) para `public/`.
+2. Em `src/content.ts`, liste os nomes em `productPhotos`, ex:
+   `productPhotos: ["embalagem-maracuja.jpg", "gelo-maracuja.jpg"]`.
 
-Sem foto, a cena mostra um espaço reservado — o vídeo continua renderizando.
+Com a lista vazia (`[]`), a cena mostra um espaço reservado — o vídeo continua
+renderizando.
 
 ## Próximos passos (ideias)
 
