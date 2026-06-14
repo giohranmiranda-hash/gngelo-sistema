@@ -9,6 +9,7 @@ import {
 import { brand } from "./brand";
 import { content } from "./content";
 import { Background } from "./Background";
+import { ProductScene } from "./ProductScene";
 
 // Composição única que se adapta ao tamanho do vídeo (9:16 ou 1:1).
 // As medidas de fonte usam `u` (1% da menor dimensão) para escalar bem
@@ -232,10 +233,14 @@ export const PromoVideo: React.FC = () => {
       <Sequence from={75} durationInFrames={105}>
         <HeadlineScene />
       </Sequence>
-      <Sequence from={180} durationInFrames={150}>
+      {/* Foto do produto tem fundo próprio, então cobre o Background */}
+      <Sequence from={180} durationInFrames={120}>
+        <ProductScene />
+      </Sequence>
+      <Sequence from={300} durationInFrames={150}>
         <FeaturesScene />
       </Sequence>
-      <Sequence from={330} durationInFrames={120}>
+      <Sequence from={450} durationInFrames={120}>
         <CtaScene />
       </Sequence>
     </AbsoluteFill>
@@ -243,4 +248,4 @@ export const PromoVideo: React.FC = () => {
 };
 
 // Duração total em frames (usada pelas duas composições).
-export const PROMO_DURATION = 450;
+export const PROMO_DURATION = 570;

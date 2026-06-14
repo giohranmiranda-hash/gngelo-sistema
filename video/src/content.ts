@@ -9,6 +9,12 @@ export const content = {
   // Frase de impacto (cena principal)
   headline: ["Gelo que", "eleva", "o seu drink"],
 
+  // Foto do produto em destaque.
+  // Coloque o arquivo em `video/public/` e escreva só o nome aqui
+  // (ex: "produto.jpg"). Deixe "" para mostrar um espaço reservado.
+  productPhoto: "",
+  productCaption: "Gelo gourmet GN",
+
   // Diferenciais — aparecem um a um
   features: [
     "Cristalino e sem sabor",

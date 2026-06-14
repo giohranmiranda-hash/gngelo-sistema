@@ -49,10 +49,12 @@ Os arquivos saem na pasta `out/`. É só subir no Instagram.
 
 ```
 video/
+├── public/             ← fotos e mídias (coloque a foto do produto aqui)
 ├── src/
-│   ├── content.ts      ← textos do vídeo (edite aqui)
+│   ├── content.ts      ← textos + nome da foto (edite aqui)
 │   ├── brand.ts        ← cores e fonte da marca
 │   ├── Background.tsx   ← fundo dourado/preto
+│   ├── ProductScene.tsx ← cena de foto do produto (zoom suave)
 │   ├── PromoVideo.tsx   ← cenas e animações
 │   ├── Root.tsx         ← define as composições (Reel + Feed)
 │   └── index.ts
@@ -60,6 +62,15 @@ video/
 ├── package.json
 └── tsconfig.json
 ```
+
+## Foto do produto
+
+Há uma cena dedicada à foto do produto em destaque (com zoom suave). Para usar:
+
+1. Copie a foto para `public/` (ex: `produto.jpg`).
+2. Em `src/content.ts`, defina `productPhoto: "produto.jpg"`.
+
+Sem foto, a cena mostra um espaço reservado — o vídeo continua renderizando.
 
 ## Próximos passos (ideias)
 
