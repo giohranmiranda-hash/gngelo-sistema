@@ -5359,11 +5359,7 @@ function calcCustoReceita(sabor){
 
 function obterCustosInsumos(){
   const par=getP();
-  const ie=getInsE();
-  
-  // Opção na config: usar última entrada ou custo médio
-  const usarUltimaEntrada=par.usarUltimaEntrada||false;
-  
+  // valores padrão (caso ainda não haja insumos cadastrados)
   let custos={
     base:par.custBase||0.12,
     glicose:par.custGlicose||0.0163,
@@ -5372,28 +5368,26 @@ function obterCustosInsumos(){
     agua:0,
     embalagem:par.custEmbalagem||0.18
   };
-  
-  // Sobrescrever com custos dinâmicos dos insumos
-  if(ie.base){
-    custos.base=ie.base.custoUnit||custos.base;
-  }
-  if(ie.glicose){
-    custos.glicose=ie.glicose.custoUnit||custos.glicose;
-  }
-  if(ie.acucar){
-    custos.acucar=ie.acucar.custoUnit||custos.acucar;
-  }
-  if(ie['Goma Xantana']){
-    custos.xantana=ie['Goma Xantana'].custoUnit||custos.xantana;
-  }
-  if(ie['Água de coco']){
-    custos.agua=ie['Água de coco'].custoUnit||0;
-  }
-  if(ie.Embalagens){
-    custos.embalagem=ie.Embalagens.custoUnit||custos.embalagem;
-  }
-  
+  // sobrescreve com o custo REAL pago (custo médio dos insumos), casando pelo NOME
+  const ie=getInsE();
+  Object.keys(ie).forEach(nome=>{
+    const cu=ie[nome]&&ie[nome].custoUnit;
+    if(cu==null||isNaN(cu))return;
+    const n=nome.toLowerCase();
+    if(n.includes("base")||n.includes("aroma"))custos.base=cu;
+    else if(n.includes("glicose"))custos.glicose=cu;
+    else if(n.includes("açúcar")||n.includes("acucar")||n.includes("açucar"))custos.acucar=cu;
+    else if(n.includes("xantana"))custos.xantana=cu;
+    else if(n.includes("embalagem"))custos.embalagem=cu;
+    else if(n.includes("água")||n.includes("agua"))custos.agua=cu;
+  });
   return custos;
+}
+// Custo por unidade de um sabor = receita × custo real dos insumos (FONTE ÚNICA)
+function custoUnidSabor(sabor){
+  const r=(getRec()[sabor])||{base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1};
+  const c=obterCustosInsumos();
+  return (r.base||0)*c.base+(r.glicose||0)*c.glicose+(r.acucar||0)*c.acucar+(r.xantana||0)*c.xantana+(r.embalagem||0)*c.embalagem;
 }
 function salvarReceitas(){
   const rec={};
