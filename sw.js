@@ -1,7 +1,6 @@
 // Service Worker — GN Gelo
-// Versione o cache (v1 -> v2 ...) sempre que publicar uma atualização,
-// para que os usuários recebam a nova versão.
-const CACHE = "gngelo-v2";
+// Versione o cache (v3 -> v4 ...) ao publicar atualizações importantes.
+const CACHE = "gngelo-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -12,13 +11,11 @@ const APP_SHELL = [
   "./icon-512.png"
 ];
 
-// Instala: pré-armazena o "esqueleto" do app.
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(APP_SHELL)));
   self.skipWaiting();
 });
 
-// Ativa: remove caches antigos de versões anteriores.
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
@@ -28,16 +25,36 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
-// Busca: cache-first com atualização em segundo plano (stale-while-revalidate).
-// Funciona offline; bibliotecas de CDN são armazenadas no primeiro acesso online.
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
+
+  const url = new URL(req.url);
+  // NÃO intercepta requisições externas (Supabase, CDNs, APIs).
+  // Deixa o navegador tratá-las normalmente — evita "Failed to fetch".
+  if (url.origin !== self.location.origin) return;
+
+  // HTML / navegação: network-first (sempre pega a versão nova; usa cache offline).
+  const isHTML = req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html");
+  if (isHTML) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then((c) => c || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // Demais arquivos do app (mesma origem): cache-first com atualização em segundo plano.
   e.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req)
         .then((res) => {
-          if (res && res.status === 200 && (res.type === "basic" || res.type === "cors")) {
+          if (res && res.status === 200 && res.type === "basic") {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(req, copy));
           }
