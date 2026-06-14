@@ -565,14 +565,6 @@ input.input-warning{
     <select id="dash-periodo" onchange="renderDashboard()"><option value="mes">Mês</option><option value="ano">Ano</option><option value="acumulado">Acumulado</option></select>
   </div>
   
-  <!-- ATALHOS RÁPIDOS (mobile) -->
-  <div class="atalhos-grid">
-    <button class="atalho" onclick="atalho('lancamentos','t-venda')"><i class="ti ti-shopping-cart"></i><span>Nova venda</span></button>
-    <button class="atalho" onclick="atalho('lancamentos','t-prod')"><i class="ti ti-snowflake"></i><span>Produzir gelo</span></button>
-    <button class="atalho" onclick="atalho('estoque')"><i class="ti ti-package"></i><span>Ver estoque</span></button>
-    <button class="atalho" onclick="atalho('dre')"><i class="ti ti-chart-bar"></i><span>DRE</span></button>
-  </div>
-
   <div id="dash-alertas"></div>
   <div class="metric-grid">
     <div class="metric"><div class="lbl">Faturamento</div><div class="val gold" id="d-fat">R$ 0,00</div><div class="sub" id="d-un">0 unidades</div><div class="sub" id="d-fat-delta" style="font-weight:700"></div></div>
@@ -1669,10 +1661,10 @@ function calcV(){
   const frete=parseFloat(document.getElementById("v-frete").value)||0;
   const bruto=qtd*preco,taxa=canal==="iFood"?bruto*par.ifood/100:0;
   const imp=bruto*par.imp/100,liq=bruto-desc-taxa-imp+frete;
-  const cpv=qtd*par.custo,lucro=liq-cpv,marg=bruto>0?lucro/bruto*100:0;
-  
-  // FIFO - Mostra lotes que serão usados
   const produto=document.getElementById("v-produto").value;
+  const cpv=qtd*custoUnidSabor(produto),lucro=liq-cpv,marg=bruto>0?lucro/bruto*100:0;
+
+  // FIFO - Mostra lotes que serão usados
   const lotes=getLot().filter(l=>l.sabor===produto).sort((a,b)=>new Date(a.data)-new Date(b.data));
   let lotesInfo="";
   let qtdCheck=qtd;
@@ -1828,7 +1820,7 @@ function abrirVendaRapida(){
   const taxa=canal==="iFood"?bruto*par.ifood/100:0;
   const imp=bruto*par.imp/100;
   const liq=bruto-taxa-imp;
-  const cpv=qtdNum*par.custo;
+  const cpv=qtdNum*custoUnidSabor("coco");
   const lucro=liq-cpv;
   
   const v={
@@ -1892,8 +1884,8 @@ function lancarVenda(){
   const frete=parseFloat(document.getElementById("v-frete").value)||0;
   const bruto=qtd*preco,taxa=canal==="iFood"?bruto*par.ifood/100:0;
   const imp=bruto*par.imp/100,liq=bruto-desc-taxa-imp+frete;
-  const cpv=qtd*par.custo,lucro=liq-cpv;
-  
+  const cpv=qtd*custoUnidSabor(produto),lucro=liq-cpv;
+
   const v={
     id:editId||Date.now(),
     data,
@@ -2005,8 +1997,7 @@ function calcP(){
   const sabor=document.getElementById("p-sabor").value;
   const receitasDisp=getRec();
   const receita=receitasDisp[sabor]||{base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1};
-  const custos={base:0.12,glicose:0.0163,acucar:0.003,xantana:0.02,embalagem:0.18};
-  const custoIng=(qtd*receita.base*custos.base)+(qtd*receita.glicose*custos.glicose)+(qtd*receita.acucar*custos.acucar)+(qtd*receita.xantana*custos.xantana)+(qtd*receita.embalagem*custos.embalagem);
+  const custoIng=qtd*custoUnidSabor(sabor);
   const el=document.getElementById("p-resumo");el.style.display="block";
   el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">
     <span style="color:var(--muted)">Qtd. produzida</span><span style="text-align:right;font-weight:700">${qtd} unid.</span>
@@ -2036,13 +2027,7 @@ function lancarProducao(){
   const receitasDisp=getRec();
   const receita=receitasDisp[sabor]||{base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1};
   
-  const custoIns={'Base/Aroma':0.12,'Glicose':0.0163,'Açúcar':0.003,'Goma Xantana':0.02,'Embalagens':0.18};
-  let custoIngredientes=0;
-  custoIngredientes+=qtd*receita.base*custoIns['Base/Aroma'];
-  custoIngredientes+=qtd*receita.glicose*custoIns['Glicose'];
-  custoIngredientes+=qtd*receita.acucar*custoIns['Açúcar'];
-  custoIngredientes+=qtd*receita.xantana*custoIns['Goma Xantana'];
-  custoIngredientes+=qtd*receita.embalagem*custoIns['Embalagens'];
+  const custoIngredientes=qtd*custoUnidSabor(sabor);
   
   const pr={
     id:editId||Date.now(),
@@ -2109,7 +2094,7 @@ function lancarProducao(){
       }else if(ins.nome.toLowerCase().includes('xantana')){
         ins.qtdConverted=(ins.qtdConverted||0)-pr.xantanaUsada;
         if(ins.qtdConverted<0)ins.qtdConverted=0;
-      }else if(ins.nome.toLowerCase().includes('embalagem')){
+      }else if(ins.nome.toLowerCase().includes('embalag')){
         ins.qtdConverted=(ins.qtdConverted||0)-pr.embalagenUsada;
         if(ins.qtdConverted<0)ins.qtdConverted=0;
       }
@@ -3507,8 +3492,7 @@ function renderEst(){
   let recHtml="<div style='font-size:12px;font-weight:700;margin-bottom:8px;text-transform:uppercase;color:var(--muted)'>Receitas por sabor (200ml)</div>";
   ["coco","morango","maracuja","maca","manga","melancia","limao","iceblue","energetico","frutas","amora","abacaxi","salLimao","uva","chiclete","cereja","morPessego","brasil","bobMarley","laranja","balaHouse"].forEach(s=>{
     const r=rec[s]||{base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1};
-    const custos={base:0.12,glicose:0.0163,acucar:0.003,xantana:0.02,embalagem:0.18};
-    const custoIng=r.base*custos.base+r.glicose*custos.glicose+r.acucar*custos.acucar+r.xantana*custos.xantana+r.embalagem*custos.embalagem;
+    const custoIng=custoUnidSabor(s);
     recHtml+=`<div class="card" style="border-left:3px solid var(--gold)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="fl ${SC[s]}" style="font-size:11px">${SB[s]}</span><span style="font-size:10px;color:var(--muted)">200ml</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px"><div><span style="color:var(--muted)">Base</span><span style="float:right;font-weight:700">${r.base}ml</span></div><div><span style="color:var(--muted)">Glicose</span><span style="float:right;font-weight:700">${r.glicose}g</span></div><div><span style="color:var(--muted)">Açúcar</span><span style="float:right;font-weight:700">${r.acucar}g</span></div><div><span style="color:var(--muted)">Xantana</span><span style="float:right;font-weight:700">${r.xantana}g</span></div><div><span style="color:var(--muted)">Embalagem</span><span style="float:right;font-weight:700">${r.embalagem}un</span></div><div style="border-top:1px solid var(--border);padding-top:3px"><span style="font-weight:700">Custo</span><span style="float:right;font-weight:700;color:var(--success)">R$ ${custoIng.toFixed(2)}</span></div></div></div>`;
   });
   document.getElementById("est-receitas").innerHTML=recHtml+"<div style='margin-top:12px;font-size:11px;color:var(--muted);text-align:center'>Para customizar as receitas, vá em <strong>Parâmetros > Receitas</strong></div>";
@@ -5357,6 +5341,16 @@ function calcCustoReceita(sabor){
   `;
 }
 
+function _catInsumo(nome){
+  const n=(nome||"").toLowerCase();
+  if(n.includes("base")||n.includes("aroma"))return "base";
+  if(n.includes("glicose"))return "glicose";
+  if(n.includes("açúcar")||n.includes("acucar")||n.includes("açucar"))return "acucar";
+  if(n.includes("xantana"))return "xantana";
+  if(n.includes("embalag"))return "embalagem";
+  if(n.includes("água")||n.includes("agua"))return "agua";
+  return null;
+}
 function obterCustosInsumos(){
   const par=getP();
   // valores padrão (caso ainda não haja insumos cadastrados)
@@ -5368,18 +5362,22 @@ function obterCustosInsumos(){
     agua:0,
     embalagem:par.custEmbalagem||0.18
   };
-  // sobrescreve com o custo REAL pago (custo médio dos insumos), casando pelo NOME
+  // 1) Custo REAL = média ponderada do que foi COMPRADO (a partir dos lotes de insumos)
+  const agg={};
+  getIns().forEach(x=>{
+    const key=_catInsumo(x.nome); if(!key)return;
+    const cu=x.custoPorUnidadePadrao||0, tot=x.custoTotal||0;
+    const q = cu>0?tot/cu:0;
+    if(!agg[key])agg[key]={gasto:0,qtd:0};
+    agg[key].gasto+=tot; agg[key].qtd+=q;
+  });
+  Object.keys(agg).forEach(k=>{ if(agg[k].qtd>0)custos[k]=agg[k].gasto/agg[k].qtd; });
+  // 2) Se houver um custo consolidado (insumoEst), ele tem prioridade
   const ie=getInsE();
   Object.keys(ie).forEach(nome=>{
     const cu=ie[nome]&&ie[nome].custoUnit;
-    if(cu==null||isNaN(cu))return;
-    const n=nome.toLowerCase();
-    if(n.includes("base")||n.includes("aroma"))custos.base=cu;
-    else if(n.includes("glicose"))custos.glicose=cu;
-    else if(n.includes("açúcar")||n.includes("acucar")||n.includes("açucar"))custos.acucar=cu;
-    else if(n.includes("xantana"))custos.xantana=cu;
-    else if(n.includes("embalagem"))custos.embalagem=cu;
-    else if(n.includes("água")||n.includes("agua"))custos.agua=cu;
+    if(cu==null||isNaN(cu)||cu<=0)return;
+    const key=_catInsumo(nome); if(key)custos[key]=cu;
   });
   return custos;
 }
@@ -5975,7 +5973,7 @@ function importarDados(e){
               qtdADescontar=p.acucarUsado||0;
             }else if(nomeIns.includes('xantana')){
               qtdADescontar=p.xantanaUsada||0;
-            }else if(nomeIns.includes('embalagem')){
+            }else if(nomeIns.includes('embalag')){
               qtdADescontar=p.embalagenUsada||0;
             }
             
@@ -5996,7 +5994,23 @@ function importarDados(e){
       if(d.entregas)set("entregas",d.entregas);
       if(d.params)set("params",d.params);
       if(d.metas)set("metas",d.metas);
-      document.getElementById("backup-msg").textContent="✅ Dados importados! Insumos descontados retroativamente. Recarregue a página.";
+      if(d.insumoEst)set("insumoEst",d.insumoEst);
+      // Recalcula o custo real de cada insumo (médio ponderado pelo que foi comprado)
+      // e o estoque restante — para os custos de produção/venda refletirem o backup
+      if(d.insumos){
+        const agg={};
+        d.insumos.forEach(x=>{
+          const nome=x.nome; if(!nome)return;
+          const cu=x.custoPorUnidadePadrao||0, tot=x.custoTotal||0;
+          const qComprada = cu>0?tot/cu:0;
+          if(!agg[nome])agg[nome]={gasto:0,qtdComprada:0,qtdRest:0,unPadrao:x.unPadrao};
+          agg[nome].gasto+=tot; agg[nome].qtdComprada+=qComprada; agg[nome].qtdRest+=(x.qtdConverted||0);
+        });
+        const ie={};
+        Object.keys(agg).forEach(nome=>{const a=agg[nome];ie[nome]={qtd:a.qtdRest,unPadrao:a.unPadrao,custoUnit:a.qtdComprada>0?a.gasto/a.qtdComprada:0};});
+        set("insumoEst",ie);
+      }
+      document.getElementById("backup-msg").textContent="✅ Dados importados! Insumos e custos recalculados. Recarregue a página.";
     }catch(err){
       console.error('Erro ao importar:',err);
       document.getElementById("backup-msg").textContent="❌ Arquivo inválido: "+err.message;
