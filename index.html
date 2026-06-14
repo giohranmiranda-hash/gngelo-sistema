@@ -444,7 +444,7 @@ input.input-warning{
   <h1>GN GELO</h1>
   <div class="tagline">Gelo Saborizado</div>
   <div id="login-box" style="width:100%;max-width:280px;display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-    <input id="login-email" type="email" autocomplete="username" placeholder="E-mail" style="padding:12px;border-radius:8px;border:1px solid var(--gold-border);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:inherit">
+    <input id="login-email" type="text" autocapitalize="off" autocorrect="off" autocomplete="username" placeholder="Usuário" style="padding:12px;border-radius:8px;border:1px solid var(--gold-border);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:inherit">
     <input id="login-senha" type="password" autocomplete="current-password" placeholder="Senha" style="padding:12px;border-radius:8px;border:1px solid var(--gold-border);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:inherit">
     <button class="btn-splash" onclick="loginNuvem()">Entrar (nuvem)</button>
     <div id="login-msg" style="font-size:12px;min-height:16px;color:var(--gold2);text-align:center"></div>
@@ -1295,6 +1295,10 @@ const set=(k,v)=>{try{localStorage.setItem("gng_"+k,JSON.stringify(v));agendarSy
 const SUPABASE_URL="https://wuqymzfzkxnxnddnrefa.supabase.co";
 const SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cXltemZ6a3hueG5kZG5yZWZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDQ4MzMsImV4cCI6MjA5NzAyMDgzM30.m-CTQhw9N1bsaeFQ3R-VxuqMl4aPPID_2Rt0KZQN838";
 var sb=null, sbUser=null, _syncTimer=null;
+const LOGIN_DOMAIN="gngelo.app";
+// Converte nome de usuário em e-mail interno (aceita e-mail completo também)
+function userParaEmail(u){ u=(u||"").trim().toLowerCase(); if(!u)return ""; return u.indexOf("@")>=0?u:u.replace(/\s+/g,"")+"@"+LOGIN_DOMAIN; }
+function emailParaUser(e){ e=(e||""); return e.indexOf("@"+LOGIN_DOMAIN)>=0?e.split("@")[0]:e; }
 try{ if(window.supabase&&window.supabase.createClient){ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON); } }catch(e){ console.warn("Supabase indisponível:",e); }
 
 // Chaves do localStorage que sincronizam (exclui flags internas)
@@ -1343,11 +1347,11 @@ function _msgNuvem(t){ const el=document.getElementById("sync-msg"); if(el)el.te
 
 // Login pela tela inicial
 async function loginNuvem(){
-  const email=(document.getElementById("login-email").value||"").trim();
+  const email=userParaEmail(document.getElementById("login-email").value);
   const senha=document.getElementById("login-senha").value||"";
   const msg=document.getElementById("login-msg");
   if(!sb){ if(msg)msg.textContent="⚠️ Sem conexão com o Supabase (precisa de internet)."; return; }
-  if(!email||!senha){ if(msg)msg.textContent="Informe e-mail e senha."; return; }
+  if(!email||!senha){ if(msg)msg.textContent="Informe usuário e senha."; return; }
   if(msg)msg.textContent="Entrando…";
   try{
     const {data,error}=await sb.auth.signInWithPassword({email,password:senha});
@@ -1361,7 +1365,7 @@ async function loginNuvem(){
     if(msg)msg.textContent="✅ Conectado!";
     entrar();
   }catch(e){
-    if(msg)msg.textContent="❌ "+(e.message==="Invalid login credentials"?"E-mail ou senha incorretos":(e.message||e));
+    if(msg)msg.textContent="❌ "+(e.message==="Invalid login credentials"?"Usuário ou senha incorretos":(e.message||e));
   }
 }
 async function logoutNuvem(){
@@ -1373,7 +1377,7 @@ function atualizarStatusNuvem(){
   if(!sb){ el.innerHTML="⚠️ Biblioteca do Supabase não carregou (precisa de internet)."; return; }
   if(sbUser){
     const u=localStorage.getItem("gng__cloud_updated");
-    el.innerHTML=`✅ Conectado como <strong>${sbUser.email||"usuário"}</strong>`+(u?` · último envio: ${new Date(u).toLocaleString("pt-BR")}`:"");
+    el.innerHTML=`✅ Conectado como <strong>${emailParaUser(sbUser.email)||"usuário"}</strong>`+(u?` · último envio: ${new Date(u).toLocaleString("pt-BR")}`:"");
   } else {
     el.innerHTML="🔒 Não conectado. Faça login pela tela inicial (e-mail e senha) para ativar o backup na nuvem.";
   }
@@ -5874,7 +5878,7 @@ if("serviceWorker" in navigator){
     if(data && data.session){
       sbUser = data.session.user;
       // Pré-preenche o e-mail e ajusta a tela inicial
-      const em=document.getElementById("login-email"); if(em)em.value=sbUser.email||"";
+      const em=document.getElementById("login-email"); if(em)em.value=emailParaUser(sbUser.email)||"";
       const msg=document.getElementById("login-msg"); if(msg)msg.textContent="✅ Sessão ativa — toque em Entrar (nuvem)";
       atualizarStatusNuvem();
     }
