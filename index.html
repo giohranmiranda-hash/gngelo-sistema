@@ -2374,6 +2374,58 @@ function validarCampoRealtime(el, tipo){
 }
 
 // ===== EDITAR VENDAS =====
+function imprimirNota(id){
+  const v=getV().find(x=>x.id===id); if(!v){alert("Venda não encontrada");return;}
+  const p=(v.data||"").split("-"); const dataBr=p[2]?`${p[2]}/${p[1]}/${p[0]}`:(v.data||"");
+  const hora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  const nome=SB[v.produto]||v.produto;
+  const subtotal=v.bruto||0, desc=v.desc||0, frete=v.frete||0, total=subtotal-desc+frete;
+  const vend=nomeVendedor(v.vendedor);
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Nota - GN Gelo</title>
+  <style id="pg">@page{size:80mm auto;margin:0}</style>
+  <style>
+    *{font-family:'Courier New',monospace;color:#000;margin:0;padding:0;box-sizing:border-box}
+    html,body{background:#fff}
+    body{width:80mm;padding:3mm;font-size:12px;line-height:1.35}
+    body.w58{width:58mm;font-size:11px;padding:2mm}
+    .c{text-align:center}.b{font-weight:700}.lg{font-size:16px}
+    .l{border-top:1px dashed #000;margin:6px 0}
+    .row{display:flex;justify-content:space-between;gap:6px}
+    .noprint{margin-top:16px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+    .noprint button{padding:9px 14px;font-size:14px;cursor:pointer}
+    @media print{.noprint{display:none}}
+  </style>
+  </head><body>
+    <div class="c b lg">GN GELO</div>
+    <div class="c" style="letter-spacing:4px;margin-top:2px">SABORIZADO</div>
+    <div class="l"></div>
+    <div>Data: ${dataBr} ${hora}</div>
+    <div style="margin-top:6px">Cliente:</div>
+    <div class="b">${v.cliente||"Avulso"}</div>
+    <div style="margin-top:6px">Itens:</div>
+    <div class="row"><span>${v.qtd}x ${nome}</span><span>${R(subtotal)}</span></div>
+    <div class="l"></div>
+    <div class="row"><span>Subtotal:</span><span>${R(subtotal)}</span></div>
+    ${desc?`<div class="row"><span>Desconto:</span><span>- ${R(desc)}</span></div>`:""}
+    ${frete?`<div class="row"><span>Frete:</span><span>${R(frete)}</span></div>`:""}
+    <div class="row b lg" style="margin-top:2px"><span>Total:</span><span>${R(total)}</span></div>
+    <div style="margin-top:6px">Forma de pagamento:</div>
+    <div class="b">${v.pagto||"-"}</div>
+    <div style="margin-top:6px">Vendedor:</div>
+    <div class="b">${vend}</div>
+    <div class="l"></div>
+    <div class="c" style="margin-top:6px">Obrigado pela preferência!</div>
+    <div class="c">WhatsApp: (21) 97686-9984</div>
+    <div class="c">Instagram: @gn_gelo</div>
+    <div class="noprint">
+      <button onclick="document.getElementById('pg').textContent='@page{size:58mm auto;margin:0}';document.body.classList.add('w58');setTimeout(function(){window.print();},120)">🖨️ 58mm</button>
+      <button onclick="document.getElementById('pg').textContent='@page{size:80mm auto;margin:0}';document.body.classList.remove('w58');setTimeout(function(){window.print();},120)">🖨️ 80mm</button>
+    </div>
+  </body></html>`;
+  const w=window.open("","_blank","width=340,height=640");
+  if(!w){ alert("Permita pop-ups/abrir janela para imprimir a nota."); return; }
+  w.document.write(html); w.document.close(); w.focus();
+}
 function editarVenda(id){
   const vs=getV();
   const venda=vs.find(v=>v.id===id);
@@ -2637,7 +2689,7 @@ function filtrarVendasAvancado(){
     return;
   }
   
-  el.innerHTML = vendas.slice(0, 50).map(v => `<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span> <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
+  el.innerHTML = vendas.slice(0, 50).map(v => `<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span> <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="imprimirNota(${v.id})"><i class="ti ti-printer"></i> Nota</button><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
 }
 
 function renderLV(){
@@ -2699,11 +2751,11 @@ function renderLV(){
     mv=mv.slice().reverse();
     const el=document.getElementById("lista-vendas");
     if(!mv.length){el.innerHTML='<div class="empty"><i class="ti ti-receipt"></i>Nenhuma venda neste período</div>';return;}
-    el.innerHTML=mv.slice(0,15).map(v=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span> <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
+    el.innerHTML=mv.slice(0,15).map(v=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span> <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="imprimirNota(${v.id})"><i class="ti ti-printer"></i> Nota</button><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
   }else{
     const mv=mvMes().slice().reverse(),el=document.getElementById("lista-vendas");
     if(!mv.length){el.innerHTML='<div class="empty"><i class="ti ti-receipt"></i>Nenhuma venda este mês</div>';return;}
-    el.innerHTML=mv.slice(0,15).map(v=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span> <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
+    el.innerHTML=mv.slice(0,15).map(v=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span> <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="imprimirNota(${v.id})"><i class="ti ti-printer"></i> Nota</button><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
   }
   
   // Preencher datalist de clientes
@@ -3133,7 +3185,19 @@ function renderDashboard(){
   if(!anoSel.options.length||anoSel.options[1]===undefined){
     anosDisp.forEach(a=>anoSel.innerHTML+="<option value='"+a+"'>"+a+"</option>");
   }
-  
+
+  // Primeira abertura: começa no MÊS ATUAL (o usuário pode trocar depois)
+  if(!window.__dashInit){
+    const ya=now.getFullYear().toString();
+    if(![...anoSel.options].some(o=>o.value===ya)) anoSel.innerHTML+="<option value='"+ya+"'>"+ya+"</option>";
+    anoSel.value=ya;
+    document.getElementById("dash-mes-sel").value=String(now.getMonth()+1).padStart(2,"0");
+    document.getElementById("dash-periodo").value="mes";
+    window.__dashInit=true;
+    mesFilter=anoSel.value && String(now.getMonth()+1).padStart(2,"0");
+    anoFilter=ya; periodo="mes";
+  }
+
   // Determinar período
   if(periodo==="acumulado"){mesFilter="";anoFilter="";}
   if(!anoFilter)anoFilter=now.getFullYear().toString();
