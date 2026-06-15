@@ -524,6 +524,17 @@ body{background:var(--bg)}
 
 /* Botão Venda Rápida (dourado) */
 .btn-venda-rapida{box-shadow:0 6px 18px rgba(201,168,76,.35)}
+/* Estado de boas-vindas (conta nova, sem dados) */
+.welcome-card{background:var(--surface);border:1px solid var(--gold-border);border-radius:18px;padding:22px 18px;box-shadow:0 1px 2px rgba(20,16,8,.04);margin-top:6px}
+.welcome-eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-deep);font-weight:700}
+.welcome-title{font-family:Georgia,'Times New Roman',serif;font-weight:600;font-size:22px;letter-spacing:-.01em;margin:6px 0 4px;color:var(--text);text-wrap:balance}
+.welcome-sub{color:var(--muted);font-size:13.5px;margin:0 0 16px;line-height:1.45}
+.welcome-steps{list-style:none;padding:0;margin:0 0 18px;display:flex;flex-direction:column;gap:13px}
+.welcome-steps li{display:flex;gap:12px;align-items:flex-start}
+.welcome-steps .ws-n{flex:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(180deg,var(--gold2),var(--gold));color:#1a1407;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif}
+.welcome-steps b{display:block;font-size:14px;color:var(--text)}
+.welcome-steps small{color:var(--muted);font-size:12px;line-height:1.4}
+.welcome-card .btn-gold{width:100%;justify-content:center;padding:13px}
 /* Agrupador recolhível de análises do dashboard */
 .dash-zona{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:6px 2px 8px}
 .dash-extra{margin-bottom:10px;border:1px solid var(--border);border-radius:16px;background:var(--surface);overflow:hidden;box-shadow:0 1px 2px rgba(20,16,8,.03)}
@@ -626,7 +637,23 @@ body{background:var(--bg)}
     <h2><i class="ti ti-home"></i> Dashboard</h2>
     <div class="sub" id="dash-mes"></div>
   </div>
-  
+
+  <!-- BOAS-VINDAS (conta nova, sem dados) -->
+  <div id="dash-welcome" style="display:none">
+    <div class="welcome-card">
+      <div class="welcome-eyebrow">Bem-vindo</div>
+      <h3 class="welcome-title">Vamos dar o toque de ouro no seu negócio</h3>
+      <p class="welcome-sub">Em 3 passos o seu lucro começa a aparecer aqui no painel.</p>
+      <ol class="welcome-steps">
+        <li><span class="ws-n">1</span><div><b>Cadastre seus insumos</b><small>Em Estoque → Insumos, com o preço real de compra. O custo se atualiza sozinho.</small></div></li>
+        <li><span class="ws-n">2</span><div><b>Lance uma produção</b><small>O sistema calcula o custo real por unidade de cada sabor.</small></div></li>
+        <li><span class="ws-n">3</span><div><b>Registre a primeira venda</b><small>O lucro do mês aparece aqui na hora.</small></div></li>
+      </ol>
+      <button class="btn btn-gold" onclick="atalho('lancamentos','t-venda')"><i class="ti ti-shopping-cart"></i> Registrar primeira venda</button>
+    </div>
+  </div>
+
+  <div id="dash-data">
   <!-- FILTROS MENSAIS/ANUAIS -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
     <select id="dash-ano" onchange="renderDashboard()"><option value="">Ano</option></select>
@@ -724,6 +751,7 @@ body{background:var(--bg)}
   </div>
     </div>
   </details>
+  </div><!-- /dash-data -->
 </div>
 
 <!-- LANÇAMENTOS -->
@@ -3260,6 +3288,11 @@ function initDemoData(){
 
 function renderDashboard(){
   const now=new Date();
+  // Conta nova (sem nenhum dado): mostra boas-vindas e pula o painel
+  const _vazioConta = getV().length===0 && getPr().length===0 && getG().length===0;
+  const _w=document.getElementById("dash-welcome"), _d=document.getElementById("dash-data");
+  if(_w&&_d){_w.style.display=_vazioConta?"":"none";_d.style.display=_vazioConta?"none":"";}
+  if(_vazioConta){contarAlertas();return;}
   let mesFilter=document.getElementById("dash-mes-sel").value;
   let anoFilter=document.getElementById("dash-ano").value;
   let periodo=document.getElementById("dash-periodo").value;
