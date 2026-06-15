@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-15T20:11:00Z",
+  "title": "Design System: GN Gelo",
+  "extensions": {
+    "colorMeta": {
+      "gold": { "role": "primary", "displayName": "Ouro GN", "canonical": "#C9A84C" },
+      "gold-bright": { "role": "primary", "displayName": "Ouro Claro", "canonical": "#E8C97A" },
+      "gold-deep": { "role": "primary", "displayName": "Ouro Profundo", "canonical": "#A8852F" },
+      "ink": { "role": "secondary", "displayName": "Preto Assinatura", "canonical": "#0E0E10" },
+      "cream-bg": { "role": "neutral", "displayName": "Creme Quente", "canonical": "#F6F3EC" },
+      "surface": { "role": "neutral", "displayName": "Superfície", "canonical": "#FFFFFF" },
+      "muted": { "role": "neutral", "displayName": "Esmaecido Terroso", "canonical": "#6F6A60" },
+      "border": { "role": "neutral", "displayName": "Borda Quente", "canonical": "#ECE6D8" },
+      "success": { "role": "status", "displayName": "Sucesso", "canonical": "#15803D" },
+      "danger": { "role": "status", "displayName": "Perigo", "canonical": "#B91C1C" },
+      "warning": { "role": "status", "displayName": "Atenção", "canonical": "#92400E" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display Serif", "purpose": "Valores de métrica, totais do DRE, números-joia." },
+      "headline": { "displayName": "Headline Serif", "purpose": "Títulos de tela." },
+      "body": { "displayName": "Body Sans", "purpose": "Texto de interface e formulários." },
+      "label": { "displayName": "Label Maiúscula", "purpose": "Rótulos de campo e métrica, com tracking largo." }
+    },
+    "shadows": [
+      { "name": "fio-cartao", "value": "0 1px 2px rgba(20,16,8,.04)", "purpose": "Cartões e métricas em repouso; apenas separa da superfície." },
+      { "name": "halo-acao", "value": "0 6px 18px rgba(201,168,76,.35)", "purpose": "Exclusivo do botão flutuante Venda Rápida; ouro vira luz." }
+    ],
+    "motion": [
+      { "name": "ease-estado", "value": "ease", "purpose": "Transições de opacidade/cor em hover e foco (0.15–0.2s)." }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "600px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal: preto com letra dourada.",
+      "html": "<button class=\"ds-btn-primary\">Salvar</button>",
+      "css": ".ds-btn-primary{background:#0E0E10;color:#E8C97A;border:1px solid #0E0E10;border-radius:12px;padding:10px 20px;font:600 14px/1 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.02em;cursor:pointer;transition:transform .15s,opacity .15s}.ds-btn-primary:hover{opacity:.92;transform:translateY(-1px)}.ds-btn-primary:focus-visible{outline:2px solid #C9A84C;outline-offset:2px}"
+    },
+    {
+      "name": "Gold Button",
+      "kind": "button",
+      "refersTo": "button-gold",
+      "description": "Ação mais desejada: gradiente dourado.",
+      "html": "<button class=\"ds-btn-gold\">Confirmar venda</button>",
+      "css": ".ds-btn-gold{background:linear-gradient(180deg,#E8C97A,#C9A84C);color:#1a1407;border:1px solid #C9A84C;border-radius:12px;padding:10px 20px;font:700 14px/1 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.02em;cursor:pointer;transition:transform .15s}.ds-btn-gold:hover{transform:translateY(-1px)}.ds-btn-gold:focus-visible{outline:2px solid #0E0E10;outline-offset:2px}"
+    },
+    {
+      "name": "Metric Card",
+      "kind": "card",
+      "refersTo": "metric",
+      "description": "Tijolo do dashboard: rótulo maiúsculo + valor em serifa.",
+      "html": "<div class=\"ds-metric\"><div class=\"ds-metric-lbl\">Lucro líquido</div><div class=\"ds-metric-val\">R$ 102,93</div><div class=\"ds-metric-sub\">Margem 67,1%</div></div>",
+      "css": ".ds-metric{background:#fff;border:1px solid #ECE6D8;border-radius:16px;padding:15px 14px;box-shadow:0 1px 2px rgba(20,16,8,.03)}.ds-metric-lbl{font:700 10px/1.2 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#6F6A60}.ds-metric-val{font:600 23px/1.05 Georgia,'Times New Roman',serif;letter-spacing:-.005em;color:#15803D;margin-top:6px}.ds-metric-sub{font:400 12px/1.3 -apple-system,Segoe UI,Roboto,sans-serif;color:#6F6A60;margin-top:4px}"
+    },
+    {
+      "name": "Gold Badge",
+      "kind": "chip",
+      "refersTo": "badge-gold",
+      "description": "Selo/pílula dourada para destaques (meta, valores a receber).",
+      "html": "<span class=\"ds-badge-gold\">46%</span>",
+      "css": ".ds-badge-gold{display:inline-block;background:linear-gradient(180deg,#E8C97A,#C9A84C);color:#1a1407;border-radius:999px;padding:3px 11px;font:700 11px/1 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.03em}"
+    },
+    {
+      "name": "Dashboard Hero",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Painel preto com o lucro do mês em serifa dourada — única exceção para texto-gradiente.",
+      "html": "<div class=\"ds-hero\"><div class=\"ds-hero-eyebrow\">Lucro líquido · Junho de 2026</div><div class=\"ds-hero-num\">R$ 102,93</div><div class=\"ds-hero-delta\">▼ 67,6% vs ant.</div></div>",
+      "css": ".ds-hero{background:linear-gradient(160deg,#16151a,#0E0E10 70%);border:1px solid rgba(201,168,76,.28);border-radius:20px;padding:20px;color:#fff;position:relative;overflow:hidden}.ds-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#E8C97A,transparent)}.ds-hero-eyebrow{font:700 10px/1.2 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(232,201,122,.72)}.ds-hero-num{font:400 40px/1 Georgia,'Times New Roman',serif;margin-top:8px;background:linear-gradient(180deg,#fff,#E8C97A);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}.ds-hero-delta{display:inline-flex;margin-top:11px;font:600 12px/1 -apple-system,Segoe UI,Roboto,sans-serif;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.78)}"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo de formulário com rótulo maiúsculo acima.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-lbl\">Cliente</span><input class=\"ds-input\" placeholder=\"Nome do cliente\"></label>",
+      "css": ".ds-field{display:block}.ds-field-lbl{display:block;font:700 11px/1.2 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#6F6A60;margin-bottom:6px}.ds-input{width:100%;background:#fff;border:1px solid #ECE6D8;border-radius:8px;padding:9px 11px;font:400 14px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;color:#0A0A0A;outline:none}.ds-input:focus{border-color:#C9A84C;box-shadow:0 0 0 2px rgba(201,168,76,.18)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "O Toque de Ouro",
+    "overview": "GN Gelo vende um gelo saborizado premium — o ingrediente dourado que transforma uma bebida comum em algo especial. O sistema de design (ferramenta interna do dono, não voltada ao cliente final) faz com a gestão o que o produto faz com a bebida: dá um toque de ouro ao que normalmente é frio e burocrático. Fundo creme quente, preto profundo de assinatura, ouro real aplicado com intenção. Rejeita o software corporativo frio (azul de ERP, tabelas cinzas) e o template de IA genérico (creme + serifa + degradê em tudo).",
+    "keyCharacteristics": [
+      "Ouro como evento, não como tinta de fundo — ≤15% de cada tela.",
+      "Serifa (Georgia) reservada a números e títulos.",
+      "Preto profundo (#0E0E10) na navegação e no herói; é a moldura, não o corpo.",
+      "Superfícies planas com fio de sombra; relevo é resposta a estado.",
+      "Mobile-first, feito para o polegar, no balcão."
+    ],
+    "rules": [
+      { "name": "A Regra do Toque de Ouro", "body": "O ouro cobre no máximo ~15% de qualquer tela; sua raridade é o ponto. Acento, número-chave e moldura — nunca fundo de conteúdo.", "section": "colors" },
+      { "name": "A Regra da Serifa Reservada", "body": "Georgia é exclusiva de números e títulos. Nunca corpo, rótulo ou botão.", "section": "typography" },
+      { "name": "A Regra do Plano em Repouso", "body": "Superfícies são planas paradas. Sombra é resposta a estado ou marca de um único elemento de ação, nunca decoração distribuída.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do tratar o ouro como evento: acento, número-chave, moldura — ≤15% da tela.",
+      "Do reservar a serifa Georgia para números e títulos.",
+      "Do manter superfícies planas sobre o creme, separadas por fio de 1px #ECE6D8.",
+      "Do colocar o lucro do mês na frente, no painel-herói preto.",
+      "Do usar verde para ganho, vermelho para gasto, âmbar para avisos.",
+      "Do desenhar para o polegar: alvos generosos, mobile-first."
+    ],
+    "donts": [
+      "Don't deixar parecer sistema corporativo frio (azul de ERP, tabelas cinzas, cara de planilha).",
+      "Don't cair no template de IA genérico (creme + serifa + degradê em tudo).",
+      "Don't usar texto-gradiente além do número-joia do herói.",
+      "Don't banhar blocos grandes de ouro nem usar ouro como fundo de conteúdo.",
+      "Don't usar cinza-gelo lavado em texto secundário; o esmaecido é terroso (#6F6A60).",
+      "Don't trazer de volta sombras pesadas; profundidade é só o herói e o halo do botão de venda."
+    ]
+  }
+}
