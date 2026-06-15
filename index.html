@@ -636,10 +636,10 @@ body{background:var(--bg)}
     </div>
   </div>
   <div class="metric-grid">
-    <div class="metric"><div class="lbl">Faturamento</div><div class="val gold" id="d-fat">R$ 0,00</div><div class="sub" id="d-un">0 unidades</div><div class="sub" id="d-fat-delta" style="font-weight:700"></div></div>
-    <div class="metric"><div class="lbl">Lucro líquido</div><div class="val green" id="d-lucro">R$ 0,00</div><div class="sub" id="d-margem">Margem 0%</div><div class="sub" id="d-lucro-delta" style="font-weight:700"></div></div>
     <div class="metric"><div class="lbl">Produzido</div><div class="val" id="d-prod">0 unid.</div><div class="sub" id="d-estq">Estoque: 0</div><div class="sub" id="d-prod-delta" style="font-weight:700"></div></div>
-    <div class="metric"><div class="lbl">Gastos</div><div class="val red" id="d-gastos">R$ 0,00</div><div class="sub" id="d-ticket">Ticket: R$ 0</div><div class="sub" id="d-gastos-delta" style="font-weight:700"></div></div>
+    <div class="metric"><div class="lbl">Margem</div><div class="val green" id="d-margem">0%</div><div class="sub" id="d-margem-tag">—</div></div>
+    <div class="metric"><div class="lbl">Gastos</div><div class="val red" id="d-gastos">R$ 0,00</div><div class="sub" id="d-gastos-sub">Ticket: R$ 0</div><div class="sub" id="d-gastos-delta" style="font-weight:700"></div></div>
+    <div class="metric"><div class="lbl">Custo/un</div><div class="val gold" id="d-custo-un">R$ 0,00</div><div class="sub">pelos insumos</div></div>
   </div>
   <div class="card card-gold">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
@@ -3297,14 +3297,15 @@ function renderDashboard(){
   const prod=getPr().filter(p=>p.data&&p.data.startsWith(mesParam)).reduce((s,p)=>s+p.qtd,0);
   const estTotal=Object.values(est).reduce((s,v)=>s+v,0);
   const marg=fat>0?lucro/fat*100:0,ticket=mv.length>0?fat/mv.length:0;
-  document.getElementById("d-fat").textContent=R(fat);document.getElementById("d-un").textContent=`${unid} unidades`;
-  document.getElementById("d-lucro").textContent=R(lucro);document.getElementById("d-margem").textContent=`Margem ${P(marg)}`;
-  document.getElementById("d-prod").textContent=`${prod} unid.`;document.getElementById("d-estq").textContent=`Estoque: ${estTotal}`;
-  document.getElementById("d-gastos").textContent=R(gastos);
-  document.getElementById("d-ticket").textContent=invest>0?`Ticket ${R(ticket)} · Invest. ${R(invest)}`:`Ticket: ${R(ticket)}`;
+  const cpvTot=mv.reduce((s,v)=>s+(v.cpv||0),0),custoUn=unid>0?cpvTot/unid:0;
+  const setT=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
+  // Cards (Produzido · Margem · Gastos · Custo/un)
+  setT("d-prod",`${prod} unid.`);setT("d-estq",`Estoque: ${estTotal}`);
+  setT("d-margem",P(marg));setT("d-margem-tag",fat<=0?"—":marg>=40?"saudável":marg>=20?"atenção":"baixa");
+  setT("d-gastos",R(gastos));setT("d-gastos-sub",invest>0?`Invest. ${R(invest)}`:`Ticket: ${R(ticket)}`);
+  setT("d-custo-un",R(custoUn));
   // HERO escuro (espelha o lucro do período)
-  {const set=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
-   set("h-eyebrow",`Lucro líquido · ${titulo}`);set("h-lucro",R(lucro));set("h-fat",R(fat));set("h-un",`${unid} un`);set("h-ticket",R(ticket));}
+  setT("h-eyebrow",`Lucro líquido · ${titulo}`);setT("h-lucro",R(lucro));setT("h-fat",R(fat));setT("h-un",`${unid} un`);setT("h-ticket",R(ticket));
 
   // ===== Contas a receber (vendas não recebidas no período) =====
   const pendentes=mv.filter(v=>!v.recebido).sort((a,b)=>(a.data||"").localeCompare(b.data||""));
@@ -3334,14 +3335,12 @@ function renderDashboard(){
     const pGastos=pg.filter(g=>!isInvestimento(g)).reduce((s,g)=>s+g.valor,0);
     const pProdParam=prevMes?prevAno+"-"+prevMes:prevAno+"-";
     const pProd=getPr().filter(p=>p.data&&p.data.startsWith(pProdParam)).reduce((s,p)=>s+p.qtd,0);
-    setDelta("d-fat-delta",fat,pFat,false);
-    setDelta("d-lucro-delta",lucro,pLucro,false);
+    setDelta("h-delta",lucro,pLucro,false);
     setDelta("d-prod-delta",prod,pProd,false);
     setDelta("d-gastos-delta",gastos,pGastos,true);
   }else{
-    ["d-fat-delta","d-lucro-delta","d-prod-delta","d-gastos-delta"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="";});
+    ["h-delta","d-prod-delta","d-gastos-delta"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="";});
   }
-  {const dl=document.getElementById("d-lucro-delta"),hd=document.getElementById("h-delta");if(hd)hd.textContent=dl?dl.textContent:"";}
 
   const pct=metas.fat>0?Math.min(100,fat/metas.fat*100):0;
   const bEl=document.getElementById("d-meta-bar");
