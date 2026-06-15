@@ -476,6 +476,54 @@ input.input-warning{
 @media(min-width:600px){
   .nav-btn{min-width:62px;padding:10px 12px}
 }
+
+/* ============================================================
+   REDESIGN PREMIUM — identidade dourado/preto/creme (global)
+   ============================================================ */
+:root{
+  --bg:#F6F3EC; --surface:#FFFFFF; --border:#ECE6D8; --muted:#6F6A60;
+  --gold:#C9A84C; --gold2:#E8C97A; --gold-deep:#A8852F; --gold-light:#FBF6EA; --gold-border:#E2D2A6;
+  --black:#0E0E10; --black2:#1A1A1E;
+}
+body{background:var(--bg)}
+
+/* Tipografia editorial nos números/títulos */
+.metric .val, .dre-total span, .dre-total, .big-num{font-family:Georgia,'Times New Roman',serif;letter-spacing:-.005em}
+.page-header h2{font-family:Georgia,'Times New Roman',serif;font-weight:600;letter-spacing:-.01em}
+
+/* Cartões */
+.card{border-radius:18px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(20,16,8,.04)}
+.card-gold{border:1px solid var(--gold-border);background:linear-gradient(180deg,#FFFDF6,#FFFFFF)}
+.metric{border-radius:16px;border:1px solid var(--border);background:var(--surface);padding:15px 14px;box-shadow:0 1px 2px rgba(20,16,8,.03)}
+.metric .lbl{letter-spacing:.12em;color:var(--muted)}
+.metric .val{font-size:23px;line-height:1.05}
+.metric .val.gold{color:var(--gold-deep)}
+.item-card{border-radius:14px;box-shadow:0 1px 2px rgba(20,16,8,.03)}
+.section-label{letter-spacing:.13em;color:var(--muted)}
+
+/* Topo e barra inferior premium */
+.nav{background:var(--black);border-bottom:1px solid rgba(201,168,76,.32)}
+.nav-logo img{border:1.5px solid var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,.18)}
+.nav-icon{color:var(--gold2)}
+.bottomnav{background:var(--black);border-top:1px solid rgba(201,168,76,.32)}
+.bnav-btn.active{color:var(--gold2)}
+
+/* Botões */
+.btn{border-radius:12px;letter-spacing:.02em}
+.btn-gold{background:linear-gradient(180deg,var(--gold2),var(--gold));border-color:var(--gold);color:#1a1407}
+.btn-primary{background:var(--black);color:var(--gold2);border-color:var(--black)}
+
+/* Badges e progresso */
+.badge{border-radius:999px;padding:3px 11px}
+.b-gold{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#1a1407}
+.progress{height:9px;background:#EFE9DB;border-radius:999px}
+.progress-fill{border-radius:999px}
+
+/* Atalho/drawer já alinhados à paleta */
+.drawer-header{background:var(--black);color:var(--gold2)}
+
+/* Botão Venda Rápida (dourado) */
+.btn-venda-rapida{box-shadow:0 6px 18px rgba(201,168,76,.35)}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 </head>
