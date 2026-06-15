@@ -274,7 +274,7 @@ tr:last-child td{border-bottom:none}
 /* DRE */
 .dre-row{display:flex;justify-content:space-between;align-items:flex-end;padding:5px 0;font-size:13px;border-bottom:1px solid var(--border);gap:8px}
 .dre-row:last-child{border-bottom:none}
-.dre-sec{font-weight:700;color:var(--black);background:#F8F5EE;padding:5px 8px;margin:4px -16px 4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;border-left:3px solid var(--gold)}
+.dre-sec{font-weight:700;color:var(--gold-deep);background:#F8F5EE;padding:5px 10px;margin:4px -16px 4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 .dre-total{font-weight:700;font-size:14px;padding-top:6px}
 .dre-pos{color:var(--success)}
 .dre-neg{color:var(--danger)}
@@ -524,12 +524,22 @@ body{background:var(--bg)}
 
 /* Botão Venda Rápida (dourado) */
 .btn-venda-rapida{box-shadow:0 6px 18px rgba(201,168,76,.35)}
+/* Agrupador recolhível de análises do dashboard */
+.dash-zona{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:6px 2px 8px}
+.dash-extra{margin-bottom:10px;border:1px solid var(--border);border-radius:16px;background:var(--surface);overflow:hidden;box-shadow:0 1px 2px rgba(20,16,8,.03)}
+.dash-extra>summary{list-style:none;cursor:pointer;padding:14px 16px;font-weight:700;font-size:13px;color:var(--gold-deep);display:flex;align-items:center;justify-content:space-between}
+.dash-extra>summary::-webkit-details-marker{display:none}
+.dash-extra>summary::after{content:"▾";color:var(--muted);transition:transform .2s}
+.dash-extra[open]>summary::after{transform:rotate(180deg)}
+.dash-extra>summary:hover{background:var(--gold-light)}
+.dash-extra .dash-extra-body{padding:0 12px 12px}
+.dash-extra .dash-extra-body .card{margin-bottom:10px}
 /* HERO escuro do dashboard — lucro em destaque */
 .dash-hero{margin-bottom:13px;background:linear-gradient(160deg,#16151a 0%,#0E0E10 70%);border:1px solid rgba(201,168,76,.28);border-radius:20px;padding:20px;color:#fff;position:relative;overflow:hidden}
 .dash-hero::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold2),transparent)}
 .dash-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 60%,rgba(201,168,76,.08));pointer-events:none}
 .dash-hero .eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(232,201,122,.72);font-weight:700}
-.dash-hero .hero-num{font-family:Georgia,'Times New Roman',serif;font-size:40px;line-height:1;margin-top:8px;background:linear-gradient(180deg,#fff,var(--gold2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.dash-hero .hero-num{font-family:Georgia,'Times New Roman',serif;font-size:40px;line-height:1;margin-top:8px;color:var(--gold2)}
 .dash-hero .hero-delta{display:inline-flex;align-items:center;gap:5px;margin-top:11px;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.78)}
 .dash-hero .hero-delta:empty{display:none}
 .dash-hero .hero-meta{display:flex;gap:18px;margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px}
@@ -651,13 +661,14 @@ body{background:var(--bg)}
       <span id="d-meta-real">R$ 0 realizado</span><span id="d-meta-falta">Falta R$ 0</span>
     </div>
   </div>
-  <div class="card" id="card-receber" style="border-left:3px solid var(--warning)">
+  <div class="card card-gold" id="card-receber">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <span class="section-label" style="margin:0">💰 Contas a receber</span>
       <span id="d-receber-total" class="badge b-gold">R$ 0,00</span>
     </div>
     <div id="d-receber-lista"></div>
   </div>
+  <div class="dash-zona">Gráficos do mês</div>
   <div class="card">
     <div class="section-label">Vendas por dia</div>
     <div class="chart-wrap"><canvas id="cVendas" role="img" aria-label="Vendas por dia">Gráfico de vendas diárias.</canvas></div>
@@ -677,6 +688,9 @@ body{background:var(--bg)}
       <div id="legenda-sabor" style="flex:1;font-size:11px;line-height:2"></div>
     </div>
   </div>
+  <details class="dash-extra">
+    <summary>Análises detalhadas</summary>
+    <div class="dash-extra-body">
   <div class="card">
     <div class="section-label">Ranking de sabores</div>
     <div id="d-ranking"></div>
@@ -708,6 +722,8 @@ body{background:var(--bg)}
     <div class="section-label">👥 Top 3 Clientes</div>
     <div id="d-top-clientes"></div>
   </div>
+    </div>
+  </details>
 </div>
 
 <!-- LANÇAMENTOS -->
@@ -2969,7 +2985,7 @@ function renderTabelaInsumosGastos(){
       <tr style="background:var(--surface);border-bottom:1px solid var(--border);font-size:11px">
         <td colspan="6" style="padding:8px 10px;color:var(--muted)">
           <strong>Entradas:</strong>
-          ${dados.entradas.map(e=>`<div style="margin:8px 0;padding:8px;background:var(--background);border-radius:4px;border-left:3px solid var(--gold);display:flex;justify-content:space-between;align-items:center"><div style="flex:1"><span style="font-weight:700;color:var(--text)">${e.data}</span> <span style="color:var(--muted)">•</span> <span style="color:var(--muted)">${e.fornecedor||"—"}</span> <span style="color:var(--muted)">•</span> <span style="color:var(--danger);font-weight:700">${R(e.valor)}</span></div><button class="btn btn-sm" onclick="editarInsumo(${e.id})" style="padding:4px 8px;font-size:11px;white-space:nowrap;margin-left:8px"><i class="ti ti-pencil"></i> Editar</button></div>`).join("")}
+          ${dados.entradas.map(e=>`<div style="margin:8px 0;padding:8px;background:var(--background);border-radius:8px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div style="flex:1"><span style="font-weight:700;color:var(--text)">${e.data}</span> <span style="color:var(--muted)">•</span> <span style="color:var(--muted)">${e.fornecedor||"—"}</span> <span style="color:var(--muted)">•</span> <span style="color:var(--danger);font-weight:700">${R(e.valor)}</span></div><button class="btn btn-sm" onclick="editarInsumo(${e.id})" style="padding:4px 8px;font-size:11px;white-space:nowrap;margin-left:8px"><i class="ti ti-pencil"></i> Editar</button></div>`).join("")}
         </td>
       </tr>
     `;
@@ -3600,7 +3616,7 @@ function renderEst(){
       if(dias<0){status="❌ VENCIDO";cor="var(--danger)";}
       else if(dias<7){status="⚠️ "+dias+"d";cor="var(--warning)";}
       const disponivel=l.qtdProduzida-l.qtdVendida;
-      return `<div class="card" style="border-left:4px solid ${cor};opacity:${dias<0?0.5:1}">
+      return `<div class="card" style="border:1px solid ${cor};opacity:${dias<0?0.5:1}">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
             <div style="font-weight:700">#${idx+1} ${l.codigo}</div>
@@ -3629,7 +3645,7 @@ function renderEst(){
   ["coco","morango","maracuja","maca","manga","melancia","limao","iceblue","energetico","frutas","amora","abacaxi","salLimao","uva","chiclete","cereja","morPessego","brasil","bobMarley","laranja","balaHouse"].forEach(s=>{
     const r=rec[s]||{base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1};
     const custoIng=custoUnidSabor(s);
-    recHtml+=`<div class="card" style="border-left:3px solid var(--gold)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="fl ${SC[s]}" style="font-size:11px">${SB[s]}</span><span style="font-size:10px;color:var(--muted)">200ml</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px"><div><span style="color:var(--muted)">Base</span><span style="float:right;font-weight:700">${r.base}ml</span></div><div><span style="color:var(--muted)">Glicose</span><span style="float:right;font-weight:700">${r.glicose}g</span></div><div><span style="color:var(--muted)">Açúcar</span><span style="float:right;font-weight:700">${r.acucar}g</span></div><div><span style="color:var(--muted)">Xantana</span><span style="float:right;font-weight:700">${r.xantana}g</span></div><div><span style="color:var(--muted)">Embalagem</span><span style="float:right;font-weight:700">${r.embalagem}un</span></div><div style="border-top:1px solid var(--border);padding-top:3px"><span style="font-weight:700">Custo</span><span style="float:right;font-weight:700;color:var(--success)">R$ ${custoIng.toFixed(2)}</span></div></div></div>`;
+    recHtml+=`<div class="card" style="border:1px solid var(--gold-border)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="fl ${SC[s]}" style="font-size:11px">${SB[s]}</span><span style="font-size:10px;color:var(--muted)">200ml</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px"><div><span style="color:var(--muted)">Base</span><span style="float:right;font-weight:700">${r.base}ml</span></div><div><span style="color:var(--muted)">Glicose</span><span style="float:right;font-weight:700">${r.glicose}g</span></div><div><span style="color:var(--muted)">Açúcar</span><span style="float:right;font-weight:700">${r.acucar}g</span></div><div><span style="color:var(--muted)">Xantana</span><span style="float:right;font-weight:700">${r.xantana}g</span></div><div><span style="color:var(--muted)">Embalagem</span><span style="float:right;font-weight:700">${r.embalagem}un</span></div><div style="border-top:1px solid var(--border);padding-top:3px"><span style="font-weight:700">Custo</span><span style="float:right;font-weight:700;color:var(--success)">R$ ${custoIng.toFixed(2)}</span></div></div></div>`;
   });
   document.getElementById("est-receitas").innerHTML=recHtml+"<div style='margin-top:12px;font-size:11px;color:var(--muted);text-align:center'>Para customizar as receitas, vá em <strong>Parâmetros > Receitas</strong></div>";
   
@@ -3676,7 +3692,7 @@ function renderEst(){
       const corUso=percentualUso>80?"var(--danger)":percentualUso>50?"var(--warning)":"var(--success)";
       
       htmlTotal+=`
-      <div class="card" style="border-left:4px solid ${corUso};margin-bottom:12px;background:var(--surface)">
+      <div class="card" style="border:1px solid ${corUso};margin-bottom:12px;background:var(--surface)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <span style="font-weight:700;font-size:14px">${nome}</span>
           <div style="text-align:right">
@@ -3708,7 +3724,7 @@ function renderEst(){
       const corUso=percentualUso>80?"var(--danger)":percentualUso>50?"var(--warning)":"var(--success)";
       
       return `
-      <div class="card" style="border-left:4px solid ${corUso}">
+      <div class="card" style="border:1px solid ${corUso}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <span style="font-weight:700">${ins.nome}</span>
           <div style="text-align:right">
@@ -3749,7 +3765,7 @@ function renderEst(){
       const alerta=d.qtd<50?"⚠️ Estoque baixo":"✅ OK";
       const cor=d.qtd<50?"var(--danger)":"var(--success)";
       const unPadrao=d.unPadrao||'un';
-      return `<div class="card" style="border-left:3px solid ${cor}"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700">${n}</span><span style="font-size:16px;font-weight:700;color:${cor}">${d.qtd.toFixed(0)} ${unPadrao}</span></div><div style="font-size:11px;color:var(--muted);margin-top:3px">Custo/un: R$ ${(d.custoUnit||0.10).toFixed(2)} • Total em volume: ${d.qtd.toFixed(0)} ${unPadrao} ${alerta}</div></div>`;
+      return `<div class="card" style="border:1px solid ${cor}"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700">${n}</span><span style="font-size:16px;font-weight:700;color:${cor}">${d.qtd.toFixed(0)} ${unPadrao}</span></div><div style="font-size:11px;color:var(--muted);margin-top:3px">Custo/un: R$ ${(d.custoUnit||0.10).toFixed(2)} • Total em volume: ${d.qtd.toFixed(0)} ${unPadrao} ${alerta}</div></div>`;
     }).join("")}`;
     document.getElementById("est-insumos").innerHTML+=estoque;
   }
@@ -4813,7 +4829,7 @@ function renderFluxoPrevisao(){
     </div>
     <div class="card">
       <div style="font-size:11px;color:#6B6B6B;margin-bottom:8px">💡 Dica: Monitore o fluxo para evitar falta de caixa. Se negativo, aumente entradas ou reduza saídas.</div>
-      ${saldoMes<0?'<div style="padding:8px;background:#FEF2F2;border-left:3px solid #B91C1C;border-radius:4px;font-size:11px">⚠️ <strong>Atenção:</strong> Saldo previsto negativo! Considere revisar despesas ou acelerar cobranças.</div>':''}
+      ${saldoMes<0?'<div style="padding:8px;background:#FEF2F2;border:1px solid #F3C4C4;border-radius:4px;font-size:11px">⚠️ <strong>Atenção:</strong> Saldo previsto negativo! Considere revisar despesas ou acelerar cobranças.</div>':''}
     </div>
   `;
   
@@ -4830,7 +4846,7 @@ function calcularPrevisaoVendas(){
   const qtd=parseFloat(document.getElementById("prev-qtd").value)||0;
   
   if(fat<=0||qtd<=0){
-    document.getElementById("prev-resultado").innerHTML='<div style="background:#FEF2F2;border-left:3px solid #B91C1C;padding:8px;border-radius:4px;font-size:11px">⚠️ Preencha faturamento e quantidade</div>';
+    document.getElementById("prev-resultado").innerHTML='<div style="background:#FEF2F2;border:1px solid #F3C4C4;padding:8px;border-radius:4px;font-size:11px">⚠️ Preencha faturamento e quantidade</div>';
     return;
   }
   
@@ -4841,7 +4857,7 @@ function calcularPrevisaoVendas(){
   
   const total=coco+morango+maracuja+maca;
   if(total!==100){
-    document.getElementById("prev-resultado").innerHTML='<div style="background:#FEF2F2;border-left:3px solid #B91C1C;padding:8px;border-radius:4px;font-size:11px">⚠️ <strong>Atenção:</strong> A soma dos percentuais deve ser 100% (atual: '+total+'%)</div>';
+    document.getElementById("prev-resultado").innerHTML='<div style="background:#FEF2F2;border:1px solid #F3C4C4;padding:8px;border-radius:4px;font-size:11px">⚠️ <strong>Atenção:</strong> A soma dos percentuais deve ser 100% (atual: '+total+'%)</div>';
     return;
   }
   
@@ -5113,7 +5129,7 @@ function renderVendedores(){
       </div>`;
     }).join("");
   }
-  html+='<div style="margin-top:12px;padding:12px;background:#FFFBEB;border-radius:8px;border-left:3px solid #92400E;font-size:11px;color:#6B6B6B"><strong>💡 Dica:</strong> As comissões são calculadas automaticamente quando uma venda é confirmada (status "Pago" ou "Entregue").</div>';
+  html+='<div style="margin-top:12px;padding:12px;background:#FFFBEB;border-radius:8px;border:1px solid #ECDCB0;font-size:11px;color:#6B6B6B"><strong>💡 Dica:</strong> As comissões são calculadas automaticamente quando uma venda é confirmada (status "Pago" ou "Entregue").</div>';
   document.getElementById("lista-vendedores").innerHTML=html;
 }
 function salvarVendedor(){
