@@ -984,7 +984,10 @@ body{background:var(--bg)}
         <div class="fg"><label>Distância (km)</label><input type="number" id="ag-km" min="0" step="0.5" placeholder="0" oninput="calcFreteAg()"></div>
         <div class="fg"><label>Tempo (min)</label><input type="number" id="ag-tempo" min="0" step="1" placeholder="auto" oninput="calcFreteAg(true)"></div>
       </div>
-      <div class="fg"><label>Frete sugerido (R$)</label><input type="number" id="ag-frete" min="0" step="0.01" value="0"></div>
+      <div class="form-row">
+        <div class="fg"><label>Preço por unidade (R$)</label><input type="number" id="ag-preco" min="0" step="0.01" placeholder="0,00"></div>
+        <div class="fg"><label>Frete sugerido (R$)</label><input type="number" id="ag-frete" min="0" step="0.01" value="0"></div>
+      </div>
       <div id="ag-frete-info" style="font-size:11px;color:var(--muted);margin:-4px 0 8px"></div>
       <label class="ag-check"><input type="checkbox" id="ag-cobra" checked onchange="calcFreteAg()"> Cobrar frete <span style="color:var(--muted);font-weight:400">(calcula pela distância e tempo, estilo apps)</span></label>
       <div class="fg"><label>Observação</label><input type="text" id="ag-obs" placeholder="Ex.: pagar na entrega, ligar antes..."></div>
@@ -1247,6 +1250,16 @@ body{background:var(--bg)}
     </div>
     <input type="file" id="imp-file" accept=".json" style="display:none" onchange="importarDados(event)">
     <div id="backup-msg" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+  </div>
+
+  <div class="card card-gold" style="margin-top:16px">
+    <div class="section-label">🕓 Histórico de versões (restaurar ponto anterior)</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">O sistema guarda automaticamente os últimos pontos dos seus dados neste aparelho. Use para voltar a um momento anterior (ex.: antes de um teste que deu errado).</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="btn btn-gold" onclick="criarSnapshotManual()"><i class="ti ti-camera"></i> Salvar ponto agora</button>
+      <button class="btn" onclick="renderHistorico()"><i class="ti ti-refresh"></i> Atualizar lista</button>
+    </div>
+    <div id="lista-historico"></div>
   </div>
   
   <div class="card card-gold" style="margin-top:16px">
@@ -1565,7 +1578,7 @@ const SC={coco:"fl-coco",morango:"fl-morango",maracuja:"fl-maracuja",maca:"fl-ma
 const CC={coco:"#92400E",morango:"#9D174D",maracuja:"#C2410C",maca:"#166534",manga:"#FF8C00",melancia:"#E91E63",limao:"#FFEB3B",iceblue:"#00BCD4",energetico:"#FF5722",frutas:"#D32F2F",amora:"#4A148C",abacaxi:"#FFC107",salLimao:"#76FF03",uva:"#7C4DFF",chiclete:"#FF1493",cereja:"#F50057",morPessego:"#E91E63",brasil:"#FFD700",bobMarley:"#FFD700",laranja:"#FF6F00",balaHouse:"#FF69B4",combo10:"#4C1D95",combo20:"#4C1D95",combo50:"#4C1D95",combo100:"#4C1D95"};
 const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const get=(k,d)=>{try{const v=localStorage.getItem("gng_"+k);return v?JSON.parse(v):d;}catch{return d;}};
-const set=(k,v)=>{try{localStorage.setItem("gng_"+k,JSON.stringify(v));localStorage.setItem("gng__local_updated",new Date().toISOString());agendarSync();}catch{}};
+const set=(k,v)=>{try{localStorage.setItem("gng_"+k,JSON.stringify(v));localStorage.setItem("gng__local_updated",new Date().toISOString());agendarSync();agendarSnapshot();}catch{}};
 
 // ===== SUPABASE (login + sincronização na nuvem) =====
 const SUPABASE_URL="https://wuqymzfzkxnxnddnrefa.supabase.co";
@@ -1582,7 +1595,7 @@ function _chavesDados(){
   const out={};
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
-    if(k&&k.indexOf("gng_")===0 && k!=="gng_backup_seeded" && k!=="gng_demo_ja_criado" && k!=="gng__cloud_updated" && k!=="gng__owner" && k!=="gng__local_updated"){
+    if(k&&k.indexOf("gng_")===0 && k!=="gng_backup_seeded" && k!=="gng_demo_ja_criado" && k!=="gng__cloud_updated" && k!=="gng__owner" && k!=="gng__local_updated" && k!=="gng__history"){
       out[k]=localStorage.getItem(k);
     }
   }
@@ -1593,6 +1606,75 @@ function agendarSync(){
   if(!sb||!sbUser)return;
   clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>{ nuvemEnviar(); }, 4000);
+}
+
+// ===== HISTÓRICO LOCAL DE VERSÕES (pontos de restauração automáticos) =====
+const HIST_MAX=20;            // quantos pontos manter
+var _snapTimer=null;
+function getHistorico(){ try{ return JSON.parse(localStorage.getItem("gng__history")||"[]"); }catch{ return []; } }
+function setHistorico(arr){ try{ localStorage.setItem("gng__history",JSON.stringify(arr)); }catch(e){
+  // Em caso de estouro de espaço, descarta os pontos mais antigos e tenta de novo
+  try{ while(arr.length>3){ arr.shift(); localStorage.setItem("gng__history",JSON.stringify(arr)); break; } }catch(_){}
+}}
+// Cria um ponto de restauração com o estado atual dos dados
+function salvarSnapshot(label){
+  const dados=_chavesDados();
+  const json=JSON.stringify(dados);
+  if(json==="{}")return; // nada a salvar
+  const hist=getHistorico();
+  // Evita pontos duplicados consecutivos (mesmo conteúdo)
+  if(hist.length && JSON.stringify(hist[hist.length-1].data)===json)return;
+  hist.push({ts:new Date().toISOString(), label:label||"automático", data:dados});
+  while(hist.length>HIST_MAX)hist.shift();
+  setHistorico(hist);
+}
+// Agenda a criação de um ponto (debounce) após mudanças nos dados
+function agendarSnapshot(){
+  clearTimeout(_snapTimer);
+  _snapTimer=setTimeout(()=>{ salvarSnapshot("automático"); if(document.getElementById("lista-historico"))renderHistorico(); }, 6000);
+}
+function criarSnapshotManual(){
+  salvarSnapshot("manual");
+  renderHistorico();
+  const el=document.getElementById("backup-msg"); if(el)el.textContent="✅ Ponto de restauração salvo.";
+}
+// Restaura os dados de um ponto do histórico (cria antes um ponto do estado atual)
+function restaurarSnapshot(ts){
+  const hist=getHistorico();
+  const snap=hist.find(h=>h.ts===ts);
+  if(!snap){alert("Ponto não encontrado.");return;}
+  const quando=new Date(snap.ts).toLocaleString("pt-BR");
+  if(!confirm("Restaurar os dados para o ponto de "+quando+"?\n\nO estado atual será salvo como um novo ponto antes de restaurar, então dá pra voltar se precisar."))return;
+  salvarSnapshot("antes de restaurar");
+  // Remove os dados atuais (preserva flags internas) e aplica o snapshot
+  const remover=[];
+  for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf("gng_")===0 && k!=="gng_backup_seeded" && k!=="gng_demo_ja_criado" && k!=="gng__history" && k!=="gng__owner") remover.push(k); }
+  remover.forEach(k=>localStorage.removeItem(k));
+  Object.entries(snap.data).forEach(([k,v])=>localStorage.setItem(k, typeof v==="string"?v:JSON.stringify(v)));
+  localStorage.setItem("gng__local_updated",new Date().toISOString());
+  alert("✅ Dados restaurados! A tela será recarregada.");
+  setTimeout(()=>location.reload(),600);
+}
+function excluirSnapshot(ts){
+  if(!confirm("Excluir este ponto de restauração?"))return;
+  setHistorico(getHistorico().filter(h=>h.ts!==ts));
+  renderHistorico();
+}
+function renderHistorico(){
+  const el=document.getElementById("lista-historico"); if(!el)return;
+  const hist=getHistorico().slice().reverse();
+  if(!hist.length){ el.innerHTML='<div style="font-size:12px;color:var(--muted)">Nenhum ponto salvo ainda. Os pontos são criados automaticamente conforme você usa o sistema.</div>'; return; }
+  el.innerHTML=hist.map(h=>{
+    const quando=new Date(h.ts).toLocaleString("pt-BR");
+    const tag=h.label==="manual"?'<span class="badge b-gold">manual</span>':(h.label==="antes de restaurar"?'<span class="badge b-red">pré-restauração</span>':'<span class="badge b-green">auto</span>');
+    return `<div class="item-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div style="min-width:0"><div style="font-weight:700;font-size:13px">🕓 ${quando}</div><div style="font-size:11px;margin-top:2px">${tag}</div></div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-sm btn-gold" onclick="restaurarSnapshot('${h.ts}')"><i class="ti ti-history"></i> Restaurar</button>
+        <button class="btn btn-sm btn-danger" onclick="excluirSnapshot('${h.ts}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join("");
 }
 async function nuvemEnviar(silencioso){
   if(!sb||!sbUser)return false;
@@ -1749,6 +1831,7 @@ function entrar(){
     document.getElementById("splash").style.display="none";
     document.getElementById("app").style.display="block";
     initDemoData();
+    try{ salvarSnapshot("entrada"); }catch(_){}
     renderDashboard();
   }catch(e){
     console.error("Erro ao entrar:",e);
@@ -1764,7 +1847,7 @@ function nav(id,el){
   // sincroniza o destaque na barra inferior (mesmo navegando por atalho/menu)
   const bb=document.querySelector('.bnav-btn[data-screen="'+id+'"]'); if(bb)bb.classList.add("active");
   try{window.scrollTo(0,0);}catch(e){}
-  const r={dashboard:renderDashboard,estoque:renderEst,dre:()=>{renderDRE();renderDREAnual();renderGerencial();renderDREInsumos();},metas:()=>{renderMetas();renderMetasAnuais();renderMetasProgresso();},clientes:renderCli,relatorios:renderRel,parametros:()=>{renderReceitas();renderCF();atualizarStatusNuvem();},comissoes:()=>{renderVendedores();updateComVendedor();renderComissoes();},fluxo:()=>{renderFluxo();renderFluxoPeriodo();renderFluxoPrevisao();renderFluxoVendas();},calendario:renderCalendario,lancamentos:()=>{renderLV();renderLG();renderLP();renderLE();renderAgendamentos();updateComVendedor();}};
+  const r={dashboard:renderDashboard,estoque:renderEst,dre:()=>{renderDRE();renderDREAnual();renderGerencial();renderDREInsumos();},metas:()=>{renderMetas();renderMetasAnuais();renderMetasProgresso();},clientes:renderCli,relatorios:renderRel,parametros:()=>{renderReceitas();renderCF();atualizarStatusNuvem();renderHistorico();},comissoes:()=>{renderVendedores();updateComVendedor();renderComissoes();},fluxo:()=>{renderFluxo();renderFluxoPeriodo();renderFluxoPrevisao();renderFluxoVendas();},calendario:renderCalendario,lancamentos:()=>{renderLV();renderLG();renderLP();renderLE();renderAgendamentos();updateComVendedor();}};
   if(r[id])r[id]();
 }
 // Atalho: navega para uma tela e (opcional) abre uma aba específica
@@ -2656,6 +2739,7 @@ function agendar(){
     veiculo:veiculoEntrega(qtd),
     cobraFrete,
     frete:cobraFrete?(parseFloat(document.getElementById("ag-frete").value)||0):0,
+    preco:parseFloat(document.getElementById("ag-preco").value)||0,
     obs:document.getElementById("ag-obs").value.trim(),
     status:editId?(getAg().find(x=>x.id===editId)||{}).status||"agendado":"agendado"
   };
@@ -2664,7 +2748,7 @@ function agendar(){
   else{ags.push(ag);alert("✅ Pedido agendado! Já aparece no calendário operacional.");}
   set("agendamentos",ags);
   __acart=[];renderACart();
-  ["ag-cli","ag-tel","ag-end","ag-obs","ag-km"].forEach(id=>document.getElementById(id).value="");
+  ["ag-cli","ag-tel","ag-end","ag-obs","ag-km","ag-preco"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("ag-qtd").value="1";
   document.getElementById("ag-tempo").value="";document.getElementById("ag-tempo").dataset.manual="";
   document.getElementById("ag-cobra").checked=true;document.getElementById("ag-frete").value="0";document.getElementById("ag-frete").disabled=false;
@@ -2692,6 +2776,7 @@ function renderAgendamentos(){
           <div style="font-size:12px;color:var(--muted);margin-top:2px">📅 ${quando} · ${a.itens&&a.itens.length>1?(a.qtd+" un · "+a.itens.length+" sabores"):(a.qtd+" un "+(SB[a.sabor]||a.sabor))}</div>
           ${a.itens&&a.itens.length>1?`<div style="font-size:11px;color:var(--muted)">🧊 ${agSaboresTxt(a)}</div>`:""}
           <div style="font-size:11px;color:var(--muted)">${a.veiculo==="carro"?"🚗":"🛵"} ${a.cobraFrete===false?"Frete grátis":"Frete "+R(a.frete||0)}${a.km?" · "+a.km+" km":""}${a.tempo?" · "+a.tempo+" min":""}</div>
+          ${a.preco?`<div style="font-size:11px;color:var(--gold)">💰 ${R(a.preco)}/un · Total ${R(a.preco*a.qtd+(a.cobraFrete===false?0:(a.frete||0)))}</div>`:""}
           ${a.endereco?`<div style="font-size:11px;color:var(--muted)">📍 ${a.endereco}</div>`:""}
           ${a.tel?`<div style="font-size:11px;color:var(--muted)">📞 ${a.tel}</div>`:""}
           ${a.obs?`<div style="font-size:11px;color:var(--muted)">📝 ${a.obs}</div>`:""}
@@ -2719,9 +2804,11 @@ function venderAgendamento(id){
     const cli=document.getElementById("v-cliente");if(cli)cli.value=a.cliente;
     const prod=document.getElementById("v-produto");if(prod)prod.value=a.sabor;
     const q=document.getElementById("v-qtd");if(q)q.value=a.qtd;
+    const p=document.getElementById("v-preco");if(p&&a.preco)p.value=a.preco;
+    const f=document.getElementById("v-frete");if(f&&a.frete)f.value=a.frete;
     if(typeof calcV==="function")calcV();
   },60);
-  alert("Abri a venda com os dados do pedido. Confira o preço e confirme. Depois marque o pedido como entregue.");
+  alert(a.preco?"Abri a venda já com o preço do pedido. Confira e confirme. Depois marque o pedido como entregue.":"Abri a venda com os dados do pedido. Confira o preço e confirme. Depois marque o pedido como entregue.");
 }
 function editarAgendamento(id){
   const a=getAg().find(x=>x.id===id);if(!a)return;
@@ -2740,6 +2827,7 @@ function editarAgendamento(id){
   document.getElementById("ag-cobra").checked=a.cobraFrete!==false;
   document.getElementById("ag-frete").value=(a.frete!=null?a.frete:0);
   document.getElementById("ag-frete").disabled=(a.cobraFrete===false);
+  document.getElementById("ag-preco").value=(a.preco!=null&&a.preco>0)?a.preco:"";
   document.getElementById("ag-obs").value=a.obs||"";
   const btn=document.getElementById("ag-btn");btn.dataset.editId=String(id);btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar alterações';
   document.getElementById("ag-data").scrollIntoView({behavior:"smooth",block:"center"});
@@ -2959,11 +3047,30 @@ function atualizarRecebido(){
 }
 
 function deletarVenda(id){
-  if(!confirm("Deletar esta venda? A ação não pode ser desfeita."))return;
-  const vs=getV().filter(v=>v.id!==id);
-  set("vendas",vs);
+  if(!confirm("Deletar esta venda? O estoque e os lotes dos sabores serão devolvidos. A ação não pode ser desfeita."))return;
+  const vs=getV();
+  const venda=vs.find(v=>v.id===id);
+  if(venda){
+    const itens=vendaItens(venda);
+    // Devolver as quantidades ao estoque (reverte a baixa feita ao lançar a venda)
+    const est=getEst();
+    itens.forEach(it=>{ if(est[it.produto]!==undefined)est[it.produto]=(est[it.produto]||0)+it.qtd; });
+    set("estoque",est);
+    // Reverter o consumo nos lotes FIFO (devolve qtdVendida, dos lotes mais recentes p/ os mais antigos)
+    const todosLotes=getLot();
+    itens.forEach(it=>{
+      const lotes=todosLotes.filter(l=>l.sabor===it.produto).sort((a,b)=>new Date(b.data)-new Date(a.data));
+      let qtdRestante=it.qtd;
+      for(let i=0;i<lotes.length&&qtdRestante>0;i++){
+        const devolver=Math.min(qtdRestante,lotes[i].qtdVendida||0);
+        lotes[i].qtdVendida-=devolver;qtdRestante-=devolver;
+      }
+    });
+    set("lotes",todosLotes);
+  }
+  set("vendas",vs.filter(v=>v.id!==id));
   renderLV();
-  alert("✅ Venda deletada!");
+  alert("✅ Venda deletada e estoque devolvido!");
 }
 
 // ===== EDITAR PRODUÇÃO =====
