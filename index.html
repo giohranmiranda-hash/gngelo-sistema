@@ -526,6 +526,27 @@ body{background:var(--bg)}
 .btn-venda-rapida{box-shadow:0 6px 18px rgba(201,168,76,.35)}
 .ag-check{display:flex;align-items:center;gap:8px;font-size:13px;margin:2px 0 12px;cursor:pointer}
 .ag-check input{width:auto;flex:none}
+/* Seletor rápido de sabores (estilo iFood) */
+.seletor-overlay{position:fixed;inset:0;background:rgba(10,8,4,.5);z-index:1000;display:none;align-items:flex-end;justify-content:center}
+.seletor-overlay.open{display:flex}
+.seletor{background:var(--bg);width:100%;max-width:560px;height:90vh;max-height:90vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;overflow:hidden}
+.seletor-head{background:var(--black);color:var(--gold2);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex:none}
+.seletor-head b{font-size:15px}
+.seletor-head button{background:none;border:none;color:var(--gold2);font-size:24px;cursor:pointer;line-height:1}
+.seletor-tools{padding:10px 14px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);flex:none}
+.seletor-tools input{height:38px}
+.seletor-list{overflow-y:auto;padding:4px 12px;flex:1;-webkit-overflow-scrolling:touch}
+.sab-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border)}
+.sab-row .nm{font-weight:600;font-size:14px}
+.sab-row.on{background:var(--gold-light);border-radius:10px;padding-left:8px;padding-right:8px}
+.stepper{display:flex;align-items:center;border:1px solid var(--gold-border);border-radius:999px;overflow:hidden;flex:none}
+.stepper button{width:36px;height:36px;border:none;background:var(--gold-light);color:var(--gold-deep);font-size:21px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}
+.stepper button:active{background:var(--gold2)}
+.stepper input{width:58px;height:36px;border:none;text-align:center;font-weight:700;font-size:15px;background:var(--surface);color:var(--text);-moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stepper input.q0{color:var(--muted)}
+.seletor-foot{padding:12px 14px;border-top:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:8px;flex:none}
+.seletor-foot .tot{display:flex;justify-content:space-between;font-weight:700;font-size:14px}
 /* Estado de boas-vindas (conta nova, sem dados) */
 .welcome-card{background:var(--surface);border:1px solid var(--gold-border);border-radius:18px;padding:22px 18px;box-shadow:0 1px 2px rgba(20,16,8,.04);margin-top:6px}
 .welcome-eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-deep);font-weight:700}
@@ -634,6 +655,22 @@ body{background:var(--bg)}
     <div class="drawer-sec">Sistema</div>
     <button class="drawer-item" onclick="navMais('parametros')"><i class="ti ti-settings"></i> Parâmetros / Backup</button>
   </aside>
+</div>
+
+<!-- SELETOR RÁPIDO DE SABORES (estilo iFood) -->
+<div class="seletor-overlay" id="sheet-sabores" onclick="if(event.target===this)fecharSeletor()">
+  <div class="seletor">
+    <div class="seletor-head"><b>🧊 Escolher sabores</b><button onclick="fecharSeletor()" aria-label="Fechar">×</button></div>
+    <div class="seletor-tools">
+      <input type="search" id="sel-busca" placeholder="Buscar sabor..." oninput="renderSeletor()" style="flex:1">
+      <input type="number" id="sel-preco" step="0.01" placeholder="Preço un." style="width:96px" oninput="__pick.precoManual=true;renderSeletorFoot()">
+    </div>
+    <div class="seletor-list" id="sel-list"></div>
+    <div class="seletor-foot">
+      <div class="tot"><span id="sel-tot-un">0 un · 0 sabores</span><span id="sel-tot-rs"></span></div>
+      <button class="btn btn-gold btn-full" onclick="confirmarSeletor()"><i class="ti ti-check"></i> Adicionar ao pedido</button>
+    </div>
+  </div>
 </div>
 
 <!-- DASHBOARD -->
@@ -787,7 +824,7 @@ body{background:var(--bg)}
         <div class="fg"><label>Preço unit. (R$)</label><input type="number" id="v-preco" step="0.01" oninput="calcV();validarCampoRealtime(this,'preco')"></div>
         <div class="fg"><label>Desconto (R$)</label><input type="number" id="v-desc" value="0" step="0.01" oninput="calcV();validarCampoRealtime(this,'valor')"></div>
       </div>
-      <button type="button" class="btn btn-sm btn-full" onclick="addItemVenda()" style="margin-bottom:8px"><i class="ti ti-plus"></i> Adicionar outro sabor ao pedido</button>
+      <button type="button" class="btn btn-gold btn-full" onclick="abrirSeletor('venda')" style="margin-bottom:8px"><i class="ti ti-apps"></i> Vários sabores no pedido (toque − e +)</button>
       <div id="v-cart"></div>
       <div class="form-row">
         <div class="fg"><label>Frete (R$)</label><input type="number" id="v-frete" value="0" step="0.01" oninput="calcV();validarCampoRealtime(this,'valor')"></div>
@@ -940,6 +977,8 @@ body{background:var(--bg)}
         <div class="fg"><label>Produto / sabor</label><select id="ag-sabor"></select></div>
         <div class="fg"><label>Quantidade</label><input type="number" id="ag-qtd" value="1" min="1" oninput="calcFreteAg()"></div>
       </div>
+      <button type="button" class="btn btn-sm btn-full" onclick="abrirSeletor('agendamento')" style="margin-bottom:8px"><i class="ti ti-apps"></i> Vários sabores (toque − e +)</button>
+      <div id="ag-cart"></div>
       <div class="fg"><label>Endereço / bairro</label><input type="text" id="ag-end" placeholder="Onde entregar"></div>
       <div class="form-row">
         <div class="fg"><label>Distância (km)</label><input type="number" id="ag-km" min="0" step="0.5" placeholder="0" oninput="calcFreteAg()"></div>
@@ -2058,6 +2097,60 @@ function vLabel(v){
   if(its.length>1)return `<span class="fl fl-combo">🧊 ${its.length} sabores</span> <span style="font-size:10px;color:var(--muted)">${its.map(i=>SB[i.produto]||i.produto).join(", ")}</span>`;
   return `<span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span>`;
 }
+
+// ===== SELETOR RÁPIDO DE SABORES (estilo iFood) =====
+let __acart=[];
+let __pick={ctx:"venda",qty:{},precoManual:false};
+function abrirSeletor(ctx){
+  __pick={ctx,qty:{},precoManual:false};
+  const cart = ctx==="venda"?__vcart:__acart;
+  cart.forEach(it=>{const s=it.produto||it.sabor;__pick.qty[s]=(__pick.qty[s]||0)+it.qtd;});
+  document.getElementById("sel-preco").style.display = ctx==="venda"?"":"none";
+  document.getElementById("sel-busca").value="";
+  renderSeletor();
+  document.getElementById("sheet-sabores").classList.add("open");
+}
+function fecharSeletor(){document.getElementById("sheet-sabores").classList.remove("open");}
+function totalPick(){let un=0,n=0;Object.values(__pick.qty).forEach(q=>{if(q>0){un+=q;n++;}});return {un,n};}
+function pickSet(s,v){v=Math.max(0,Math.floor(parseFloat(v)||0));if(v)__pick.qty[s]=v;else delete __pick.qty[s];const el=document.getElementById("st-"+s);if(el){el.value=__pick.qty[s]||0;el.className="stepper-in"+(__pick.qty[s]?"":" q0");}const row=document.getElementById("row-"+s);if(row)row.className="sab-row"+(__pick.qty[s]?" on":"");renderSeletorFoot();}
+function pickMais(s){pickSet(s,(__pick.qty[s]||0)+1);}
+function pickMenos(s){pickSet(s,(__pick.qty[s]||0)-1);}
+function renderSeletor(){
+  const busca=(document.getElementById("sel-busca").value||"").toLowerCase();
+  const keys=Object.keys(SB).filter(k=>!k.startsWith("combo")).filter(k=>SB[k].toLowerCase().includes(busca));
+  document.getElementById("sel-list").innerHTML=keys.map(k=>{
+    const q=__pick.qty[k]||0;
+    return `<div class="sab-row${q?" on":""}" id="row-${k}"><span class="nm">${SB[k]}</span><div class="stepper"><button type="button" onclick="pickMenos('${k}')">−</button><input type="number" id="st-${k}" class="stepper-in${q?"":" q0"}" value="${q}" min="0" inputmode="numeric" oninput="pickSet('${k}',this.value)"><button type="button" onclick="pickMais('${k}')">+</button></div></div>`;
+  }).join("");
+  renderSeletorFoot();
+}
+function renderSeletorFoot(){
+  const t=totalPick();
+  document.getElementById("sel-tot-un").textContent=`${t.un} un · ${t.n} sabor(es)`;
+  const rsEl=document.getElementById("sel-tot-rs");
+  if(__pick.ctx==="venda"){
+    const pEl=document.getElementById("sel-preco");
+    if(!__pick.precoManual)pEl.value=(precoSugerido(t.un)||0).toFixed(2);
+    const preco=parseFloat(pEl.value)||0;
+    rsEl.textContent=R(t.un*preco);
+  }else{rsEl.textContent="";}
+}
+function confirmarSeletor(){
+  const t=totalPick();
+  if(!t.un){alert("❌ Escolha ao menos um sabor (use o + )");return;}
+  const sabores=Object.keys(__pick.qty).filter(s=>__pick.qty[s]>0);
+  if(__pick.ctx==="venda"){
+    const preco=parseFloat(document.getElementById("sel-preco").value)||precoSugerido(t.un);
+    __vcart=sabores.map(s=>({produto:s,qtd:__pick.qty[s],preco}));
+    document.getElementById("v-qtd").value="1";document.getElementById("v-preco").value="";
+    renderVCart();
+  }else{
+    __acart=sabores.map(s=>({sabor:s,qtd:__pick.qty[s]}));
+    renderACart();
+  }
+  fecharSeletor();
+}
+
 function lancarVenda(){
   if(!validarVenda()) return;
   const par=getP();
@@ -2509,7 +2602,7 @@ function calcFreteAg(manualTempo){
   const kmEl=document.getElementById("ag-km"),tEl=document.getElementById("ag-tempo");
   if(!cobraEl||!fEl)return;
   const km=parseFloat(kmEl.value)||0;
-  const qtd=parseInt(document.getElementById("ag-qtd").value)||0;
+  const qtd=(typeof agQtdTotal==="function")?agQtdTotal():(parseInt(document.getElementById("ag-qtd").value)||0);
   const M=tarifaFrete(veiculoEntrega(qtd));
   if(manualTempo)tEl.dataset.manual="1";
   let tempo=parseFloat(tEl.value);
@@ -2523,16 +2616,30 @@ function calcFreteAg(manualTempo){
   fEl.value=frete.toFixed(2);
   if(info){const custo=km*M.custoKm;info.innerHTML=`<b>${M.nome}</b>${M.motivo} — base R$ ${M.base.toFixed(2)} + ${km}km×R$${M.porKm.toFixed(2)} + ${tempo}min×R$${M.porMin.toFixed(2)} · mín. R$ ${M.min.toFixed(2)}<br>custo ≈ R$ ${custo.toFixed(2)} · margem R$ ${(frete-custo).toFixed(2)}`;}
 }
+function agQtdTotal(){ if(__acart&&__acart.length)return __acart.reduce((s,x)=>s+(x.qtd||0),0); return parseInt(document.getElementById("ag-qtd").value)||0; }
+function renderACart(){
+  const el=document.getElementById("ag-cart");if(!el)return;
+  if(!__acart.length){el.innerHTML="";return;}
+  let un=0;
+  el.innerHTML='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:2px 2px 6px">Sabores do pedido</div>'+
+    __acart.map((it,i)=>{un+=it.qtd;return `<div class="item-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><b>${it.qtd}× ${SB[it.sabor]||it.sabor}</b><button class="btn btn-sm btn-danger" onclick="removeItemAg(${i})"><i class="ti ti-x"></i></button></div>`;}).join("")+
+    `<div style="display:flex;justify-content:space-between;font-weight:700;margin:2px 2px 8px"><span>${un} un · ${__acart.length} sabor(es)</span><span>${veiculoEntrega(un)==="carro"?"🚗 Carro":"🛵 Moto"}</span></div>`;
+  calcFreteAg();
+}
+function removeItemAg(i){__acart.splice(i,1);renderACart();}
+function agSaboresTxt(a){ if(a.itens&&a.itens.length>1)return a.itens.map(it=>`${it.qtd}× ${SB[it.sabor]||it.sabor}`).join(", "); return `${a.qtd} un ${SB[a.sabor]||a.sabor}`; }
 function agendar(){
   popularSaborAg();
   const btn=document.getElementById("ag-btn");
   const editId=btn.dataset.editId?parseInt(btn.dataset.editId):null;
   const data=document.getElementById("ag-data").value;
   const cliente=document.getElementById("ag-cli").value.trim();
-  const qtd=parseInt(document.getElementById("ag-qtd").value)||0;
+  // itens: carrinho de sabores ou linha única
+  const itens=(__acart&&__acart.length)?__acart.map(x=>({sabor:x.sabor,qtd:x.qtd})):[{sabor:document.getElementById("ag-sabor").value,qtd:parseInt(document.getElementById("ag-qtd").value)||0}];
+  const qtd=itens.reduce((s,x)=>s+(x.qtd||0),0);
   if(!data){alert("❌ Escolha a data da entrega");return;}
   if(!cliente){alert("❌ Informe o cliente");return;}
-  if(qtd<1){alert("❌ Quantidade deve ser ao menos 1");return;}
+  if(qtd<1){alert("❌ Escolha ao menos 1 sabor/quantidade");return;}
   const cobraFrete=document.getElementById("ag-cobra").checked;
   const ag={
     id:editId||Date.now(),
@@ -2540,7 +2647,8 @@ function agendar(){
     hora:document.getElementById("ag-hora").value||"",
     cliente,
     tel:document.getElementById("ag-tel").value.trim(),
-    sabor:document.getElementById("ag-sabor").value,
+    sabor:itens[0].sabor,
+    itens,
     qtd,
     endereco:document.getElementById("ag-end").value.trim(),
     km:parseFloat(document.getElementById("ag-km").value)||0,
@@ -2555,6 +2663,7 @@ function agendar(){
   if(editId){ags=ags.filter(x=>x.id!==editId);ags.push(ag);alert("✅ Agendamento atualizado!");}
   else{ags.push(ag);alert("✅ Pedido agendado! Já aparece no calendário operacional.");}
   set("agendamentos",ags);
+  __acart=[];renderACart();
   ["ag-cli","ag-tel","ag-end","ag-obs","ag-km"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("ag-qtd").value="1";
   document.getElementById("ag-tempo").value="";document.getElementById("ag-tempo").dataset.manual="";
@@ -2580,7 +2689,8 @@ function renderAgendamentos(){
     return `<div class="item-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div style="min-width:0"><div style="font-weight:700">${a.cliente}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">📅 ${quando} · ${a.qtd} un ${SB[a.sabor]||a.sabor}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">📅 ${quando} · ${a.itens&&a.itens.length>1?(a.qtd+" un · "+a.itens.length+" sabores"):(a.qtd+" un "+(SB[a.sabor]||a.sabor))}</div>
+          ${a.itens&&a.itens.length>1?`<div style="font-size:11px;color:var(--muted)">🧊 ${agSaboresTxt(a)}</div>`:""}
           <div style="font-size:11px;color:var(--muted)">${a.veiculo==="carro"?"🚗":"🛵"} ${a.cobraFrete===false?"Frete grátis":"Frete "+R(a.frete||0)}${a.km?" · "+a.km+" km":""}${a.tempo?" · "+a.tempo+" min":""}</div>
           ${a.endereco?`<div style="font-size:11px;color:var(--muted)">📍 ${a.endereco}</div>`:""}
           ${a.tel?`<div style="font-size:11px;color:var(--muted)">📞 ${a.tel}</div>`:""}
@@ -2622,6 +2732,8 @@ function editarAgendamento(id){
   document.getElementById("ag-tel").value=a.tel||"";
   document.getElementById("ag-sabor").value=a.sabor;
   document.getElementById("ag-qtd").value=a.qtd;
+  __acart=(a.itens&&a.itens.length>1)?a.itens.map(it=>({sabor:it.sabor,qtd:it.qtd})):[];
+  renderACart();
   document.getElementById("ag-end").value=a.endereco||"";
   document.getElementById("ag-km").value=a.km||"";
   document.getElementById("ag-tempo").value=a.tempo||"";document.getElementById("ag-tempo").dataset.manual=a.tempo?"1":"";
@@ -5347,7 +5459,7 @@ function renderEventosDia(mes,ano){
 
   if(ags.length){
     html+=`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#9D174D;margin-bottom:4px">🚚 Entregas agendadas (${ags.length})</div>`;
-    html+=ags.map(a=>{const dia=a.data.split("-")[2];const st=a.status==="entregue"?" ✅":(a.data<today()?" ⏰":"");return `<div style="font-size:11px;padding:4px;background:#FCE7F3;border-radius:4px;margin-bottom:2px">${dia}${a.hora?" "+a.hora:""}: ${a.cliente} — ${a.qtd} un ${SB[a.sabor]||a.sabor}${st}</div>`;}).join("");
+    html+=ags.map(a=>{const dia=a.data.split("-")[2];const st=a.status==="entregue"?" ✅":(a.data<today()?" ⏰":"");const desc=a.itens&&a.itens.length>1?`${a.qtd} un (${a.itens.length} sabores)`:`${a.qtd} un ${SB[a.sabor]||a.sabor}`;return `<div style="font-size:11px;padding:4px;background:#FCE7F3;border-radius:4px;margin-bottom:2px">${dia}${a.hora?" "+a.hora:""}: ${a.cliente} — ${desc}${st}</div>`;}).join("");
     html+="</div>";
   }
 
@@ -5383,7 +5495,7 @@ function showDiaDetalhes(data){
   const ags=getAg().filter(a=>a.data===data&&a.status!=="cancelado");
 
   let msg=`📅 ${data}\n\n`;
-  if(ags.length)msg+=`🚚 ENTREGAS AGENDADAS (${ags.length}):\n${ags.map(a=>`  - ${a.hora?a.hora+" ":""}${a.cliente} — ${a.qtd} un ${SB[a.sabor]||a.sabor}${a.endereco?" ("+a.endereco+")":""}${a.status==="entregue"?" ✅":""}`).join("\n")}\n\n`;
+  if(ags.length)msg+=`🚚 ENTREGAS AGENDADAS (${ags.length}):\n${ags.map(a=>`  - ${a.hora?a.hora+" ":""}${a.cliente} — ${agSaboresTxt(a)}${a.endereco?" ("+a.endereco+")":""}${a.status==="entregue"?" ✅":""}`).join("\n")}\n\n`;
   if(ps.length)msg+=`🏭 PRODUÇÕES (${ps.length}):\n${ps.map(p=>`  - ${p.qtd} un ${SB[p.sabor]} (Lote: ${p.lote})`).join("\n")}\n\n`;
   if(vs.length)msg+=`💰 VENDAS (${vs.length}):\n${vs.map(v=>`  - ${v.qtd} un ${R(v.bruto)} (${v.cliente})`).join("\n")}\n\n`;
   if(lotesVenc.length)msg+=`⚠️ VENCIMENTOS (${lotesVenc.length}):\n${lotesVenc.map(l=>`  - ${l.codigo} (${l.qtdProduzida-l.qtdVendida} un disponíveis)`).join("\n")}`;
