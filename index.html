@@ -5222,7 +5222,12 @@ function renderCalendario(){
     });
   }
 
-  // Define valores padrão se não tiver seleção
+  // Primeira abertura: começa no MÊS ATUAL (o usuário pode trocar depois)
+  if(!window.__calInit){
+    anoSel.value=hoje.getFullYear().toString();
+    mesSel.value=String(hoje.getMonth()+1).padStart(2,"0");
+    window.__calInit=true;
+  }
   if(!anoSel.value)anoSel.value=hoje.getFullYear().toString();
   if(!mesSel.value)mesSel.value=String(hoje.getMonth()+1).padStart(2,"0");
 
