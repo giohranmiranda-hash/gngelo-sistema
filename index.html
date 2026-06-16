@@ -984,7 +984,10 @@ body{background:var(--bg)}
         <div class="fg"><label>Distância (km)</label><input type="number" id="ag-km" min="0" step="0.5" placeholder="0" oninput="calcFreteAg()"></div>
         <div class="fg"><label>Tempo (min)</label><input type="number" id="ag-tempo" min="0" step="1" placeholder="auto" oninput="calcFreteAg(true)"></div>
       </div>
-      <div class="fg"><label>Frete sugerido (R$)</label><input type="number" id="ag-frete" min="0" step="0.01" value="0"></div>
+      <div class="form-row">
+        <div class="fg"><label>Preço por unidade (R$)</label><input type="number" id="ag-preco" min="0" step="0.01" placeholder="0,00"></div>
+        <div class="fg"><label>Frete sugerido (R$)</label><input type="number" id="ag-frete" min="0" step="0.01" value="0"></div>
+      </div>
       <div id="ag-frete-info" style="font-size:11px;color:var(--muted);margin:-4px 0 8px"></div>
       <label class="ag-check"><input type="checkbox" id="ag-cobra" checked onchange="calcFreteAg()"> Cobrar frete <span style="color:var(--muted);font-weight:400">(calcula pela distância e tempo, estilo apps)</span></label>
       <div class="fg"><label>Observação</label><input type="text" id="ag-obs" placeholder="Ex.: pagar na entrega, ligar antes..."></div>
@@ -2656,6 +2659,7 @@ function agendar(){
     veiculo:veiculoEntrega(qtd),
     cobraFrete,
     frete:cobraFrete?(parseFloat(document.getElementById("ag-frete").value)||0):0,
+    preco:parseFloat(document.getElementById("ag-preco").value)||0,
     obs:document.getElementById("ag-obs").value.trim(),
     status:editId?(getAg().find(x=>x.id===editId)||{}).status||"agendado":"agendado"
   };
@@ -2664,7 +2668,7 @@ function agendar(){
   else{ags.push(ag);alert("✅ Pedido agendado! Já aparece no calendário operacional.");}
   set("agendamentos",ags);
   __acart=[];renderACart();
-  ["ag-cli","ag-tel","ag-end","ag-obs","ag-km"].forEach(id=>document.getElementById(id).value="");
+  ["ag-cli","ag-tel","ag-end","ag-obs","ag-km","ag-preco"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("ag-qtd").value="1";
   document.getElementById("ag-tempo").value="";document.getElementById("ag-tempo").dataset.manual="";
   document.getElementById("ag-cobra").checked=true;document.getElementById("ag-frete").value="0";document.getElementById("ag-frete").disabled=false;
@@ -2692,6 +2696,7 @@ function renderAgendamentos(){
           <div style="font-size:12px;color:var(--muted);margin-top:2px">📅 ${quando} · ${a.itens&&a.itens.length>1?(a.qtd+" un · "+a.itens.length+" sabores"):(a.qtd+" un "+(SB[a.sabor]||a.sabor))}</div>
           ${a.itens&&a.itens.length>1?`<div style="font-size:11px;color:var(--muted)">🧊 ${agSaboresTxt(a)}</div>`:""}
           <div style="font-size:11px;color:var(--muted)">${a.veiculo==="carro"?"🚗":"🛵"} ${a.cobraFrete===false?"Frete grátis":"Frete "+R(a.frete||0)}${a.km?" · "+a.km+" km":""}${a.tempo?" · "+a.tempo+" min":""}</div>
+          ${a.preco?`<div style="font-size:11px;color:var(--gold)">💰 ${R(a.preco)}/un · Total ${R(a.preco*a.qtd+(a.cobraFrete===false?0:(a.frete||0)))}</div>`:""}
           ${a.endereco?`<div style="font-size:11px;color:var(--muted)">📍 ${a.endereco}</div>`:""}
           ${a.tel?`<div style="font-size:11px;color:var(--muted)">📞 ${a.tel}</div>`:""}
           ${a.obs?`<div style="font-size:11px;color:var(--muted)">📝 ${a.obs}</div>`:""}
@@ -2719,9 +2724,11 @@ function venderAgendamento(id){
     const cli=document.getElementById("v-cliente");if(cli)cli.value=a.cliente;
     const prod=document.getElementById("v-produto");if(prod)prod.value=a.sabor;
     const q=document.getElementById("v-qtd");if(q)q.value=a.qtd;
+    const p=document.getElementById("v-preco");if(p&&a.preco)p.value=a.preco;
+    const f=document.getElementById("v-frete");if(f&&a.frete)f.value=a.frete;
     if(typeof calcV==="function")calcV();
   },60);
-  alert("Abri a venda com os dados do pedido. Confira o preço e confirme. Depois marque o pedido como entregue.");
+  alert(a.preco?"Abri a venda já com o preço do pedido. Confira e confirme. Depois marque o pedido como entregue.":"Abri a venda com os dados do pedido. Confira o preço e confirme. Depois marque o pedido como entregue.");
 }
 function editarAgendamento(id){
   const a=getAg().find(x=>x.id===id);if(!a)return;
@@ -2740,6 +2747,7 @@ function editarAgendamento(id){
   document.getElementById("ag-cobra").checked=a.cobraFrete!==false;
   document.getElementById("ag-frete").value=(a.frete!=null?a.frete:0);
   document.getElementById("ag-frete").disabled=(a.cobraFrete===false);
+  document.getElementById("ag-preco").value=(a.preco!=null&&a.preco>0)?a.preco:"";
   document.getElementById("ag-obs").value=a.obs||"";
   const btn=document.getElementById("ag-btn");btn.dataset.editId=String(id);btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar alterações';
   document.getElementById("ag-data").scrollIntoView({behavior:"smooth",block:"center"});
@@ -2959,11 +2967,30 @@ function atualizarRecebido(){
 }
 
 function deletarVenda(id){
-  if(!confirm("Deletar esta venda? A ação não pode ser desfeita."))return;
-  const vs=getV().filter(v=>v.id!==id);
-  set("vendas",vs);
+  if(!confirm("Deletar esta venda? O estoque e os lotes dos sabores serão devolvidos. A ação não pode ser desfeita."))return;
+  const vs=getV();
+  const venda=vs.find(v=>v.id===id);
+  if(venda){
+    const itens=vendaItens(venda);
+    // Devolver as quantidades ao estoque (reverte a baixa feita ao lançar a venda)
+    const est=getEst();
+    itens.forEach(it=>{ if(est[it.produto]!==undefined)est[it.produto]=(est[it.produto]||0)+it.qtd; });
+    set("estoque",est);
+    // Reverter o consumo nos lotes FIFO (devolve qtdVendida, dos lotes mais recentes p/ os mais antigos)
+    const todosLotes=getLot();
+    itens.forEach(it=>{
+      const lotes=todosLotes.filter(l=>l.sabor===it.produto).sort((a,b)=>new Date(b.data)-new Date(a.data));
+      let qtdRestante=it.qtd;
+      for(let i=0;i<lotes.length&&qtdRestante>0;i++){
+        const devolver=Math.min(qtdRestante,lotes[i].qtdVendida||0);
+        lotes[i].qtdVendida-=devolver;qtdRestante-=devolver;
+      }
+    });
+    set("lotes",todosLotes);
+  }
+  set("vendas",vs.filter(v=>v.id!==id));
   renderLV();
-  alert("✅ Venda deletada!");
+  alert("✅ Venda deletada e estoque devolvido!");
 }
 
 // ===== EDITAR PRODUÇÃO =====
