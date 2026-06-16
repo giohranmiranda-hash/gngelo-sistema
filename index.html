@@ -787,6 +787,8 @@ body{background:var(--bg)}
         <div class="fg"><label>Preço unit. (R$)</label><input type="number" id="v-preco" step="0.01" oninput="calcV();validarCampoRealtime(this,'preco')"></div>
         <div class="fg"><label>Desconto (R$)</label><input type="number" id="v-desc" value="0" step="0.01" oninput="calcV();validarCampoRealtime(this,'valor')"></div>
       </div>
+      <button type="button" class="btn btn-sm btn-full" onclick="addItemVenda()" style="margin-bottom:8px"><i class="ti ti-plus"></i> Adicionar outro sabor ao pedido</button>
+      <div id="v-cart"></div>
       <div class="form-row">
         <div class="fg"><label>Frete (R$)</label><input type="number" id="v-frete" value="0" step="0.01" oninput="calcV();validarCampoRealtime(this,'valor')"></div>
         <div class="fg"><label>Vendedor</label><select id="v-vendedor"><option value="">Sem vendedor</option></select></div>
@@ -1849,32 +1851,36 @@ function validarVenda(){
   const qtd=parseFloat(document.getElementById("v-qtd").value);
   const preco=parseFloat(document.getElementById("v-preco").value);
   const canal=document.getElementById("v-canal").value;
-  
+  const temCarrinho=(typeof __vcart!=="undefined" && __vcart.length>0);
+
   if(!data){
     alert("❌ Data é obrigatória");
     return false;
   }
-  
-  if(!qtd || qtd<=0 || isNaN(qtd)){
-    alert("❌ Quantidade deve ser um número maior que zero");
-    return false;
-  }
-  
-  if(qtd>10000){
-    alert("❌ Quantidade não pode exceder 10.000 unidades");
-    return false;
-  }
-  
-  if(!preco || preco<0 || isNaN(preco)){
-    alert("❌ Preço não pode ser negativo");
-    return false;
-  }
-  
+
   if(!canal){
     alert("❌ Canal de venda é obrigatório");
     return false;
   }
-  
+
+  // Com itens já no carrinho, a linha atual é opcional
+  if(temCarrinho)return true;
+
+  if(!qtd || qtd<=0 || isNaN(qtd)){
+    alert("❌ Quantidade deve ser um número maior que zero");
+    return false;
+  }
+
+  if(qtd>10000){
+    alert("❌ Quantidade não pode exceder 10.000 unidades");
+    return false;
+  }
+
+  if(!preco || preco<0 || isNaN(preco)){
+    alert("❌ Preço não pode ser negativo");
+    return false;
+  }
+
   const estoque=getEst();
   const produto=document.getElementById("v-produto").value;
   if((estoque[produto]||0)<qtd){
@@ -1882,7 +1888,7 @@ function validarVenda(){
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -2016,22 +2022,73 @@ function abrirVendaRapida(){
   alert("✅ Venda rápida registrada!");
 }
 
+// ===== PEDIDO COM VÁRIOS SABORES (carrinho) =====
+let __vcart=[];
+function precoSugerido(qtd){const par=getP();if(qtd>=1000)return par.p1000;if(qtd>=500)return par.p500;if(qtd>=200)return par.p200;if(qtd>=100)return par.p100;if(qtd>=50)return par.p50;return par.p1;}
+function addItemVenda(){
+  const produto=document.getElementById("v-produto").value;
+  const qtd=parseFloat(document.getElementById("v-qtd").value)||0;
+  let preco=parseFloat(document.getElementById("v-preco").value)||0;
+  if(qtd<1){alert("❌ Informe a quantidade do sabor.");return;}
+  if(preco<=0)preco=precoSugerido(qtd);
+  __vcart.push({produto,qtd,preco});
+  document.getElementById("v-qtd").value="1";document.getElementById("v-preco").value="";
+  renderVCart();calcV();
+}
+function removeItemVenda(i){__vcart.splice(i,1);renderVCart();calcV();}
+function renderVCart(){
+  const el=document.getElementById("v-cart");if(!el)return;
+  if(!__vcart.length){el.innerHTML="";return;}
+  let tot=0,un=0;
+  el.innerHTML='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:2px 2px 6px">Itens do pedido</div>'+
+    __vcart.map((it,i)=>{const sub=it.qtd*it.preco;tot+=sub;un+=it.qtd;return `<div class="item-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><div style="min-width:0"><b>${it.qtd}× ${SB[it.produto]||it.produto}</b><div style="font-size:11px;color:var(--muted)">${R(it.preco)}/un · ${R(sub)}</div></div><button class="btn btn-sm btn-danger" onclick="removeItemVenda(${i})"><i class="ti ti-x"></i></button></div>`;}).join("")+
+    `<div style="display:flex;justify-content:space-between;font-weight:700;margin:2px 2px 8px"><span>${un} un · ${__vcart.length} sabor(es)</span><span>${R(tot)}</span></div>`;
+}
+// Itens normalizados de uma venda (compatível com vendas antigas de 1 sabor)
+function vendaItens(v){
+  if(v&&v.itens&&v.itens.length){
+    const totB=v.itens.reduce((s,it)=>s+(it.bruto!=null?it.bruto:it.qtd*it.preco),0)||1;
+    return v.itens.map(it=>{const b=(it.bruto!=null?it.bruto:it.qtd*it.preco);return {produto:it.produto,qtd:it.qtd,preco:it.preco,bruto:b,cpv:(it.cpv!=null?it.cpv:it.qtd*custoUnidSabor(it.produto)),lucro:(v.lucro||0)*(b/totB)};});
+  }
+  return [{produto:v.produto,qtd:v.qtd,preco:v.preco,bruto:v.bruto||0,cpv:v.cpv||0,lucro:v.lucro||0}];
+}
+// Rótulo do sabor para listas (mostra "N sabores" quando há vários)
+function vLabel(v){
+  const its=vendaItens(v);
+  if(its.length>1)return `<span class="fl fl-combo">🧊 ${its.length} sabores</span> <span style="font-size:10px;color:var(--muted)">${its.map(i=>SB[i.produto]||i.produto).join(", ")}</span>`;
+  return `<span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span>`;
+}
 function lancarVenda(){
   if(!validarVenda()) return;
   const par=getP();
   const data=document.getElementById("v-data").value;
-  const qtd=parseFloat(document.getElementById("v-qtd").value)||0;
-  const preco=parseFloat(document.getElementById("v-preco").value)||0;
   const btn=document.getElementById("v-btn-lancar");
   const editId=btn.dataset.editId?parseInt(btn.dataset.editId):null;
   const canal=document.getElementById("v-canal").value;
   const cliente=document.getElementById("v-cliente").value||"Avulso";
-  const produto=document.getElementById("v-produto").value;
   const desc=parseFloat(document.getElementById("v-desc").value)||0;
   const frete=parseFloat(document.getElementById("v-frete").value)||0;
-  const bruto=qtd*preco,taxa=canal==="iFood"?bruto*par.ifood/100:0;
+  // Monta itens: se há carrinho, usa só ele; senão, usa a linha atual (1 sabor)
+  let itens;
+  if(__vcart.length){
+    itens=__vcart.slice();
+  }else{
+    const curQtd=parseFloat(document.getElementById("v-qtd").value)||0;
+    const curPreco=parseFloat(document.getElementById("v-preco").value)||0;
+    itens=[];
+    if(curQtd>0&&curPreco>0)itens.push({produto:document.getElementById("v-produto").value,qtd:curQtd,preco:curPreco});
+  }
+  if(!itens.length){alert("❌ Adicione ao menos um sabor ao pedido.");return;}
+  // Calcula por item (bruto e CPV reais)
+  itens=itens.map(it=>({produto:it.produto,qtd:it.qtd,preco:it.preco,bruto:it.qtd*it.preco,cpv:it.qtd*custoUnidSabor(it.produto)}));
+  const bruto=itens.reduce((s,it)=>s+it.bruto,0);
+  const qtd=itens.reduce((s,it)=>s+it.qtd,0);
+  const cpv=itens.reduce((s,it)=>s+it.cpv,0);
+  const taxa=canal==="iFood"?bruto*par.ifood/100:0;
   const imp=bruto*par.imp/100,liq=bruto-desc-taxa-imp+frete;
-  const cpv=qtd*custoUnidSabor(produto),lucro=liq-cpv;
+  const lucro=liq-cpv;
+  const produto=itens[0].produto; // representativo (compatibilidade)
+  const preco=qtd>0?bruto/qtd:0; // preço médio
 
   const v={
     id:editId||Date.now(),
@@ -2041,6 +2098,7 @@ function lancarVenda(){
     produto,
     qtd,
     preco,
+    itens,
     bruto,
     desc,
     taxa,
@@ -2054,7 +2112,7 @@ function lancarVenda(){
     recebido:document.getElementById("v-recebido").checked?true:false,
     obs:document.getElementById("v-obs").value
   };
-  
+
   let vs=getV();
   if(editId){
     // Editar: remove a antiga e adiciona a nova
@@ -2064,36 +2122,24 @@ function lancarVenda(){
   }else{
     // Novo: apenas adiciona
     vs.push(v);
-    
-    // Descontar do estoque
-    const est=getEst();
-    if(est[produto]!==undefined){
-      est[produto]=(est[produto]||0)-qtd;
-      if(est[produto]<0)est[produto]=0;
-      set("estoque",est);
-    }
 
-    // FIFO - Descontar dos lotes mais antigos (atualiza qtdVendida)
-    const lotes=getLot().filter(l=>l.sabor===produto).sort((a,b)=>new Date(a.data)-new Date(b.data));
-    let qtdRestante=qtd, loteAtualizado=false;
-    for(let i=0;i<lotes.length&&qtdRestante>0;i++){
-      const disp=lotes[i].qtdProduzida-lotes[i].qtdVendida;
-      if(disp>0){
-        const usar=Math.min(qtdRestante,disp);
-        lotes[i].qtdVendida+=usar;
-        qtdRestante-=usar;
-        loteAtualizado=true;
+    // Descontar do estoque (por item)
+    const est=getEst();
+    itens.forEach(it=>{ if(est[it.produto]!==undefined)est[it.produto]=Math.max(0,(est[it.produto]||0)-it.qtd); });
+    set("estoque",est);
+
+    // FIFO - Descontar dos lotes mais antigos por item (atualiza qtdVendida)
+    const todosLotes=getLot();
+    itens.forEach(it=>{
+      const lotes=todosLotes.filter(l=>l.sabor===it.produto).sort((a,b)=>new Date(a.data)-new Date(b.data));
+      let qtdRestante=it.qtd;
+      for(let i=0;i<lotes.length&&qtdRestante>0;i++){
+        const disp=lotes[i].qtdProduzida-lotes[i].qtdVendida;
+        if(disp>0){const usar=Math.min(qtdRestante,disp);lotes[i].qtdVendida+=usar;qtdRestante-=usar;}
       }
-    }
-    if(loteAtualizado){
-      const todosLotes=getLot();
-      lotes.forEach(lAtual=>{
-        const idx=todosLotes.findIndex(l=>l.codigo===lAtual.codigo&&l.sabor===lAtual.sabor);
-        if(idx>=0)todosLotes[idx].qtdVendida=lAtual.qtdVendida;
-      });
-      set("lotes",todosLotes);
-    }
-    
+    });
+    set("lotes",todosLotes);
+
     // Adicionar cliente automaticamente se não for "Avulso"
     if(cliente && cliente!=="Avulso"){
       const clientes=getCli();
@@ -2129,6 +2175,7 @@ function lancarVenda(){
   }catch(e){}
   
   // Limpar formulário e botão
+  __vcart=[];renderVCart();
   ["v-cliente","v-obs"].forEach(i=>document.getElementById(i).value="");
   ["v-desc","v-frete"].forEach(i=>document.getElementById(i).value="0");
   document.getElementById("v-qtd").value="1";document.getElementById("v-preco").value="";
@@ -2699,7 +2746,7 @@ function imprimirNota(id){
     <div style="margin-top:6px">Cliente:</div>
     <div class="b">${v.cliente||"Avulso"}</div>
     <div style="margin-top:6px">Itens:</div>
-    <div class="row"><span>${v.qtd}x ${nome}</span><span>${R(subtotal)}</span></div>
+    ${vendaItens(v).map(it=>`<div class="row"><span>${it.qtd}x ${SB[it.produto]||it.produto}</span><span>${R(it.bruto)}</span></div>`).join("")}
     <div class="l"></div>
     <div class="row"><span>Subtotal:</span><span>${R(subtotal)}</span></div>
     ${desc?`<div class="row"><span>Desconto:</span><span>- ${R(desc)}</span></div>`:""}
@@ -2738,7 +2785,15 @@ function editarVenda(id){
   document.getElementById("v-pagto").value=venda.pagto;
   document.getElementById("v-recebido").checked=venda.recebido||false;
   document.getElementById("v-obs").value=venda.obs||"";
-  
+
+  // Pedido com vários sabores: carrega os itens no carrinho
+  __vcart=[];
+  if(venda.itens&&venda.itens.length>1){
+    __vcart=venda.itens.map(it=>({produto:it.produto,qtd:it.qtd,preco:it.preco}));
+    document.getElementById("v-qtd").value="1";document.getElementById("v-preco").value="";
+  }
+  renderVCart();
+
   // Armazena ID da venda em edição
   document.getElementById("v-btn-lancar").dataset.editId=id;
   document.getElementById("v-btn-lancar").textContent="✏️ Atualizar venda";
@@ -2910,17 +2965,17 @@ function deletarEntrega(id){
 
 // ===== ANÁLISE PREDITIVA =====
 function preverVendas(sabor, dias=30){
-  const vendas=getV().filter(v=>v.produto===sabor);
-  if(vendas.length===0)return null;
-  
-  const media=vendas.reduce((s,v)=>s+v.qtd,0)/vendas.length;
-  const desvio=Math.sqrt(vendas.reduce((s,v)=>s+Math.pow(v.qtd-media,2),0)/vendas.length);
-  
+  const qts=[];getV().forEach(v=>{vendaItens(v).forEach(it=>{if(it.produto===sabor)qts.push(it.qtd);});});
+  if(qts.length===0)return null;
+
+  const media=qts.reduce((s,q)=>s+q,0)/qts.length;
+  const desvio=Math.sqrt(qts.reduce((s,q)=>s+Math.pow(q-media,2),0)/qts.length);
+
   return {
     previsao:Math.round(media),
     minimo:Math.round(media-desvio),
     maximo:Math.round(media+desvio),
-    vendidas:vendas.length,
+    vendidas:qts.length,
     dias:dias
   };
 }
@@ -2969,7 +3024,7 @@ function filtrarVendasAvancado(){
     vendas = vendas.filter(v => v.vendedor === vendedor);
   }
   if (produto) {
-    vendas = vendas.filter(v => v.produto === produto);
+    vendas = vendas.filter(v => vendaItens(v).some(it => it.produto === produto));
   }
   if (canal) {
     vendas = vendas.filter(v => v.canal === canal);
@@ -2985,7 +3040,7 @@ function filtrarVendasAvancado(){
     return;
   }
   
-  el.innerHTML = vendas.slice(0, 50).map(v => `<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span> <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="imprimirNota(${v.id})"><i class="ti ti-printer"></i> Nota</button><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
+  el.innerHTML = vendas.slice(0, 50).map(v => `<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div>${vLabel(v)} <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="imprimirNota(${v.id})"><i class="ti ti-printer"></i> Nota</button><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
 }
 
 function renderLV(){
@@ -3047,11 +3102,11 @@ function renderLV(){
     mv=mv.slice().reverse();
     const el=document.getElementById("lista-vendas");
     if(!mv.length){el.innerHTML='<div class="empty"><i class="ti ti-receipt"></i>Nenhuma venda neste período</div>';return;}
-    el.innerHTML=mv.slice(0,15).map(v=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span> <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="imprimirNota(${v.id})"><i class="ti ti-printer"></i> Nota</button><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
+    el.innerHTML=mv.slice(0,15).map(v=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div>${vLabel(v)} <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="imprimirNota(${v.id})"><i class="ti ti-printer"></i> Nota</button><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
   }else{
     const mv=mvMes().slice().reverse(),el=document.getElementById("lista-vendas");
     if(!mv.length){el.innerHTML='<div class="empty"><i class="ti ti-receipt"></i>Nenhuma venda este mês</div>';return;}
-    el.innerHTML=mv.slice(0,15).map(v=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="fl ${SC[v.produto]||"fl-combo"}">${SB[v.produto]||v.produto}</span> <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="imprimirNota(${v.id})"><i class="ti ti-printer"></i> Nota</button><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
+    el.innerHTML=mv.slice(0,15).map(v=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div>${vLabel(v)} <span style="font-size:11px;color:var(--muted)">${v.canal}</span></div><span style="font-weight:700;color:var(--success)">${R(v.lucro)}</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)"><span>${v.cliente} · ${v.qtd} unid. · ${v.data}</span><span style="color:var(--text)">${R(v.bruto)}</span></div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="imprimirNota(${v.id})"><i class="ti ti-printer"></i> Nota</button><button class="btn btn-sm" onclick="editarVenda(${v.id})"><i class="ti ti-pencil"></i> Editar</button><button class="btn btn-sm btn-danger" onclick="deletarVenda(${v.id})"><i class="ti ti-trash"></i> Deletar</button></div></div>`).join("");
   }
   
   // Preencher datalist de clientes
@@ -3548,7 +3603,7 @@ function renderDashboard(){
   if(elRecLista){
     elRecLista.innerHTML=pendentes.length?pendentes.map(v=>`
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
-        <div style="min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.cliente||"Avulso"}</div><div style="font-size:11px;color:var(--muted)">${v.data} · ${v.produto?(SB[v.produto]||v.produto):""}</div></div>
+        <div style="min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.cliente||"Avulso"}</div><div style="font-size:11px;color:var(--muted)">${v.data} · ${v.itens&&v.itens.length>1?(v.itens.length+" sabores"):(v.produto?(SB[v.produto]||v.produto):"")}</div></div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-weight:700;color:var(--warning)">${R(v.bruto||0)}</span><button class="btn" style="padding:4px 8px;font-size:11px" onclick="toggleRecebido(${v.id});renderDashboard()">✓ Recebi</button></div>
       </div>`).join(""):'<div style="font-size:12px;color:var(--muted);padding:4px 0">Tudo recebido neste período ✅</div>';
   }
@@ -3636,7 +3691,7 @@ function renderDashboard(){
     cLC=new Chart(cLanc,{type:"bar",data:{labels:["Vendas (R$)","Produções (un×100)","Gastos (R$)"],datasets:[{data:lancamentosData,backgroundColor:["rgba(34,197,94,.8)","rgba(59,130,246,.8)","rgba(239,68,68,.8)"],borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:true,anchor:"end",align:"top",color:"#555",font:{size:9,weight:"bold"},formatter:v=>v>0?Math.round(v):""}},scales:{x:{ticks:{font:{size:10},color:"#888"}},y:{ticks:{font:{size:10},color:"#888",callback:v=>"R$"+v}}}}});
   }
   
-  const sqtd={};mv.forEach(v=>{sqtd[v.produto]=(sqtd[v.produto]||0)+v.qtd;});
+  const sqtd={};mv.forEach(v=>{vendaItens(v).forEach(it=>{sqtd[it.produto]=(sqtd[it.produto]||0)+it.qtd;});});
   const sk=Object.keys(sqtd),sd=Object.values(sqtd),sc=sk.map(k=>CC[k]||"#888"),total=sd.reduce((s,v)=>s+v,0);
   if(cSI)cSI.destroy();
   const ctxS=document.getElementById("cSabor");
@@ -4040,7 +4095,7 @@ function renderDRE(){
   const pMed=unid>0?fat/unid:par.p1,peR=pMed>0&&mcU>0?cF*pMed/mcU:0;
   const pMin=par.custo+(par.imp/100*par.p1)+(par.marg/100*par.p1);
   document.getElementById("dre-gerencial").innerHTML=`<div class="metric-grid"><div class="metric"><div class="lbl">Custo fixo</div><div class="val">${R(cF)}</div></div><div class="metric"><div class="lbl">Custo variável</div><div class="val">${R(cV)}</div></div><div class="metric"><div class="lbl">MC unitária</div><div class="val gold">${R(mcU)}</div></div><div class="metric"><div class="lbl">Preço mínimo</div><div class="val">${R(pMin)}</div></div></div><div class="card"><div class="dre-row"><span>Ponto de equilíbrio</span><span style="font-weight:700">${pe} unid. / ${R(peR)}</span></div><div class="dre-row"><span>Custo médio/unidade</span><span>${R(par.custo)}</span></div><div class="dre-row"><span>Preço médio de venda</span><span>${R(pMed)}</span></div><div class="dre-row"><span>Lucro por unidade</span><span style="color:var(--success);font-weight:700">${R(unid>0?lucroL/unid:0)}</span></div></div><div class="card" style="margin-top:8px"><div class="section-label">Lucro por canal</div>${lucroCanalHTML(mv)}</div>`;
-  const sd={};mv.forEach(v=>{if(!sd[v.produto])sd[v.produto]={qtd:0,fat:0,cpv:0,lucro:0};sd[v.produto].qtd+=v.qtd;sd[v.produto].fat+=v.bruto;sd[v.produto].cpv+=v.cpv;sd[v.produto].lucro+=v.lucro;});
+  const sd={};mv.forEach(v=>{vendaItens(v).forEach(it=>{if(!sd[it.produto])sd[it.produto]={qtd:0,fat:0,cpv:0,lucro:0};sd[it.produto].qtd+=it.qtd;sd[it.produto].fat+=it.bruto;sd[it.produto].cpv+=it.cpv;sd[it.produto].lucro+=it.lucro;});});
   document.getElementById("dre-sabor").innerHTML=Object.entries(sd).map(([k,d])=>{const m=d.fat>0?d.lucro/d.fat*100:0,pf=fat>0?d.fat/fat*100:0;return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="fl ${SC[k]||"fl-combo"}">${SB[k]||k}</span><span class="badge ${m>40?"b-green":m>20?"b-gold":"b-red"}">${P(m)} margem</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:12px"><span style="color:var(--muted)">Qtd.</span><span style="text-align:right">${d.qtd} unid.</span><span style="color:var(--muted)">Faturamento</span><span style="text-align:right">${R(d.fat)}</span><span style="color:var(--muted)">CPV</span><span style="text-align:right;color:var(--danger)">-${R(d.cpv)}</span><span style="font-weight:700;color:var(--success)">Lucro bruto</span><span style="text-align:right;font-weight:700;color:var(--success)">${R(d.lucro)}</span><span style="color:var(--muted)">Participação</span><span style="text-align:right">${P(pf)}</span></div></div>`;}).join("")||'<div class="empty"><i class="ti ti-chart-bar"></i>Sem dados</div>';
 }
 
@@ -5496,7 +5551,7 @@ function gerarCSVVendas(){
   vendas.forEach(v => {
     const margem = v.bruto > 0 ? ((v.lucro / v.bruto) * 100).toFixed(2) : 0;
     const recebido = v.recebido ? "Sim" : "Não";
-    csv += `"${v.data}","${v.cliente}","${SB[v.produto] || v.produto}",${v.qtd},${v.preco},${v.bruto.toFixed(2)},${v.desc.toFixed(2)},${(v.taxa||0).toFixed(2)},${v.imp.toFixed(2)},${v.frete.toFixed(2)},${v.liq.toFixed(2)},${v.cpv.toFixed(2)},${v.lucro.toFixed(2)},${margem},"${v.canal}","${v.vendedor}","${recebido}"\n`;
+    csv += `"${v.data}","${v.cliente}","${v.itens&&v.itens.length>1?('Vários: '+v.itens.map(it=>SB[it.produto]||it.produto).join('; ')):(SB[v.produto] || v.produto)}",${v.qtd},${v.preco},${v.bruto.toFixed(2)},${v.desc.toFixed(2)},${(v.taxa||0).toFixed(2)},${v.imp.toFixed(2)},${v.frete.toFixed(2)},${v.liq.toFixed(2)},${v.cpv.toFixed(2)},${v.lucro.toFixed(2)},${margem},"${v.canal}","${v.vendedor}","${recebido}"\n`;
   });
   
   exportarCSV(csv, `Vendas_${new Date().toISOString().split('T')[0]}.csv`);
@@ -6050,14 +6105,16 @@ function analisarMargemPorSabor(){
   const sabores={};
   
   vs.forEach(v=>{
-    const sabor=SB[v.produto]||v.produto;
-    if(!sabores[sabor]){
-      sabores[sabor]={lucro:0,qtd:0,vendas:0,faturamento:0};
-    }
-    sabores[sabor].lucro+=v.lucro||0;
-    sabores[sabor].qtd+=v.qtd||0;
-    sabores[sabor].vendas+=1;
-    sabores[sabor].faturamento+=v.bruto||0;
+    vendaItens(v).forEach(it=>{
+      const sabor=SB[it.produto]||it.produto;
+      if(!sabores[sabor]){
+        sabores[sabor]={lucro:0,qtd:0,vendas:0,faturamento:0};
+      }
+      sabores[sabor].lucro+=it.lucro||0;
+      sabores[sabor].qtd+=it.qtd||0;
+      sabores[sabor].vendas+=1;
+      sabores[sabor].faturamento+=it.bruto||0;
+    });
   });
   
   const ranking=Object.entries(sabores)
@@ -6128,7 +6185,7 @@ function renderRel(){
   const ca={};mv.forEach(v=>{if(!ca[v.canal])ca[v.canal]={fat:0,lucro:0,qtd:0};ca[v.canal].fat+=v.bruto;ca[v.canal].lucro+=v.lucro;ca[v.canal].qtd+=v.qtd;});
   document.getElementById("rel-canal").innerHTML=Object.entries(ca).map(([c,d])=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)"><span>${c} <span style="font-size:11px;color:var(--muted)">(${d.qtd})</span></span><span>${R(d.fat)} <span style="font-size:11px;color:var(--success)">${d.fat>0?P(d.lucro/d.fat*100):""}</span></span></div>`).join("")||'<div style="font-size:12px;color:var(--muted)">Sem dados</div>';
   
-  const sa={};mv.forEach(v=>{if(!sa[v.produto])sa[v.produto]={fat:0,lucro:0,qtd:0};sa[v.produto].fat+=v.bruto;sa[v.produto].lucro+=v.lucro;sa[v.produto].qtd+=v.qtd;});
+  const sa={};mv.forEach(v=>{vendaItens(v).forEach(it=>{if(!sa[it.produto])sa[it.produto]={fat:0,lucro:0,qtd:0};sa[it.produto].fat+=it.bruto;sa[it.produto].lucro+=it.lucro;sa[it.produto].qtd+=it.qtd;});});
   document.getElementById("rel-sabor").innerHTML=Object.entries(sa).sort((a,b)=>b[1].fat-a[1].fat).map(([k,d])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)"><span class="fl ${SC[k]||"fl-combo"}">${SB[k]||k}</span><span style="font-size:12px">${d.qtd} unid · ${R(d.fat)} <span style="color:var(--success)">${d.fat>0?P(d.lucro/d.fat*100):""}</span></span></div>`).join("")||'<div style="font-size:12px;color:var(--muted)">Sem dados</div>';
   
   const cliAgg={};mv.forEach(v=>{const n=v.cliente||"Avulso";cliAgg[n]=(cliAgg[n]||0)+v.bruto;});
@@ -6213,7 +6270,7 @@ function gerarPDF(){
   }
 
   // Por sabor
-  const sa={};mv.forEach(v=>{if(!sa[v.produto])sa[v.produto]={fat:0,lucro:0,qtd:0};sa[v.produto].fat+=v.bruto;sa[v.produto].lucro+=v.lucro;sa[v.produto].qtd+=v.qtd;});
+  const sa={};mv.forEach(v=>{vendaItens(v).forEach(it=>{if(!sa[it.produto])sa[it.produto]={fat:0,lucro:0,qtd:0};sa[it.produto].fat+=it.bruto;sa[it.produto].lucro+=it.lucro;sa[it.produto].qtd+=it.qtd;});});
   if(Object.keys(sa).length){
     doc.setFontSize(13);doc.text("Vendas por sabor",40,doc.lastAutoTable.finalY+28);
     doc.autoTable({
