@@ -488,7 +488,7 @@ input.input-warning{
 body{background:var(--bg)}
 
 /* Tipografia editorial nos números/títulos */
-.metric .val, .dre-total span, .dre-total, .big-num{font-family:Georgia,'Times New Roman',serif;letter-spacing:-.005em}
+.metric .val, .dre-total span, .dre-total, .big-num{font-family:'Space Grotesk',-apple-system,sans-serif;font-feature-settings:"tnum" 1;letter-spacing:-.01em}
 .page-header h2{font-family:Georgia,'Times New Roman',serif;font-weight:600;letter-spacing:-.01em}
 
 /* Cartões */
@@ -550,14 +550,17 @@ body{background:var(--bg)}
 .dash-hero::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold2),transparent)}
 .dash-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 60%,rgba(201,168,76,.08));pointer-events:none}
 .dash-hero .eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(232,201,122,.72);font-weight:700}
-.dash-hero .hero-num{font-family:Georgia,'Times New Roman',serif;font-size:40px;line-height:1;margin-top:8px;color:var(--gold2)}
+.dash-hero .hero-num{font-family:'Space Grotesk',-apple-system,sans-serif;font-feature-settings:"tnum" 1;font-weight:600;font-size:40px;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--gold2)}
 .dash-hero .hero-delta{display:inline-flex;align-items:center;gap:5px;margin-top:11px;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.78)}
 .dash-hero .hero-delta:empty{display:none}
 .dash-hero .hero-meta{display:flex;gap:18px;margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px}
 .dash-hero .hero-meta>div small{display:block;color:rgba(255,255,255,.45);font-size:10px;letter-spacing:.05em;text-transform:uppercase}
-.dash-hero .hero-meta>div b{font-size:15px;color:#fff;font-weight:600;font-family:Georgia,serif}
+.dash-hero .hero-meta>div b{font-size:15px;color:#fff;font-weight:600;font-family:'Space Grotesk',-apple-system,sans-serif;font-feature-settings:"tnum" 1}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.18/500.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.18/600.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.18/700.css">
 </head>
 <body>
 

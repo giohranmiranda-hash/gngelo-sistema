@@ -22,11 +22,11 @@ colors:
   warning-bg: "#FFFBEB"
 typography:
   display:
-    fontFamily: "Georgia, 'Times New Roman', serif"
+    fontFamily: "Space Grotesk, -apple-system, sans-serif"
     fontSize: "23px"
     fontWeight: 600
     lineHeight: 1.05
-    letterSpacing: "-0.005em"
+    letterSpacing: "-0.01em"
   headline:
     fontFamily: "Georgia, 'Times New Roman', serif"
     fontSize: "28px"
@@ -141,19 +141,20 @@ Uma paleta de três vozes — ouro, preto e creme — onde o ouro fala pouco e p
 
 ## 3. Typography
 
-**Display Font:** Georgia (com 'Times New Roman', serif)
+**Number Font:** Space Grotesk (com fallback de sistema), com algarismos tabulares (`tnum`)
+**Title Font:** Georgia (com 'Times New Roman', serif)
 **Body Font:** Pilha de sistema (-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)
 
-**Character:** Um par por eixo de contraste — serifa editorial para o que tem valor (números, títulos), sans neutra de sistema para o trabalho do dia a dia. A serifa dá ao dinheiro um ar de coisa séria e feita à mão; a sans some de vista e deixa registrar rápido.
+**Character:** Contraste em dois eixos — uma sans geométrica e marcante (Space Grotesk) para os números, que dá ar de painel premium e mantém os dígitos alinhados; serifa editorial (Georgia) para títulos de tela, que carrega a sofisticação artesanal; e a sans de sistema, que some de vista no trabalho do dia a dia.
 
 ### Hierarchy
-- **Display** (serif, 23px, line-height 1.05, letter-spacing -0.005em): valores de métrica, totais do DRE, o "big-num". O número como joia.
+- **Display / Números** (Space Grotesk, 23–40px, tabular, letter-spacing -0.01em): valores de métrica, lucro do herói, totais do DRE. O número como protagonista.
 - **Headline** (serif, 600, ~28px, letter-spacing -0.01em): títulos de tela (`.page-header h2`, "Dashboard", "DRE — Junho de 2026").
 - **Body** (sans, 14px, line-height 1.5): texto de interface, itens de lista, conteúdo de formulário.
 - **Label** (sans, 700, 10–12px, letter-spacing 0.12em, MAIÚSCULAS): rótulos de campo, rótulos de métrica, abas, section-labels. Tracking largo é a assinatura tipográfica do sistema.
 
 ### Named Rules
-**A Regra da Serifa Reservada.** Georgia é exclusiva de números e títulos. Nunca corpo de texto, nunca rótulo, nunca botão. Quando a serifa aparece, é porque aquilo vale dinheiro ou nomeia a tela.
+**A Regra dos Dois Destaques.** Números são Space Grotesk (tabular); títulos de tela são Georgia (serifa). Corpo, rótulos e botões ficam na sans de sistema. Cada fonte tem um trabalho — número, título ou texto — e não invade o do outro.
 
 ## 4. Elevation
 
