@@ -524,6 +524,8 @@ body{background:var(--bg)}
 
 /* Botão Venda Rápida (dourado) */
 .btn-venda-rapida{box-shadow:0 6px 18px rgba(201,168,76,.35)}
+.ag-check{display:flex;align-items:center;gap:8px;font-size:13px;margin:2px 0 12px;cursor:pointer}
+.ag-check input{width:auto;flex:none}
 /* Estado de boas-vindas (conta nova, sem dados) */
 .welcome-card{background:var(--surface);border:1px solid var(--gold-border);border-radius:18px;padding:22px 18px;box-shadow:0 1px 2px rgba(20,16,8,.04);margin-top:6px}
 .welcome-eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-deep);font-weight:700}
@@ -922,7 +924,35 @@ body{background:var(--bg)}
     <div id="tabela-insumos-gastos"></div>
   </div>
   <div id="t-entrega" style="display:none">
-    <div class="page-header"><h2><i class="ti ti-truck"></i> Calcular entrega</h2></div>
+    <div class="page-header"><h2><i class="ti ti-calendar-plus"></i> Agendar pedido / entrega</h2></div>
+    <div class="card">
+      <div class="form-row">
+        <div class="fg"><label>Data da entrega</label><input type="date" id="ag-data"></div>
+        <div class="fg"><label>Hora (opcional)</label><input type="time" id="ag-hora"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Cliente</label><input type="text" id="ag-cli" placeholder="Nome do cliente"></div>
+        <div class="fg"><label>Telefone (opcional)</label><input type="tel" id="ag-tel" placeholder="(00) 0000-0000"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Produto / sabor</label><select id="ag-sabor"></select></div>
+        <div class="fg"><label>Quantidade</label><input type="number" id="ag-qtd" value="1" min="1" oninput="calcFreteAg()"></div>
+      </div>
+      <div class="fg"><label>Endereço / bairro</label><input type="text" id="ag-end" placeholder="Onde entregar"></div>
+      <div class="form-row">
+        <div class="fg"><label>Distância (km)</label><input type="number" id="ag-km" min="0" step="0.5" placeholder="0" oninput="calcFreteAg()"></div>
+        <div class="fg"><label>Tempo (min)</label><input type="number" id="ag-tempo" min="0" step="1" placeholder="auto" oninput="calcFreteAg(true)"></div>
+      </div>
+      <div class="fg"><label>Frete sugerido (R$)</label><input type="number" id="ag-frete" min="0" step="0.01" value="0"></div>
+      <div id="ag-frete-info" style="font-size:11px;color:var(--muted);margin:-4px 0 8px"></div>
+      <label class="ag-check"><input type="checkbox" id="ag-cobra" checked onchange="calcFreteAg()"> Cobrar frete <span style="color:var(--muted);font-weight:400">(calcula pela distância e tempo, estilo apps)</span></label>
+      <div class="fg"><label>Observação</label><input type="text" id="ag-obs" placeholder="Ex.: pagar na entrega, ligar antes..."></div>
+      <button class="btn btn-gold btn-full" id="ag-btn" onclick="agendar()"><i class="ti ti-calendar-check"></i> Agendar</button>
+    </div>
+    <div class="page-header" style="margin-top:16px"><h2><i class="ti ti-clock-hour-4"></i> Próximos agendamentos</h2></div>
+    <div id="lista-agendamentos"></div>
+
+    <div class="page-header" style="margin-top:18px"><h2><i class="ti ti-truck"></i> Calcular entrega</h2></div>
     <div class="card">
       <div class="form-row">
         <div class="fg"><label>Cliente / Bairro</label><input type="text" id="e-cli" placeholder="Nome/bairro"></div>
@@ -1344,7 +1374,7 @@ body{background:var(--bg)}
     <div class="section-label">Legenda</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
       <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#FEF3C7;border-radius:3px;border:1px solid #92400E"></span><span>Produção</span></div>
-      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#FCE7F3;border-radius:3px;border:1px solid #9D174D"></span><span>Entrega</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#FCE7F3;border-radius:3px;border:1px solid #9D174D"></span><span>Entrega agendada</span></div>
       <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#FEF2F2;border-radius:3px;border:1px solid #B91C1C"></span><span>Vencimento</span></div>
       <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#F0FDF4;border-radius:3px;border:1px solid #15803D"></span><span>Venda confirmada</span></div>
     </div>
@@ -1643,7 +1673,7 @@ const curM=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMont
 const getP=()=>get("params",{custo:.47,marg:40,p1:2,p50:1.5,p100:1.25,p200:1.1,p500:1,p1000:.9,ifood:28,com:5,imp:6,fkm:2.5,gas:200,en:180,ag:60,of:150});
 const getV=()=>get("vendas",[]);const getPr=()=>get("producoes",[]);const getG=()=>get("gastos",[]);
 const getCli=()=>get("clientes",[]);const getEst=()=>get("estoque",{coco:0,morango:0,maracuja:0,maca:0,manga:0,melancia:0,limao:0,iceblue:0,energetico:0,frutas:0,amora:0,abacaxi:0,salLimao:0,uva:0,chiclete:0,cereja:0,morPessego:0,brasil:0,bobMarley:0,laranja:0,balaHouse:0,combo10:0,combo20:0,combo50:0,combo100:0});
-const getIns=()=>get("insumos",[]);const getEnt=()=>get("entregas",[]);
+const getIns=()=>get("insumos",[]);const getEnt=()=>get("entregas",[]);const getAg=()=>get("agendamentos",[]);
 const getInsE=()=>get("insumoEst",{});const getLot=()=>get("lotes",[]);
 const mvMes=()=>getV().filter(v=>v.data&&v.data.startsWith(curM()));
 const mgMes=()=>getG().filter(g=>g.data&&g.data.startsWith(curM()));
@@ -1662,6 +1692,7 @@ const mgMes=()=>getG().filter(g=>g.data&&g.data.startsWith(curM()));
     if(BACKUP.lotes)set("lotes",BACKUP.lotes);
     if(BACKUP.insumos)set("insumos",BACKUP.insumos);
     if(BACKUP.entregas)set("entregas",BACKUP.entregas);
+    if(BACKUP.agendamentos)set("agendamentos",BACKUP.agendamentos);
     if(BACKUP.params)set("params",BACKUP.params);
     if(BACKUP.receitas)set("receitas",BACKUP.receitas);
     if(BACKUP.metas)set("metas",BACKUP.metas);
@@ -1692,7 +1723,7 @@ function nav(id,el){
   // sincroniza o destaque na barra inferior (mesmo navegando por atalho/menu)
   const bb=document.querySelector('.bnav-btn[data-screen="'+id+'"]'); if(bb)bb.classList.add("active");
   try{window.scrollTo(0,0);}catch(e){}
-  const r={dashboard:renderDashboard,estoque:renderEst,dre:()=>{renderDRE();renderDREAnual();renderGerencial();renderDREInsumos();},metas:()=>{renderMetas();renderMetasAnuais();renderMetasProgresso();},clientes:renderCli,relatorios:renderRel,parametros:()=>{renderReceitas();renderCF();atualizarStatusNuvem();},comissoes:()=>{renderVendedores();updateComVendedor();renderComissoes();},fluxo:()=>{renderFluxo();renderFluxoPeriodo();renderFluxoPrevisao();renderFluxoVendas();},calendario:renderCalendario,lancamentos:()=>{renderLV();renderLG();renderLP();renderLE();updateComVendedor();}};
+  const r={dashboard:renderDashboard,estoque:renderEst,dre:()=>{renderDRE();renderDREAnual();renderGerencial();renderDREInsumos();},metas:()=>{renderMetas();renderMetasAnuais();renderMetasProgresso();},clientes:renderCli,relatorios:renderRel,parametros:()=>{renderReceitas();renderCF();atualizarStatusNuvem();},comissoes:()=>{renderVendedores();updateComVendedor();renderComissoes();},fluxo:()=>{renderFluxo();renderFluxoPeriodo();renderFluxoPrevisao();renderFluxoVendas();},calendario:renderCalendario,lancamentos:()=>{renderLV();renderLG();renderLP();renderLE();renderAgendamentos();updateComVendedor();}};
   if(r[id])r[id]();
 }
 // Atalho: navega para uma tela e (opcional) abre uma aba específica
@@ -2409,6 +2440,155 @@ function regEntrega(){
   btn.textContent="✓ Registrar entrega";
   btn.style.background="";
   renderLE();
+}
+
+// ===== AGENDAMENTO DE PEDIDOS / ENTREGAS =====
+function popularSaborAg(){
+  const sel=document.getElementById("ag-sabor");
+  if(!sel||sel.options.length)return;
+  sel.innerHTML=Object.keys(SB).map(k=>`<option value="${k}">${SB[k]}</option>`).join("");
+}
+// Veículo da entrega pela quantidade: acima de 200 un não cabe na moto -> carro
+const LIMITE_MOTO=200;
+function veiculoEntrega(qtd){ return (qtd||0)>LIMITE_MOTO?"carro":"moto"; }
+// Tarifas de mercado (Brasil 2025) por veículo: base/saída + por km + leve fator tempo, com mínimo
+function tarifaFrete(veic){
+  return veic==="carro"
+    ?{base:8, porKm:3, porMin:0.25, min:15, custoKm:1.20, nome:"🚗 Carro", motivo:" (acima de "+LIMITE_MOTO+" un — peso não cabe na moto)"}
+    :{base:5, porKm:2, porMin:0.20, min:8,  custoKm:0.70, nome:"🛵 Moto",  motivo:""};
+}
+function calcFreteAg(manualTempo){
+  const cobraEl=document.getElementById("ag-cobra"),fEl=document.getElementById("ag-frete"),info=document.getElementById("ag-frete-info");
+  const kmEl=document.getElementById("ag-km"),tEl=document.getElementById("ag-tempo");
+  if(!cobraEl||!fEl)return;
+  const km=parseFloat(kmEl.value)||0;
+  const qtd=parseInt(document.getElementById("ag-qtd").value)||0;
+  const M=tarifaFrete(veiculoEntrega(qtd));
+  if(manualTempo)tEl.dataset.manual="1";
+  let tempo=parseFloat(tEl.value);
+  if(tEl.dataset.manual!=="1"){tempo=km>0?Math.round(km*3):0;tEl.value=km>0?tempo:"";} // ~3 min/km no trânsito urbano
+  if(isNaN(tempo))tempo=0;
+  if(!cobraEl.checked){fEl.value="0";fEl.disabled=true;if(info)info.innerHTML=`<b>${M.nome}</b>${M.motivo} · 🆓 Entrega sem frete (cortesia).`;return;}
+  fEl.disabled=false;
+  let frete=M.base+km*M.porKm+tempo*M.porMin;
+  if(frete<M.min)frete=M.min;
+  frete=Math.round(frete*100)/100;
+  fEl.value=frete.toFixed(2);
+  if(info){const custo=km*M.custoKm;info.innerHTML=`<b>${M.nome}</b>${M.motivo} — base R$ ${M.base.toFixed(2)} + ${km}km×R$${M.porKm.toFixed(2)} + ${tempo}min×R$${M.porMin.toFixed(2)} · mín. R$ ${M.min.toFixed(2)}<br>custo ≈ R$ ${custo.toFixed(2)} · margem R$ ${(frete-custo).toFixed(2)}`;}
+}
+function agendar(){
+  popularSaborAg();
+  const btn=document.getElementById("ag-btn");
+  const editId=btn.dataset.editId?parseInt(btn.dataset.editId):null;
+  const data=document.getElementById("ag-data").value;
+  const cliente=document.getElementById("ag-cli").value.trim();
+  const qtd=parseInt(document.getElementById("ag-qtd").value)||0;
+  if(!data){alert("❌ Escolha a data da entrega");return;}
+  if(!cliente){alert("❌ Informe o cliente");return;}
+  if(qtd<1){alert("❌ Quantidade deve ser ao menos 1");return;}
+  const cobraFrete=document.getElementById("ag-cobra").checked;
+  const ag={
+    id:editId||Date.now(),
+    data,
+    hora:document.getElementById("ag-hora").value||"",
+    cliente,
+    tel:document.getElementById("ag-tel").value.trim(),
+    sabor:document.getElementById("ag-sabor").value,
+    qtd,
+    endereco:document.getElementById("ag-end").value.trim(),
+    km:parseFloat(document.getElementById("ag-km").value)||0,
+    tempo:parseFloat(document.getElementById("ag-tempo").value)||0,
+    veiculo:veiculoEntrega(qtd),
+    cobraFrete,
+    frete:cobraFrete?(parseFloat(document.getElementById("ag-frete").value)||0):0,
+    obs:document.getElementById("ag-obs").value.trim(),
+    status:editId?(getAg().find(x=>x.id===editId)||{}).status||"agendado":"agendado"
+  };
+  let ags=getAg();
+  if(editId){ags=ags.filter(x=>x.id!==editId);ags.push(ag);alert("✅ Agendamento atualizado!");}
+  else{ags.push(ag);alert("✅ Pedido agendado! Já aparece no calendário operacional.");}
+  set("agendamentos",ags);
+  ["ag-cli","ag-tel","ag-end","ag-obs","ag-km"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("ag-qtd").value="1";
+  document.getElementById("ag-tempo").value="";document.getElementById("ag-tempo").dataset.manual="";
+  document.getElementById("ag-cobra").checked=true;document.getElementById("ag-frete").value="0";document.getElementById("ag-frete").disabled=false;
+  const _fi=document.getElementById("ag-frete-info");if(_fi)_fi.textContent="";
+  btn.dataset.editId="";btn.innerHTML='<i class="ti ti-calendar-check"></i> Agendar';
+  renderAgendamentos();
+  if(typeof renderCalendario==="function" && document.getElementById("cal-mes-sel"))renderCalendario();
+}
+function renderAgendamentos(){
+  popularSaborAg();
+  const dEl=document.getElementById("ag-data");if(dEl&&!dEl.value)dEl.value=today();
+  const el=document.getElementById("lista-agendamentos");
+  if(!el)return;
+  const hoje=today();
+  const ags=getAg().filter(a=>a.status!=="cancelado").sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+  if(!ags.length){el.innerHTML='<div class="empty"><i class="ti ti-calendar-off"></i>Nenhum pedido agendado. Use o formulário acima.</div>';return;}
+  el.innerHTML=ags.map(a=>{
+    const entregue=a.status==="entregue";
+    const atrasado=!entregue && a.data<hoje;
+    const badge=entregue?'<span class="badge b-green">✅ Entregue</span>':(atrasado?'<span class="badge b-red">⏰ Atrasado</span>':'<span class="badge b-gold">📅 Agendado</span>');
+    const quando=a.data.split("-").reverse().join("/")+(a.hora?` · ${a.hora}`:"");
+    return `<div class="item-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="min-width:0"><div style="font-weight:700">${a.cliente}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">📅 ${quando} · ${a.qtd} un ${SB[a.sabor]||a.sabor}</div>
+          <div style="font-size:11px;color:var(--muted)">${a.veiculo==="carro"?"🚗":"🛵"} ${a.cobraFrete===false?"Frete grátis":"Frete "+R(a.frete||0)}${a.km?" · "+a.km+" km":""}${a.tempo?" · "+a.tempo+" min":""}</div>
+          ${a.endereco?`<div style="font-size:11px;color:var(--muted)">📍 ${a.endereco}</div>`:""}
+          ${a.tel?`<div style="font-size:11px;color:var(--muted)">📞 ${a.tel}</div>`:""}
+          ${a.obs?`<div style="font-size:11px;color:var(--muted)">📝 ${a.obs}</div>`:""}
+        </div>${badge}
+      </div>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        ${entregue?"":`<button class="btn btn-sm btn-gold" onclick="concluirAgendamento(${a.id})"><i class="ti ti-check"></i> Marcar entregue</button>`}
+        <button class="btn btn-sm" onclick="venderAgendamento(${a.id})"><i class="ti ti-cash"></i> Registrar venda</button>
+        <button class="btn btn-sm" onclick="editarAgendamento(${a.id})"><i class="ti ti-edit"></i> Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="deletarAgendamento(${a.id})"><i class="ti ti-trash"></i> Excluir</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+function concluirAgendamento(id){
+  const ags=getAg();const a=ags.find(x=>x.id===id);if(!a)return;
+  a.status="entregue";set("agendamentos",ags);renderAgendamentos();
+  if(document.getElementById("cal-mes-sel"))renderCalendario();
+}
+function venderAgendamento(id){
+  const a=getAg().find(x=>x.id===id);if(!a)return;
+  atalho("lancamentos","t-venda");
+  setTimeout(()=>{
+    const d=document.getElementById("v-data");if(d)d.value=a.data;
+    const cli=document.getElementById("v-cliente");if(cli)cli.value=a.cliente;
+    const prod=document.getElementById("v-produto");if(prod)prod.value=a.sabor;
+    const q=document.getElementById("v-qtd");if(q)q.value=a.qtd;
+    if(typeof calcV==="function")calcV();
+  },60);
+  alert("Abri a venda com os dados do pedido. Confira o preço e confirme. Depois marque o pedido como entregue.");
+}
+function editarAgendamento(id){
+  const a=getAg().find(x=>x.id===id);if(!a)return;
+  popularSaborAg();
+  document.getElementById("ag-data").value=a.data;
+  document.getElementById("ag-hora").value=a.hora||"";
+  document.getElementById("ag-cli").value=a.cliente;
+  document.getElementById("ag-tel").value=a.tel||"";
+  document.getElementById("ag-sabor").value=a.sabor;
+  document.getElementById("ag-qtd").value=a.qtd;
+  document.getElementById("ag-end").value=a.endereco||"";
+  document.getElementById("ag-km").value=a.km||"";
+  document.getElementById("ag-tempo").value=a.tempo||"";document.getElementById("ag-tempo").dataset.manual=a.tempo?"1":"";
+  document.getElementById("ag-cobra").checked=a.cobraFrete!==false;
+  document.getElementById("ag-frete").value=(a.frete!=null?a.frete:0);
+  document.getElementById("ag-frete").disabled=(a.cobraFrete===false);
+  document.getElementById("ag-obs").value=a.obs||"";
+  const btn=document.getElementById("ag-btn");btn.dataset.editId=String(id);btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar alterações';
+  document.getElementById("ag-data").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function deletarAgendamento(id){
+  if(!confirm("Excluir este agendamento?"))return;
+  set("agendamentos",getAg().filter(x=>x.id!==id));renderAgendamentos();
+  if(document.getElementById("cal-mes-sel"))renderCalendario();
 }
 
 // PONTO 6: Validação real-time em campos editáveis
@@ -5031,29 +5211,31 @@ function renderCalendario(){
   const hoje=new Date();
   const anoSel=document.getElementById("cal-ano");
   const mesSel=document.getElementById("cal-mes-sel");
-  
-  // Define valores padrão se não tiver seleção
+
+  // Preenche anos disponíveis (uma vez): ano atual + anos com vendas/agendamentos
+  if(anoSel.options.length===0){
+    const anos=new Set([hoje.getFullYear().toString()]);
+    getV().forEach(v=>{if(v.data)anos.add(v.data.split("-")[0]);});
+    getAg().forEach(a=>{if(a.data)anos.add(a.data.split("-")[0]);});
+    Array.from(anos).filter(Boolean).sort((a,b)=>b-a).forEach(a=>{
+      const opt=document.createElement("option");opt.value=a;opt.textContent=a;anoSel.appendChild(opt);
+    });
+  }
+
+  // Primeira abertura: começa no MÊS ATUAL (o usuário pode trocar depois)
+  if(!window.__calInit){
+    anoSel.value=hoje.getFullYear().toString();
+    mesSel.value=String(hoje.getMonth()+1).padStart(2,"0");
+    window.__calInit=true;
+  }
   if(!anoSel.value)anoSel.value=hoje.getFullYear().toString();
   if(!mesSel.value)mesSel.value=String(hoje.getMonth()+1).padStart(2,"0");
-  
+
   const ano=anoSel.value;
   const mes=mesSel.value;
   const mesNum=parseInt(mes);
   const mesNome=MESES[mesNum-1];
   document.getElementById("cal-mes").textContent=`${mesNome} de ${ano}`;
-  
-  // Preenche anos disponíveis (uma única vez)
-  if(anoSel.options.length===1){
-    const vs=getV();
-    const anosDisp=new Set([ano,...vs.map(v=>v.data?v.data.split("-")[0]:"")]);
-    Array.from(anosDisp).filter(a=>a).sort((a,b)=>b-a).forEach(a=>{
-      const opt=document.createElement("option");
-      opt.value=a;
-      opt.textContent=a;
-      anoSel.appendChild(opt);
-    });
-    anoSel.value=ano;
-  }
   
   // Calendário HTML
   const primeiroDia=new Date(ano,mesNum-1,1);
@@ -5073,16 +5255,19 @@ function renderCalendario(){
     const ps=getPr().filter(p=>p.data===data);
     const lts=getLot().filter(l=>l.data===data);
     const lotesVenc=getLot().filter(l=>l.validade===data);
-    
+    const ags=getAg().filter(a=>a.data===data&&a.status!=="cancelado");
+
     let cores=[];
+    if(ags.length)cores.push("#FCE7F3"); // Entrega/agendamento rosa
     if(ps.length)cores.push("#FEF3C7"); // Produção amarela
     if(vs.length)cores.push("#F0FDF4"); // Venda verde
     if(lotesVenc.length)cores.push("#FEF2F2"); // Vencimento vermelho
-    
+
     const bg=cores.length>0?cores[0]:"#FFF";
-    const border=cores.length>1?"3px solid #92400E":"1px solid #E8E4DC";
-    
+    const border=cores.length>1?"2px solid #9D174D":"1px solid #E8E4DC";
+
     let tooltip="";
+    if(ags.length)tooltip+=`🚚 ${ags.length} entrega(s) agendada(s)\\n`;
     if(ps.length)tooltip+=`Produção: ${ps.length} lote(s)\\n`;
     if(vs.length)tooltip+=`Vendas: ${vs.length}\\n`;
     if(lotesVenc.length)tooltip+=`⚠️ ${lotesVenc.length} lote(s) vencem\\n`;
@@ -5101,9 +5286,16 @@ function renderEventosDia(mes,ano){
   const ps=getPr().filter(p=>p.data.startsWith(ano+"-"+mes));
   const lts=getLot().filter(l=>l.data.startsWith(ano+"-"+mes));
   const lotesVenc=getLot().filter(l=>l.validade.startsWith(ano+"-"+mes));
-  
+  const ags=getAg().filter(a=>a.data.startsWith(ano+"-"+mes)&&a.status!=="cancelado").sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+
   let html="";
-  
+
+  if(ags.length){
+    html+=`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#9D174D;margin-bottom:4px">🚚 Entregas agendadas (${ags.length})</div>`;
+    html+=ags.map(a=>{const dia=a.data.split("-")[2];const st=a.status==="entregue"?" ✅":(a.data<today()?" ⏰":"");return `<div style="font-size:11px;padding:4px;background:#FCE7F3;border-radius:4px;margin-bottom:2px">${dia}${a.hora?" "+a.hora:""}: ${a.cliente} — ${a.qtd} un ${SB[a.sabor]||a.sabor}${st}</div>`;}).join("");
+    html+="</div>";
+  }
+
   if(ps.length){
     html+=`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#92400E;margin-bottom:4px">🏭 Produções (${ps.length})</div>`;
     html+=ps.map(p=>`<div style="font-size:11px;padding:4px;background:#FEF3C7;border-radius:4px;margin-bottom:2px">${p.data}: ${p.qtd} un ${SB[p.sabor]}</div>`).join("");
@@ -5122,10 +5314,10 @@ function renderEventosDia(mes,ano){
     html+="</div>";
   }
   
-  if(!ps.length&&!vs.length&&!lotesVenc.length){
+  if(!ps.length&&!vs.length&&!lotesVenc.length&&!ags.length){
     html='<div style="font-size:12px;color:#6B6B6B;text-align:center;padding:20px">Nenhum evento neste mês</div>';
   }
-  
+
   document.getElementById("cal-eventos").innerHTML=html;
 }
 
@@ -5133,8 +5325,10 @@ function showDiaDetalhes(data){
   const vs=getV().filter(v=>v.data===data);
   const ps=getPr().filter(p=>p.data===data);
   const lotesVenc=getLot().filter(l=>l.validade===data);
-  
+  const ags=getAg().filter(a=>a.data===data&&a.status!=="cancelado");
+
   let msg=`📅 ${data}\n\n`;
+  if(ags.length)msg+=`🚚 ENTREGAS AGENDADAS (${ags.length}):\n${ags.map(a=>`  - ${a.hora?a.hora+" ":""}${a.cliente} — ${a.qtd} un ${SB[a.sabor]||a.sabor}${a.endereco?" ("+a.endereco+")":""}${a.status==="entregue"?" ✅":""}`).join("\n")}\n\n`;
   if(ps.length)msg+=`🏭 PRODUÇÕES (${ps.length}):\n${ps.map(p=>`  - ${p.qtd} un ${SB[p.sabor]} (Lote: ${p.lote})`).join("\n")}\n\n`;
   if(vs.length)msg+=`💰 VENDAS (${vs.length}):\n${vs.map(v=>`  - ${v.qtd} un ${R(v.bruto)} (${v.cliente})`).join("\n")}\n\n`;
   if(lotesVenc.length)msg+=`⚠️ VENCIMENTOS (${lotesVenc.length}):\n${lotesVenc.map(l=>`  - ${l.codigo} (${l.qtdProduzida-l.qtdVendida} un disponíveis)`).join("\n")}`;
@@ -6095,7 +6289,7 @@ function exportarRelatorio(){
   const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`GNGelo_${ano}_${mes}.txt`;a.click();
 }
 function exportarDados(){
-  const dados={vendas:getV(),producoes:getPr(),gastos:getG(),clientes:getCli(),estoque:getEst(),insumos:getIns(),entregas:getEnt(),params:getP(),metas:getM()};
+  const dados={vendas:getV(),producoes:getPr(),gastos:getG(),clientes:getCli(),estoque:getEst(),insumos:getIns(),entregas:getEnt(),agendamentos:getAg(),params:getP(),metas:getM()};
   const b=new Blob([JSON.stringify(dados,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`GNGelo_backup_${new Date().toISOString().split("T")[0]}.json`;a.click();
   document.getElementById("backup-msg").textContent="✅ Backup exportado!";
@@ -6114,6 +6308,7 @@ function limparDados(){
   localStorage.removeItem("gng_insumoEst");
   localStorage.removeItem("gng_insumos");
   localStorage.removeItem("gng_entregas");
+  localStorage.removeItem("gng_agendamentos");
   localStorage.removeItem("gng_metas");
   localStorage.removeItem("gng_metasAnuais");
   localStorage.removeItem("gng_vendedores");
@@ -6180,6 +6375,7 @@ function importarDados(e){
       if(d.estoque)set("estoque",d.estoque);
       if(d.insumos)set("insumos",d.insumos);
       if(d.entregas)set("entregas",d.entregas);
+      if(d.agendamentos)set("agendamentos",d.agendamentos);
       if(d.params)set("params",d.params);
       if(d.metas)set("metas",d.metas);
       if(d.insumoEst)set("insumoEst",d.insumoEst);
