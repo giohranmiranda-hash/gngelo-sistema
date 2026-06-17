@@ -606,6 +606,12 @@ body{background:var(--bg)}
 .estq-alert .ea-t{font-weight:700;font-size:13px;color:#fff}
 .estq-alert .ea-d{font-size:12px;color:rgba(255,255,255,.72);margin-top:2px}
 .estq-alert .ea-btn{margin-left:auto;color:var(--danger);font-weight:700;font-size:12px;background:none;border:none;cursor:pointer;flex:none;align-self:center}
+/* KPIs do dashboard (estilo mockup IMG_1285) */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:13px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 16px}
+.kpi-card .k-lbl{font-size:13px;color:var(--muted);font-weight:400}
+.kpi-card .k-val{font-size:24px;font-weight:700;color:#fff;margin-top:8px;font-family:'Space Grotesk',-apple-system,sans-serif;letter-spacing:-.01em;line-height:1.1}
+.kpi-card .k-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-left:7px;vertical-align:middle}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.18/500.css">
@@ -745,12 +751,12 @@ body{background:var(--bg)}
     <div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:8px" id="h-atualizado">Última atualização: agora</div>
   </div>
 
-  <!-- KPIs PRINCIPAIS (estilo mockup) -->
-  <div class="metric-grid" style="margin-top:13px">
-    <div class="metric"><div class="lbl">Faturamento</div><div class="val" id="d-fat">R$ 0</div></div>
-    <div class="metric"><div class="lbl">Gelos vendidos</div><div class="val" id="d-vendidos">0</div></div>
-    <div class="metric"><div class="lbl">Ticket médio</div><div class="val" id="d-ticket">R$ 0</div></div>
-    <div class="metric"><div class="lbl">Pendentes</div><div class="val gold" id="d-pendentes">0</div><div class="sub" id="d-pendentes-sub">em dia</div></div>
+  <!-- KPIs PRINCIPAIS (estilo mockup IMG_1285) -->
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="k-lbl">Faturamento</div><div class="k-val" id="d-fat">R$ 0</div></div>
+    <div class="kpi-card"><div class="k-lbl">Gelos Vendidos</div><div class="k-val" id="d-vendidos">0</div></div>
+    <div class="kpi-card"><div class="k-lbl">Ticket Médio</div><div class="k-val" id="d-ticket">R$ 0</div></div>
+    <div class="kpi-card"><div class="k-lbl">Pendentes</div><div class="k-val"><span id="d-pendentes">0</span><span class="k-dot"></span></div></div>
   </div>
 
   <!-- MAIS INDICADORES -->
