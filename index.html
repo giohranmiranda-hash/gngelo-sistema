@@ -596,6 +596,16 @@ body{background:var(--bg)}
 .ia-item .ia-t{font-weight:700;font-size:13px}
 .ia-item .ia-d{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45}
 .ia-item .ia-acts{display:flex;justify-content:flex-end;gap:6px;margin-top:10px}
+/* Anel de meta (gauge) */
+.gauge{width:140px;height:140px;border-radius:50%;margin:12px auto;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--gold) 0%,#2a2a2a 0)}
+.gauge .gauge-center{width:104px;height:104px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center}
+.gauge .gauge-center b{font-size:28px;font-weight:700;color:var(--gold2);font-family:'Space Grotesk',-apple-system,sans-serif}
+/* Caixa de alerta de estoque (estilo mockup) */
+.estq-alert{background:#2A1517;border:1px solid rgba(255,107,107,.35);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:flex-start}
+.estq-alert>i{color:var(--danger);font-size:18px;margin-top:1px;flex:none}
+.estq-alert .ea-t{font-weight:700;font-size:13px;color:#fff}
+.estq-alert .ea-d{font-size:12px;color:rgba(255,255,255,.72);margin-top:2px}
+.estq-alert .ea-btn{margin-left:auto;color:var(--danger);font-weight:700;font-size:12px;background:none;border:none;cursor:pointer;flex:none;align-self:center}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.18/500.css">
@@ -722,21 +732,29 @@ body{background:var(--bg)}
     <select id="dash-periodo" onchange="renderDashboard()"><option value="mes">Mês</option><option value="ano">Ano</option><option value="acumulado">Acumulado</option></select>
   </div>
   
-  <!-- HERÓI: lucro + gráfico dourado -->
+  <!-- HERÓI -->
   <div class="dash-hero">
-    <div class="eyebrow" id="h-eyebrow">Lucro líquido do mês</div>
-    <div class="hero-num" id="h-lucro">R$ 0,00</div>
-    <div class="hero-delta" id="h-delta"></div>
-    <div class="hero-chart"><canvas id="cHero" role="img" aria-label="Evolução de lucro e faturamento do período">Gráfico de evolução do período.</canvas></div>
-    <div class="hero-meta">
-      <div><small>Faturamento</small><b id="h-fat">R$ 0,00</b></div>
-      <div><small>Vendido</small><b id="h-un">0 un</b></div>
-      <div><small>Ticket</small><b id="h-ticket">R$ 0,00</b></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="eyebrow" id="h-eyebrow">Lucro líquido do mês</div>
+      <i class="ti ti-chart-line" style="color:var(--gold2);font-size:20px"></i>
     </div>
+    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:2px">
+      <div class="hero-num" id="h-lucro" style="color:#fff">R$ 0,00</div>
+      <span class="hero-delta" id="h-delta" style="margin:0 0 6px"></span>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:8px" id="h-atualizado">Última atualização: agora</div>
   </div>
 
-  <!-- INDICADORES -->
-  <div class="dash-zona">Indicadores do mês</div>
+  <!-- KPIs PRINCIPAIS (estilo mockup) -->
+  <div class="metric-grid" style="margin-top:13px">
+    <div class="metric"><div class="lbl">Faturamento</div><div class="val" id="d-fat">R$ 0</div></div>
+    <div class="metric"><div class="lbl">Gelos vendidos</div><div class="val" id="d-vendidos">0</div></div>
+    <div class="metric"><div class="lbl">Ticket médio</div><div class="val" id="d-ticket">R$ 0</div></div>
+    <div class="metric"><div class="lbl">Pendentes</div><div class="val gold" id="d-pendentes">0</div><div class="sub" id="d-pendentes-sub">em dia</div></div>
+  </div>
+
+  <!-- MAIS INDICADORES -->
+  <div class="dash-zona">Mais indicadores</div>
   <div class="metric-grid">
     <div class="metric"><div class="lbl">Produzido</div><div class="val" id="d-prod">0 unid.</div><div class="sub" id="d-estq">Estoque: 0</div><div class="sub" id="d-prod-delta" style="font-weight:700"></div></div>
     <div class="metric"><div class="lbl">Margem</div><div class="val green" id="d-margem">0%</div><div class="sub" id="d-margem-tag">—</div></div>
@@ -747,7 +765,7 @@ body{background:var(--bg)}
   <!-- ASSISTENTE & ALERTAS -->
   <div class="dash-zona">Assistente & alertas</div>
   <div class="card ia-card">
-    <div class="ia-head"><span class="ia-ico"><i class="ti ti-robot"></i></span><h3>Assistente GN IA</h3></div>
+    <div class="ia-head"><span class="ia-ico"><i class="ti ti-bolt"></i></span><h3>Assistente GN IA</h3></div>
     <div id="ia-lista"></div>
   </div>
   <div id="dash-alertas"></div>
@@ -755,14 +773,19 @@ body{background:var(--bg)}
   <!-- METAS E RECEBÍVEIS -->
   <div class="dash-zona">Metas e recebíveis</div>
   <div class="card card-gold">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
-      <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">Meta mensal</span>
-      <span id="d-meta-pct" class="badge b-gold">0%</span>
+    <div style="text-align:center"><span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">Meta mensal</span></div>
+    <div class="gauge" id="d-gauge"><div class="gauge-center"><b id="d-meta-pct">0%</b></div></div>
+    <div style="text-align:center;font-size:11px;color:var(--muted)"><span id="d-meta-real">R$ 0 realizado</span> · <span id="d-meta-falta">Falta R$ 0</span></div>
+    <div style="display:none"><span id="d-meta-bar"></span></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="section-label" style="margin:0">Produção e estoque</span>
+      <button class="btn btn-sm" onclick="nav('estoque')">Ver tudo</button>
     </div>
-    <div class="progress"><div class="progress-fill" id="d-meta-bar" style="width:0%;background:var(--gold)"></div></div>
-    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--muted)">
-      <span id="d-meta-real">R$ 0 realizado</span><span id="d-meta-falta">Falta R$ 0</span>
-    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Produção × vendas do mês</span><span id="d-prod-dia-val" style="font-weight:700">0 / 0</span></div>
+    <div class="progress"><div class="progress-fill" id="d-prod-dia-bar" style="width:0%;background:var(--gold)"></div></div>
+    <div id="d-estq-alerta" style="margin-top:12px"></div>
   </div>
   <div class="card card-gold" id="card-receber">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -4010,13 +4033,15 @@ function renderDashboard(){
   setT("d-gastos",R(gastos));setT("d-gastos-sub",invest>0?`Invest. ${R(invest)}`:`Ticket: ${R(ticket)}`);
   setT("d-custo-un",R(custoUn));
   // HERO escuro (espelha o lucro do período)
-  setT("h-eyebrow",`Lucro líquido · ${titulo}`);setT("h-lucro",R(lucro));setT("h-fat",R(fat));setT("h-un",`${unid} un`);setT("h-ticket",R(ticket));
+  setT("h-eyebrow",`Lucro líquido · ${titulo}`);setT("h-lucro",R(lucro));setT("h-atualizado","Última atualização: "+now.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}));
+  setT("d-fat",R(fat));setT("d-vendidos",unid.toLocaleString("pt-BR"));setT("d-ticket",R(ticket));
 
   // ===== Contas a receber (vendas não recebidas no período) =====
   const pendentes=mv.filter(v=>!v.recebido).sort((a,b)=>(a.data||"").localeCompare(b.data||""));
   const totReceber=pendentes.reduce((s,v)=>s+(v.bruto||0),0);
   const elRecTot=document.getElementById("d-receber-total");
   if(elRecTot){elRecTot.textContent=R(totReceber);elRecTot.className="badge b-gold";elRecTot.style.background=totReceber>0?"var(--warning-bg)":"";elRecTot.style.color=totReceber>0?"var(--warning)":"";}
+  setT("d-pendentes",String(pendentes.length));setT("d-pendentes-sub",pendentes.length?R(totReceber)+" a receber":"em dia");
   const elRecLista=document.getElementById("d-receber-lista");
   if(elRecLista){
     elRecLista.innerHTML=pendentes.length?pendentes.map(v=>`
@@ -4053,8 +4078,24 @@ function renderDashboard(){
   document.getElementById("d-meta-pct").textContent=P(pct);
   document.getElementById("d-meta-real").textContent=`${R(fat)} realizado`;
   document.getElementById("d-meta-falta").textContent=`Falta ${R(Math.max(0,metas.fat-fat))}`;
+  // Anel circular da meta (gauge)
+  const gEl=document.getElementById("d-gauge");
+  if(gEl){const cor=pct>=100?"var(--success)":pct>=70?"var(--gold)":"var(--danger)";gEl.style.background=`conic-gradient(${cor} ${pct}%, #2a2a2a 0)`;}
+  // Produção × vendas do mês
+  setT("d-prod-dia-val",`${prod} / ${unid}`);
+  const pdBar=document.getElementById("d-prod-dia-bar");
+  if(pdBar)pdBar.style.width=Math.min(100,unid>0?(prod/unid*100):(prod>0?100:0))+"%";
+  // Caixa de alerta de estoque baixo (sabor que vende, abaixo do limite seguro)
+  const LIM_SEG=100;
+  const soldQ={};mv.forEach(v=>vendaItens(v).forEach(it=>{soldQ[it.produto]=(soldQ[it.produto]||0)+it.qtd;}));
+  const baixoCand=Object.keys(soldQ).filter(k=>(est[k]||0)<LIM_SEG).sort((a,b)=>(est[a]||0)-(est[b]||0));
+  const eaEl=document.getElementById("d-estq-alerta");
+  if(eaEl){
+    if(baixoCand.length){const k=baixoCand[0];
+      eaEl.innerHTML=`<div class="estq-alert"><i class="ti ti-alert-triangle"></i><div><div class="ea-t">Alerta de estoque baixo</div><div class="ea-d">Sabor ${SB[k]||k}: restam apenas <b>${est[k]||0}</b> unidades (abaixo do limite seguro de ${LIM_SEG}).</div></div><button class="ea-btn" onclick="nav('estoque')">Repor</button></div>`;
+    }else{eaEl.innerHTML='<div style="font-size:12px;color:var(--success)">✅ Estoques acima do limite seguro.</div>';}
+  }
   const al=[];
-  ["coco","morango","maracuja","maca"].forEach(k=>{if((est[k]||0)<20)al.push(`Estoque baixo: ${SB[k]} (${est[k]||0} unid.)`);});
   if(marg<20&&fat>0)al.push(`Margem baixa: ${P(marg)} — verifique seus custos`);
   
   // Alertas de validade
