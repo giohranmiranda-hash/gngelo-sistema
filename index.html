@@ -1445,6 +1445,7 @@ body{background:var(--bg)}
 <!-- COMISSÕES -->
 <div id="screen-comissoes" class="screen">
   <div class="page-header"><h2><i class="ti ti-percentage"></i> Comissões de vendedores</h2></div>
+  <div id="com-resumo" class="kpi-grid" style="margin-bottom:12px"></div>
   
   <div class="tab-bar">
     <button class="tab-btn active" onclick="tab('t-com-vend',this)">Vendedores</button>
@@ -6064,7 +6065,21 @@ function updateComVendedor(){
   const el=document.getElementById("com-vendedor");
   el.innerHTML='<option value="">Todos os vendedores</option>'+vs.map(v=>`<option value="${v.id}">${v.nome}</option>`).join("");
 }
+function renderComResumo(){
+  const el=document.getElementById("com-resumo"); if(!el)return;
+  const vs=getVend(), mes=curM();
+  const vendas=getV().filter(v=>v.vendedor && v.data && v.data.startsWith(mes));
+  const porVend={};
+  vendas.forEach(v=>{const vend=vs.find(x=>String(x.id)===String(v.vendedor)); if(!vend||vend.status==="inativo")return; const com=vend.tipo==="fixo"?(vend.valor||0):(v.bruto||0)*(vend.valor||0)/100; porVend[vend.nome]=(porVend[vend.nome]||0)+com;});
+  const total=Object.values(porVend).reduce((a,x)=>a+x,0);
+  const top=Object.entries(porVend).sort((a,b)=>b[1]-a[1])[0];
+  const ativos=vs.filter(v=>v.status!=="inativo").length;
+  el.innerHTML=`<div class="kpi-card acc" style="grid-column:1/-1"><div class="k-lbl">Total a pagar (mês)</div><div class="k-val" style="color:var(--gold2)">${R(total)}</div><div class="k-lbl" style="margin-top:2px">${vendas.length} venda(s) com comissão</div></div>`+
+    `<div class="kpi-card"><div class="k-lbl">Vendedores ativos</div><div class="k-val">${ativos}</div></div>`+
+    `<div class="kpi-card"><div class="k-lbl">Maior comissão</div><div class="k-val" style="font-size:17px">${top?top[0]:"—"}</div><div class="k-lbl" style="color:var(--gold2);margin-top:2px">${top?R(top[1]):"—"}</div></div>`;
+}
 function renderComissoes(){
+  try{renderComResumo();}catch(e){}
   const vs=getVend();
   const vendSel=document.getElementById("com-vendedor").value;
   const periodoSel=document.getElementById("com-periodo").value;
