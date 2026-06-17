@@ -580,6 +580,7 @@ body{background:var(--bg)}
 .dash-hero .hero-num{font-family:'Space Grotesk',-apple-system,sans-serif;font-feature-settings:"tnum" 1;font-weight:600;font-size:40px;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--gold2)}
 .dash-hero .hero-delta{display:inline-flex;align-items:center;gap:5px;margin-top:11px;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.78)}
 .dash-hero .hero-delta:empty{display:none}
+.dash-hero .hero-chart{height:140px;margin-top:16px;position:relative}
 .dash-hero .hero-meta{display:flex;gap:18px;margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px}
 .dash-hero .hero-meta>div small{display:block;color:rgba(255,255,255,.45);font-size:10px;letter-spacing:.05em;text-transform:uppercase}
 .dash-hero .hero-meta>div b{font-size:15px;color:#fff;font-weight:600;font-family:'Space Grotesk',-apple-system,sans-serif;font-feature-settings:"tnum" 1}
@@ -714,6 +715,7 @@ body{background:var(--bg)}
     <div class="eyebrow" id="h-eyebrow">Lucro líquido do mês</div>
     <div class="hero-num" id="h-lucro">R$ 0,00</div>
     <div class="hero-delta" id="h-delta"></div>
+    <div class="hero-chart"><canvas id="cHero" role="img" aria-label="Evolução de lucro e faturamento do período">Gráfico de evolução do período.</canvas></div>
     <div class="hero-meta">
       <div><small>Faturamento</small><b id="h-fat">R$ 0,00</b></div>
       <div><small>Vendido</small><b id="h-un">0 un</b></div>
@@ -3997,7 +3999,8 @@ function renderDashboard(){
   }).join("");
   const dias=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
   const vpd=Array(dias).fill(0);
-  mv.forEach(v=>{const d=parseInt(v.data.split("-")[2])-1;if(d>=0&&d<dias)vpd[d]+=v.bruto;});
+  const lpd=Array(dias).fill(0);
+  mv.forEach(v=>{const d=parseInt(v.data.split("-")[2])-1;if(d>=0&&d<dias){vpd[d]+=v.bruto;lpd[d]+=(v.lucro||0);}});
   if(cVI)cVI.destroy();
   const cVendas=document.getElementById("cVendas");
   if(cVendas){
@@ -4017,6 +4020,22 @@ function renderDashboard(){
       {label:"Lucro",data:lucMes,borderColor:"#15803D",backgroundColor:"transparent",tension:.3,borderWidth:2,pointRadius:2},
       {label:"Gastos",data:gasMes,borderColor:"#B91C1C",backgroundColor:"transparent",tension:.3,borderWidth:2,pointRadius:2,borderDash:[4,3]}
     ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,labels:{font:{size:10},boxWidth:12}},tooltip:_tipBRL,datalabels:{display:false}},scales:{x:{ticks:{font:{size:9},color:"#888"}},y:{ticks:{font:{size:10},color:"#888",callback:v=>"R$"+v}}}}});
+  }
+
+  // ===== Gráfico-HERÓI: Lucro (dourado) × Faturamento (cinza) — estilo Stitch =====
+  const heroDaily=!!mesFilter;
+  const hLabels=heroDaily?Array.from({length:dias},(_,i)=>String(i+1).padStart(2,"0")):["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  const hLucro=heroDaily?lpd:lucMes, hFat=heroDaily?vpd:fatMes;
+  if(window.cHE)window.cHE.destroy();
+  const cHeroEl=document.getElementById("cHero");
+  if(cHeroEl){
+    const ctxH=cHeroEl.getContext("2d");
+    const grad=ctxH.createLinearGradient(0,0,0,140);
+    grad.addColorStop(0,"rgba(230,195,100,.28)");grad.addColorStop(1,"rgba(230,195,100,0)");
+    window.cHE=new Chart(cHeroEl,{type:"line",data:{labels:hLabels,datasets:[
+      {label:"Faturamento",data:hFat,borderColor:"rgba(255,255,255,.35)",backgroundColor:"transparent",borderWidth:1.5,tension:.4,pointRadius:0,fill:false},
+      {label:"Lucro",data:hLucro,borderColor:"#E6C364",backgroundColor:grad,borderWidth:2.5,tension:.4,pointRadius:0,fill:true}
+    ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{display:false},tooltip:_tipBRL,datalabels:{display:false}},scales:{x:{grid:{display:false},border:{display:false},ticks:{font:{size:9},color:"rgba(255,255,255,.4)",maxTicksLimit:5}},y:{display:false,grid:{display:false}}}}});
   }
 
   // Gráfico de Lançamentos (Vendas/Produção/Gastos)
