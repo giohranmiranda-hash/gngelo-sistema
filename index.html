@@ -1178,6 +1178,7 @@ body{background:var(--bg)}
   </div>
   
   <div id="t-metas-mensal">
+    <div id="metas-hero"></div>
     <div class="page-header"><h2><i class="ti ti-target"></i> Metas do mês</h2><div class="sub" id="meta-mes-label"></div></div>
     
     <!-- Navegação de meses -->
@@ -4965,6 +4966,19 @@ function renderMetas(){
       select.innerHTML+=`<option value="${value}" ${i===0?'selected':''}>${label}</option>`;
     }
   }
+  // Headline de faturamento global vs meta (estilo mockup)
+  try{
+    const _m=getM(), _vs=getV(), _ym=hoje.toISOString().substring(0,7);
+    const _fat=_vs.filter(v=>v.data&&v.data.startsWith(_ym)).reduce((s,v)=>s+(v.bruto||0),0);
+    const _pct=_m.fat>0?Math.min(100,_fat/_m.fat*100):0;
+    const _h=document.getElementById("metas-hero");
+    if(_h)_h.innerHTML=`<div class="card card-gold" style="text-align:center">`+
+      `<div class="k-lbl">Faturamento do mês · ${MESES[hoje.getMonth()]} de ${hoje.getFullYear()}</div>`+
+      `<div style="color:var(--gold2);font-size:34px;font-weight:700;font-family:'Space Grotesk',-apple-system,sans-serif;letter-spacing:-.02em;margin:4px 0">${R(_fat)}</div>`+
+      `<div class="k-lbl" style="margin-bottom:10px">Meta: ${R(_m.fat||0)}</div>`+
+      `<div class="progress"><div class="progress-fill" style="width:${_pct}%;background:${_pct>=100?'var(--success)':_pct>=70?'var(--gold)':'var(--danger)'}"></div></div>`+
+      `<div style="font-size:11px;color:var(--muted);margin-top:6px">${P(_pct)} da meta global</div></div>`;
+  }catch(e){}
 }
 
 function navMesAnterior(){
