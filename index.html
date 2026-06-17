@@ -624,6 +624,7 @@ body{background:var(--bg)}
   <button class="nav-btn" onclick="nav('calendario',this)"><i class="ti ti-calendar"></i><span>Calendário</span></button>
   <button class="nav-btn" onclick="nav('parametros',this)"><i class="ti ti-settings"></i><span>Config</span></button>
   <button class="nav-btn" onclick="nav('relatorios',this)"><i class="ti ti-file-text"></i><span>Relatórios</span></button>
+  <button class="nav-btn" onclick="nav('exportacao',this)"><i class="ti ti-file-export"></i><span>Exportação</span></button>
   <button class="nav-icon nav-bell" onclick="mostrarAlertas()" aria-label="Alertas"><i class="ti ti-bell"></i><span class="alert-badge"></span></button>
   <button class="nav-btn" onclick="mostrarAlertas()" style="position:relative"><i class="ti ti-alert-circle"></i><span>Alertas</span><span class="alert-badge" style="position:absolute;top:-5px;right:-5px;background:var(--danger);color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;display:none">0</span></button>
 </nav>
@@ -651,6 +652,7 @@ body{background:var(--bg)}
     <button class="drawer-item" onclick="navMais('metas')"><i class="ti ti-target"></i> Metas</button>
     <div class="drawer-sec">Análise</div>
     <button class="drawer-item" onclick="navMais('relatorios')"><i class="ti ti-file-text"></i> Relatórios</button>
+    <button class="drawer-item" onclick="navMais('exportacao')"><i class="ti ti-file-export"></i> Exportação</button>
     <button class="drawer-item" onclick="navMais('calendario')"><i class="ti ti-calendar"></i> Calendário</button>
     <div class="drawer-sec">Sistema</div>
     <button class="drawer-item" onclick="navMais('parametros')"><i class="ti ti-settings"></i> Parâmetros / Backup</button>
@@ -1527,6 +1529,89 @@ body{background:var(--bg)}
   </div>
 </div>
 
+<!-- ===== TELA: CENTRAL DE EXPORTAÇÃO ===== -->
+<style>
+  #screen-exportacao .exp-grid{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:1024px){#screen-exportacao .exp-grid{grid-template-columns:repeat(12,1fr)}
+    #screen-exportacao .exp-fin{grid-column:span 7}
+    #screen-exportacao .exp-bkp{grid-column:span 5}
+    #screen-exportacao .exp-ops{grid-column:span 6}
+    #screen-exportacao .exp-ana{grid-column:span 6}
+    #screen-exportacao .exp-hist{grid-column:span 12}}
+  #screen-exportacao .exp-list{display:grid;gap:8px}
+  @media(min-width:560px){#screen-exportacao .exp-list.two{grid-template-columns:1fr 1fr}}
+  .exp-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;
+    background:var(--gold-light);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:all .15s;color:var(--text)}
+  .exp-item:hover{border-color:var(--gold);background:#fff}
+  .exp-item b{font-size:13px;font-weight:700;display:block}
+  .exp-item small{font-size:11px;color:var(--muted)}
+  .exp-item .ico{width:36px;height:36px;flex-shrink:0;border-radius:50%;background:var(--gold);color:var(--black);
+    display:flex;align-items:center;justify-content:center;font-size:18px}
+  .exp-chart{height:90px;display:flex;align-items:flex-end;gap:4px;padding:8px;background:var(--gold-light);border:1px solid var(--border);border-radius:8px;margin-top:10px}
+  .exp-chart i{flex:1;background:linear-gradient(var(--gold2),var(--gold));border-radius:3px 3px 0 0;opacity:.85}
+</style>
+<div id="screen-exportacao" class="screen">
+  <div class="page-header"><h2><i class="ti ti-file-export"></i> Central de Exportação</h2><div class="sub">Relatórios, dados operacionais e backups do sistema.</div></div>
+  <div class="exp-grid">
+
+    <!-- Relatórios financeiros -->
+    <div class="card card-gold exp-fin">
+      <div class="section-label" style="color:var(--gold)"><i class="ti ti-wallet"></i> Relatórios financeiros</div>
+      <div class="exp-list two">
+        <button class="exp-item" onclick="gerarCSVDRE()"><span><b>DRE — Lucros e Perdas</b><small>Planilha CSV</small></span><span class="ico"><i class="ti ti-download"></i></span></button>
+        <button class="exp-item" onclick="gerarPDF()"><span><b>Relatório completo</b><small>PDF para auditoria</small></span><span class="ico"><i class="ti ti-file-type-pdf"></i></span></button>
+        <button class="exp-item" onclick="exportarRelatorio()"><span><b>Resumo executivo</b><small>Texto (.txt)</small></span><span class="ico"><i class="ti ti-download"></i></span></button>
+        <button class="exp-item" onclick="gerarCSVEstoque()"><span><b>Posição de estoque</b><small>Planilha CSV</small></span><span class="ico"><i class="ti ti-download"></i></span></button>
+      </div>
+    </div>
+
+    <!-- Backup & nuvem -->
+    <div class="card exp-bkp">
+      <div class="section-label"><i class="ti ti-cloud"></i> Backup & nuvem</div>
+      <div class="exp-list">
+        <button class="exp-item" onclick="nuvemEnviar()"><span><b>Enviar à nuvem</b><small>Supabase — backup online</small></span><span class="ico"><i class="ti ti-cloud-upload"></i></span></button>
+        <button class="exp-item" onclick="nuvemBaixar()"><span><b>Baixar da nuvem</b><small>Restaura o backup online</small></span><span class="ico"><i class="ti ti-cloud-download"></i></span></button>
+        <button class="exp-item" onclick="criarSnapshotManual();nav('exportacao')"><span><b>Snapshot local</b><small>Ponto de restauração</small></span><span class="ico"><i class="ti ti-camera"></i></span></button>
+      </div>
+      <button class="btn btn-gold btn-full" style="margin-top:10px" onclick="gerarBackupJSON()"><i class="ti ti-database"></i> Backup completo (JSON)</button>
+      <div id="exp-bkp-msg" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+    </div>
+
+    <!-- Dados operacionais -->
+    <div class="card exp-ops">
+      <div class="section-label"><i class="ti ti-building-factory-2"></i> Dados operacionais</div>
+      <div class="exp-list two">
+        <button class="exp-item" onclick="gerarCSVVendas()"><span><b>Vendas</b><small>Planilha CSV</small></span><span class="ico"><i class="ti ti-receipt"></i></span></button>
+        <button class="exp-item" onclick="gerarCSVProducoes()"><span><b>Produções</b><small>Planilha CSV</small></span><span class="ico"><i class="ti ti-tool"></i></span></button>
+        <button class="exp-item" onclick="gerarCSVGastos()"><span><b>Gastos</b><small>Planilha CSV</small></span><span class="ico"><i class="ti ti-cash"></i></span></button>
+        <button class="exp-item" onclick="gerarCSVEstoque()"><span><b>Estoque / FIFO</b><small>Planilha CSV</small></span><span class="ico"><i class="ti ti-package"></i></span></button>
+      </div>
+    </div>
+
+    <!-- Análises -->
+    <div class="card exp-ana">
+      <div class="section-label"><i class="ti ti-chart-histogram"></i> Análises</div>
+      <div class="exp-list two">
+        <button class="exp-item" onclick="nav('relatorios')"><span><b>Comparar períodos</b><small>Mês a mês / ano a ano</small></span><span class="ico"><i class="ti ti-chart-line"></i></span></button>
+        <button class="exp-item" onclick="nav('metas')"><span><b>Rastreio de metas</b><small>Progresso dos objetivos</small></span><span class="ico"><i class="ti ti-target"></i></span></button>
+      </div>
+      <div class="exp-chart" role="img" aria-label="Ilustração de gráfico">
+        <i style="height:40%"></i><i style="height:60%"></i><i style="height:50%"></i><i style="height:80%"></i><i style="height:90%"></i><i style="height:70%"></i><i style="height:45%"></i><i style="height:65%"></i>
+      </div>
+    </div>
+
+    <!-- Histórico de versões -->
+    <div class="card exp-hist">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="section-label" style="margin:0"><i class="ti ti-history"></i> Histórico de versões</div>
+        <button class="btn btn-sm" onclick="navMais('parametros')">Ver tudo</button>
+      </div>
+      <div id="exp-historico" style="margin-top:10px"></div>
+    </div>
+
+  </div>
+</div>
+
 </div><!-- /app -->
 
 <!-- MODAIS -->
@@ -1676,6 +1761,20 @@ function excluirSnapshot(ts){
   if(!confirm("Excluir este ponto de restauração?"))return;
   setHistorico(getHistorico().filter(h=>h.ts!==ts));
   renderHistorico();
+}
+// Histórico de versões compacto para a Central de Exportação
+function renderExpHistorico(){
+  const el=document.getElementById("exp-historico"); if(!el)return;
+  const hist=getHistorico().slice().reverse().slice(0,5);
+  if(!hist.length){ el.innerHTML='<div style="font-size:12px;color:var(--muted)">Nenhum ponto salvo ainda. Os pontos são criados automaticamente conforme você usa o sistema.</div>'; return; }
+  el.innerHTML=hist.map(h=>{
+    const quando=new Date(h.ts).toLocaleString("pt-BR");
+    const tag=h.label==="manual"?'<span class="badge b-gold">manual</span>':(h.label==="antes de restaurar"?'<span class="badge b-red">pré-restauração</span>':'<span class="badge b-green">auto</span>');
+    return `<div class="item-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div style="min-width:0"><div style="font-weight:700;font-size:13px">🕓 ${quando}</div><div style="font-size:11px;margin-top:2px">${tag}</div></div>
+      <button class="btn btn-sm btn-gold" onclick="restaurarSnapshot('${h.ts}')"><i class="ti ti-history"></i> Restaurar</button>
+    </div>`;
+  }).join("");
 }
 function renderHistorico(){
   const el=document.getElementById("lista-historico"); if(!el)return;
@@ -1864,7 +1963,7 @@ function nav(id,el){
   // sincroniza o destaque na barra inferior (mesmo navegando por atalho/menu)
   const bb=document.querySelector('.bnav-btn[data-screen="'+id+'"]'); if(bb)bb.classList.add("active");
   try{window.scrollTo(0,0);}catch(e){}
-  const r={dashboard:renderDashboard,estoque:renderEst,dre:()=>{renderDRE();renderDREAnual();renderGerencial();renderDREInsumos();},metas:()=>{renderMetas();renderMetasAnuais();renderMetasProgresso();},clientes:renderCli,relatorios:renderRel,parametros:()=>{renderReceitas();renderCF();atualizarStatusNuvem();renderHistorico();},comissoes:()=>{renderVendedores();updateComVendedor();renderComissoes();},fluxo:()=>{renderFluxo();renderFluxoPeriodo();renderFluxoPrevisao();renderFluxoVendas();},calendario:renderCalendario,lancamentos:()=>{renderLV();renderLG();renderLP();renderLE();renderAgendamentos();updateComVendedor();}};
+  const r={dashboard:renderDashboard,estoque:renderEst,dre:()=>{renderDRE();renderDREAnual();renderGerencial();renderDREInsumos();},metas:()=>{renderMetas();renderMetasAnuais();renderMetasProgresso();},clientes:renderCli,relatorios:renderRel,parametros:()=>{renderReceitas();renderCF();atualizarStatusNuvem();renderHistorico();},comissoes:()=>{renderVendedores();updateComVendedor();renderComissoes();},fluxo:()=>{renderFluxo();renderFluxoPeriodo();renderFluxoPrevisao();renderFluxoVendas();},calendario:renderCalendario,exportacao:renderExpHistorico,lancamentos:()=>{renderLV();renderLG();renderLP();renderLE();renderAgendamentos();updateComVendedor();}};
   if(r[id])r[id]();
 }
 // Atalho: navega para uma tela e (opcional) abre uma aba específica
