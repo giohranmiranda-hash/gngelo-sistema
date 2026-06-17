@@ -1094,8 +1094,14 @@ body{background:var(--bg)}
     <button class="tab-btn" onclick="tab('t-est-i',this)">Insumos</button>
   </div>
   <div id="t-est-p">
-    <div class="page-header"><h2><i class="ti ti-package"></i> Estoque de produtos</h2></div>
-    <div id="est-produtos"></div>
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <h2 style="margin:0"><i class="ti ti-package"></i> Gestão de produção</h2>
+      <button class="btn btn-gold btn-sm" onclick="atalho('lancamentos','t-prod')"><i class="ti ti-plus"></i> Registrar produção</button>
+    </div>
+    <div class="dash-zona">Estoque atual</div>
+    <div id="est-produtos" class="kpi-grid" style="margin-top:0"></div>
+    <div class="dash-zona">Histórico recente</div>
+    <div id="est-hist-prod"></div>
     <div class="card card-gold" style="margin-top:16px">
       <div class="section-label">✏️ Ajuste manual de estoque</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Corrige o saldo direto, <b>sem</b> registrar produção nem consumir insumos. Use para acertar divergências (ex.: estoque que não voltou após um erro).</div>
@@ -1209,7 +1215,19 @@ body{background:var(--bg)}
 
 <!-- CLIENTES -->
 <div id="screen-clientes" class="screen">
-  <div class="page-header"><h2><i class="ti ti-users"></i> Clientes</h2></div>
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+    <h2 style="margin:0"><i class="ti ti-users"></i> Vendas & Clientes</h2>
+    <button class="btn btn-sm" onclick="gerarCSVVendas()"><i class="ti ti-download"></i> Exportar</button>
+  </div>
+  <div class="kpi-grid" style="margin-top:4px">
+    <div class="kpi-card"><div class="k-lbl">Faturamento (30d)</div><div class="k-val" id="vc-fat">R$ 0</div><div class="k-lbl" id="vc-fat-delta" style="margin-top:4px"></div></div>
+    <div class="kpi-card"><div class="k-lbl">Pedidos (30d)</div><div class="k-val" id="vc-ped">0</div><div class="k-lbl" id="vc-ped-sub" style="margin-top:4px"></div></div>
+  </div>
+  <div class="dash-zona">Vendas recentes</div>
+  <div id="vc-recentes"></div>
+  <div class="dash-zona">Top 5 clientes</div>
+  <div id="vc-top"></div>
+  <div class="dash-zona">Todos os clientes</div>
   <button class="btn btn-primary" style="margin-bottom:10px" onclick="openModal('modal-cliente')"><i class="ti ti-plus"></i> Novo cliente</button>
   <div id="lista-cli"></div>
 </div>
@@ -4346,7 +4364,15 @@ function ajustarEstoque(){
 function renderEst(){
   const est=getEst();
   const sabores=["coco","morango","maracuja","maca","manga","melancia","limao","iceblue","energetico","frutas","amora","abacaxi","salLimao","uva","chiclete","cereja","morPessego","brasil","bobMarley","laranja","balaHouse"];
-  document.getElementById("est-produtos").innerHTML=sabores.map(k=>{const v=est[k]||0,low=v<20;return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><span class="fl ${SC[k]}">${SB[k]}</span><span class="badge ${low?"b-red":"b-green"}">${low?"⚠️ Baixo":"✅ OK"}</span></div><div style="display:flex;justify-content:space-between;margin-top:8px"><span style="color:var(--muted);font-size:13px">Estoque atual</span><span style="font-size:22px;font-weight:700;${low?"color:var(--danger)":"color:var(--success)"}">${v} unid.</span></div></div>`;}).join("");
+  document.getElementById("est-produtos").innerHTML=sabores.map(k=>{
+    const v=est[k]||0; let status,bc;
+    if(v<=0){status="ZERADO";bc="b-red";}else if(v<20){status="CRÍTICO";bc="b-red";}else if(v<100){status="ATENÇÃO";bc="b-gold";}else{status="ESTÁVEL";bc="b-green";}
+    return `<div class="kpi-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="k-lbl" style="text-transform:uppercase">${SB[k]}</span><span class="badge ${bc}">${status}</span></div><div class="k-val" style="margin-top:8px">${v.toLocaleString("pt-BR")}</div><div class="k-lbl">unidades${v>0&&v<100?" (mín. 100)":""}</div></div>`;
+  }).join("");
+  // Histórico recente de produção (estilo mockup)
+  const elHP=document.getElementById("est-hist-prod");
+  if(elHP){const ps=getPr().slice().sort((a,b)=>(b.data||"").localeCompare(a.data||"")).slice(0,5);
+    elHP.innerHTML=ps.length?ps.map(p=>`<div class="item-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="min-width:0"><div style="font-weight:700;font-size:13px">${SB[p.sabor]||p.sabor}</div><div style="font-size:11px;color:var(--muted)">${p.data}${p.codigoLote?" · Lote "+p.codigoLote:""}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-weight:700;color:var(--gold2)">+${(p.qtd||0).toLocaleString("pt-BR")}</div><span class="badge b-green">Concluído</span></div></div>`).join(""):'<div class="empty"><i class="ti ti-history"></i>Sem produções registradas</div>';}
   // Popula o seletor de sabores do ajuste manual (mantém a seleção atual)
   const ajSel=document.getElementById("aj-sabor");
   if(ajSel){const cur=ajSel.value;ajSel.innerHTML=sabores.map(k=>`<option value="${k}">${SB[k]} — ${est[k]||0} un</option>`).join("");if(cur)ajSel.value=cur;}
@@ -5141,7 +5167,34 @@ function salvarMetasAnuais(){
   renderMetasAnuais();alert("✅ Metas anuais salvas!");
 }
 
+function renderVendasClientes(){
+  const vs=getV(), setT=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
+  const hoje=new Date(), c30=new Date(hoje.getTime()-30*86400000), c60=new Date(hoje.getTime()-60*86400000);
+  let fat30=0, fatPrev=0, ped30=0;
+  vs.forEach(v=>{const d=new Date(v.data); if(isNaN(d))return; if(d>=c30){fat30+=v.bruto||0;ped30++;} else if(d>=c60)fatPrev+=v.bruto||0;});
+  setT("vc-fat",R(fat30));
+  const delta=fatPrev>0?((fat30-fatPrev)/fatPrev*100):0;
+  setT("vc-fat-delta",fatPrev>0?`${delta>=0?"+":""}${delta.toFixed(0)}% vs 30d ant.`:"—");
+  setT("vc-ped",String(ped30));
+  const pend=vs.filter(v=>!v.recebido);
+  setT("vc-ped-sub",pend.length?`${pend.length} pendente(s)`:"todos pagos");
+  // Vendas recentes
+  const rec=vs.slice().sort((a,b)=>(b.data||"").localeCompare(a.data||"")).slice(0,5);
+  const elR=document.getElementById("vc-recentes");
+  if(elR)elR.innerHTML=rec.length?rec.map(v=>{
+    const badge=v.recebido?'<span class="badge b-green">PAGO</span>':'<span class="badge" style="background:var(--warning-bg);color:var(--warning)">PENDENTE</span>';
+    const it=v.itens&&v.itens.length>1?(v.itens.length+" sabores"):(SB[v.produto]||v.produto||"");
+    return `<div class="item-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="min-width:0"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.cliente||"Avulso"}</div><div style="font-size:11px;color:var(--muted)">${v.data} · ${it}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-weight:700">${R(v.bruto||0)}</div>${badge}</div></div>`;
+  }).join(""):'<div class="empty"><i class="ti ti-receipt-off"></i>Sem vendas ainda</div>';
+  // Top 5 clientes
+  const agg={};
+  vs.forEach(v=>{const k=(v.cliente||"").trim();if(!k||k.toLowerCase()==="avulso")return;agg[k]=(agg[k]||0)+(v.bruto||0);});
+  const top=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const elT=document.getElementById("vc-top");
+  if(elT)elT.innerHTML=top.length?top.map(([nome,tot],i)=>`<div class="item-card" style="display:flex;align-items:center;gap:12px"><span style="font-weight:700;color:var(--gold2);width:18px;text-align:center;flex:none">${i+1}</span><div style="flex:1;min-width:0;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}</div><div style="font-weight:700;color:var(--success);flex:none">${R(tot)}</div></div>`).join(""):'<div class="empty"><i class="ti ti-user-off"></i>Sem dados de clientes</div>';
+}
 function renderCli(){
+  renderVendasClientes();
   const cs=getCli(),el=document.getElementById("lista-cli");
   if(!cs.length){el.innerHTML='<div class="empty"><i class="ti ti-users"></i>Nenhum cliente cadastrado</div>';return;}
   // Agrega compras por cliente a partir das vendas (nome normalizado).
