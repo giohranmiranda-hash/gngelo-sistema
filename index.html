@@ -584,6 +584,18 @@ body{background:var(--bg)}
 .dash-hero .hero-meta{display:flex;gap:18px;margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px}
 .dash-hero .hero-meta>div small{display:block;color:rgba(255,255,255,.45);font-size:10px;letter-spacing:.05em;text-transform:uppercase}
 .dash-hero .hero-meta>div b{font-size:15px;color:#fff;font-weight:600;font-family:'Space Grotesk',-apple-system,sans-serif;font-feature-settings:"tnum" 1}
+/* Assistente GN IA */
+.ia-card{position:relative;overflow:hidden;border:1px solid var(--gold-border)}
+.ia-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(var(--gold2),var(--gold))}
+.ia-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ia-head h3{font-size:16px;font-weight:700;margin:0}
+.ia-ico{width:30px;height:30px;flex:none;border-radius:50%;background:rgba(201,168,76,.16);color:var(--gold2);display:flex;align-items:center;justify-content:center;font-size:17px}
+.ia-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.ia-item .ia-row{display:flex;gap:10px;align-items:flex-start}
+.ia-item .ia-row>i{font-size:18px;margin-top:1px;flex:none}
+.ia-item .ia-t{font-weight:700;font-size:13px}
+.ia-item .ia-d{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45}
+.ia-item .ia-acts{display:flex;justify-content:flex-end;gap:6px;margin-top:10px}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.18/500.css">
@@ -727,6 +739,10 @@ body{background:var(--bg)}
     <div class="metric"><div class="lbl">Margem</div><div class="val green" id="d-margem">0%</div><div class="sub" id="d-margem-tag">—</div></div>
     <div class="metric"><div class="lbl">Gastos</div><div class="val red" id="d-gastos">R$ 0,00</div><div class="sub" id="d-gastos-sub">Ticket: R$ 0</div><div class="sub" id="d-gastos-delta" style="font-weight:700"></div></div>
     <div class="metric"><div class="lbl">Custo/un</div><div class="val gold" id="d-custo-un">R$ 0,00</div><div class="sub">pelos insumos</div></div>
+  </div>
+  <div class="card ia-card">
+    <div class="ia-head"><span class="ia-ico"><i class="ti ti-robot"></i></span><h3>Assistente GN IA</h3></div>
+    <div id="ia-lista"></div>
   </div>
   <div class="card card-gold">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
@@ -3865,6 +3881,57 @@ function initDemoData(){
   set("demo_ja_criado",true);
 }
 
+// ===== ASSISTENTE GN IA (recomendações inteligentes a partir dos dados reais) =====
+function iaDismiss(id){
+  try{ const d=JSON.parse(localStorage.getItem("gng__ia_dismiss")||"[]"); if(!d.includes(id))d.push(id); localStorage.setItem("gng__ia_dismiss",JSON.stringify(d)); }catch(e){}
+  renderAssistenteIA();
+}
+function renderAssistenteIA(){
+  const el=document.getElementById("ia-lista"); if(!el)return;
+  const vs=getV(), est=getEst(), lotes=getLot(), ins=getIns();
+  let dismissed=[]; try{ dismissed=JSON.parse(localStorage.getItem("gng__ia_dismiss")||"[]"); }catch(e){}
+  const itens=[];
+  const hoje=new Date();
+
+  // 1) Recomendação de produção: demanda média (30 dias) projetada para 7 dias menos o estoque
+  const dias=30, corte=new Date(hoje.getTime()-dias*86400000), vend={};
+  vs.forEach(v=>{ const d=new Date(v.data); if(!isNaN(d)&&d>=corte){ (v.itens&&v.itens.length?v.itens:[{produto:v.produto,qtd:v.qtd}]).forEach(it=>{ if(it&&it.produto)vend[it.produto]=(vend[it.produto]||0)+(it.qtd||0); }); } });
+  let best=null;
+  Object.keys(vend).forEach(k=>{ const demanda7=Math.round((vend[k]/dias)*7), falta=demanda7-(est[k]||0); if(falta>0&&(!best||falta>best.falta))best={sabor:k,falta,demanda7,estoque:est[k]||0}; });
+  if(best&&best.falta>=5)itens.push({id:"prod-"+best.sabor,icon:"ti-bulb",cor:"var(--gold)",t:"Recomendação de produção",
+    d:`Produzir <b style="color:var(--gold2)">${best.falta} un de ${SB[best.sabor]||best.sabor}</b> para os próximos 7 dias — sua média de vendas indica demanda de ~${best.demanda7} un e o estoque atual é ${best.estoque} un.`,
+    aLabel:"Criar produção",aFn:"atalho('lancamentos','t-prod')"});
+
+  // 2) Estoque baixo de sabores que vendem
+  const baixos=Object.keys(vend).filter(k=>(est[k]||0)<20).sort((a,b)=>(est[a]||0)-(est[b]||0));
+  if(baixos.length)itens.push({id:"estq",icon:"ti-alert-triangle",cor:"var(--danger)",t:"Alerta de estoque",
+    d:`Estoque baixo de <b>${baixos.slice(0,3).map(k=>SB[k]||k).join(", ")}</b>${baixos.length>3?` e +${baixos.length-3}`:""}. Considere produzir para não perder vendas.`,
+    aLabel:"Ver estoque",aFn:"nav('estoque')"});
+
+  // 3) Validade de lotes
+  const h=hoje.toISOString().split("T")[0];
+  const venc=lotes.filter(l=>l.validade&&l.validade<h), vencendo=lotes.filter(l=>l.validade&&l.validade>=h&&(new Date(l.validade)-hoje)/86400000<7);
+  if(venc.length||vencendo.length)itens.push({id:"lotes-"+h,icon:"ti-clock-hour-4",cor:"var(--warning)",t:"Validade de lotes",
+    d:venc.length?`<b>${venc.length} lote(s) vencido(s)</b> — retire do estoque para não usar produto fora da validade.`:`${vencendo.length} lote(s) vencendo em menos de 7 dias. Priorize a venda (FIFO).`,
+    aLabel:"Ver lotes",aFn:"atalho('estoque','t-est-l')"});
+
+  // 4) Contas a receber em aberto
+  const aReceber=vs.filter(v=>!v.recebido), totRec=aReceber.reduce((s,v)=>s+(v.bruto||0),0);
+  if(aReceber.length>=2&&totRec>0)itens.push({id:"receber",icon:"ti-cash",cor:"var(--gold)",t:"Cobranças pendentes",
+    d:`Você tem <b style="color:var(--gold2)">${R(totRec)}</b> a receber em ${aReceber.length} venda(s). Que tal fazer a cobrança?`,
+    aLabel:"Ver vendas",aFn:"nav('lancamentos')"});
+
+  const vis=itens.filter(i=>!dismissed.includes(i.id));
+  if(!vis.length){ el.innerHTML='<div class="ia-item" style="color:var(--muted);font-size:13px">✅ Tudo sob controle — sem recomendações no momento.</div>'; return; }
+  el.innerHTML=vis.map(i=>`<div class="ia-item">
+      <div class="ia-row"><i class="ti ${i.icon}" style="color:${i.cor}"></i>
+        <div><div class="ia-t">${i.t}</div><div class="ia-d">${i.d}</div></div></div>
+      <div class="ia-acts">
+        <button class="btn btn-sm" onclick="iaDismiss('${i.id}')">Ignorar</button>
+        <button class="btn btn-sm btn-gold" onclick="${i.aFn}">${i.aLabel}</button>
+      </div>
+    </div>`).join("");
+}
 function renderDashboard(){
   const now=new Date();
   // Conta nova (sem nenhum dado): mostra boas-vindas e pula o painel
@@ -4087,6 +4154,8 @@ function renderDashboard(){
     if(dGastosInsumos)dGastosInsumos.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">Nenhum gasto com insumos este mês</div>';
   }
   
+  // Assistente GN IA (recomendações)
+  renderAssistenteIA();
   // PONTO 3: Chamar análises avançadas
   renderDashboardAnalises();
 }
