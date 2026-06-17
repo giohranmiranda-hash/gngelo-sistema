@@ -1450,7 +1450,7 @@ body{background:var(--bg)}
 
 <!-- FLUXO DE CAIXA -->
 <div id="screen-fluxo" class="screen">
-  <div class="page-header"><h2><i class="ti ti-cash"></i> Fluxo de caixa</h2></div>
+  <div class="page-header"><h2><i class="ti ti-cash"></i> Financeiro &amp; Logística</h2></div>
   
   <div class="tab-bar">
     <button class="tab-btn active" onclick="tab('t-fluxo-atual',this)">Saldo atual</button>
@@ -1461,6 +1461,11 @@ body{background:var(--bg)}
   
   <div id="t-fluxo-atual">
     <div id="fluxo-resumo"></div>
+    <div class="dash-zona">Logística — fila de entregas</div>
+    <div class="card" style="background:linear-gradient(120deg,#1B1710,#141414);border-color:var(--gold-border)">
+      <div style="display:flex;align-items:center;gap:10px"><span class="ia-ico"><i class="ti ti-truck-delivery"></i></span><div><div style="font-weight:700">Rotas ativas</div><div style="font-size:11px;color:var(--muted)" id="log-resumo">—</div></div></div>
+    </div>
+    <div id="fluxo-logistica"></div>
     <div class="card">
       <div class="section-label">Movimentação do mês</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
@@ -2062,7 +2067,7 @@ function nav(id,el){
   // sincroniza o destaque na barra inferior (mesmo navegando por atalho/menu)
   const bb=document.querySelector('.bnav-btn[data-screen="'+id+'"]'); if(bb)bb.classList.add("active");
   try{window.scrollTo(0,0);}catch(e){}
-  const r={dashboard:renderDashboard,estoque:renderEst,dre:()=>{renderDRE();renderDREAnual();renderGerencial();renderDREInsumos();},metas:()=>{renderMetas();renderMetasAnuais();renderMetasProgresso();},clientes:renderCli,relatorios:renderRel,parametros:()=>{renderReceitas();renderCF();atualizarStatusNuvem();renderHistorico();},comissoes:()=>{renderVendedores();updateComVendedor();renderComissoes();},fluxo:()=>{renderFluxo();renderFluxoPeriodo();renderFluxoPrevisao();renderFluxoVendas();},calendario:renderCalendario,exportacao:renderExpHistorico,lancamentos:()=>{renderLV();renderLG();renderLP();renderLE();renderAgendamentos();updateComVendedor();}};
+  const r={dashboard:renderDashboard,estoque:renderEst,dre:()=>{renderDRE();renderDREAnual();renderGerencial();renderDREInsumos();},metas:()=>{renderMetas();renderMetasAnuais();renderMetasProgresso();},clientes:renderCli,relatorios:renderRel,parametros:()=>{renderReceitas();renderCF();atualizarStatusNuvem();renderHistorico();},comissoes:()=>{renderVendedores();updateComVendedor();renderComissoes();},fluxo:()=>{renderFluxo();renderLogistica();renderFluxoPeriodo();renderFluxoPrevisao();renderFluxoVendas();},calendario:renderCalendario,exportacao:renderExpHistorico,lancamentos:()=>{renderLV();renderLG();renderLP();renderLE();renderAgendamentos();updateComVendedor();}};
   if(r[id])r[id]();
 }
 // Atalho: navega para uma tela e (opcional) abre uma aba específica
@@ -5528,6 +5533,26 @@ function isInvestimento(g){
 function getCom(){
   const defaultComissoes=[];
   return get("comissoes",defaultComissoes);
+}
+function renderLogistica(){
+  const el=document.getElementById("fluxo-logistica"); if(!el)return;
+  const hoje=today();
+  const ags=getAg().filter(a=>a.status!=="cancelado"&&a.status!=="entregue").sort((a,b)=>((a.data||"")+(a.hora||"")).localeCompare((b.data||"")+(b.hora||"")));
+  const resumo=document.getElementById("log-resumo");
+  if(resumo)resumo.textContent=ags.length?`${ags.length} entrega(s) na fila · ${ags.reduce((s,a)=>s+(a.qtd||0),0)} un`:"Nenhuma entrega na fila";
+  if(!ags.length){el.innerHTML='<div class="empty"><i class="ti ti-truck-off"></i>Nenhuma entrega na fila</div>';return;}
+  el.innerHTML=ags.map(a=>{
+    const atrasado=(a.data||"")<hoje;
+    const badge=atrasado?'<span class="badge b-red">Atrasado</span>':'<span class="badge b-gold">Agendado</span>';
+    const veic=a.veiculo==="carro"?"🚗 Carro":"🛵 Moto";
+    const frete=a.cobraFrete===false?"Grátis":R(a.frete||0);
+    const valor=a.preco?R((a.preco||0)*(a.qtd||0)):"—";
+    const quando=(a.data||"").split("-").reverse().join("/")+(a.hora?" "+a.hora:"");
+    return `<div class="item-card" style="border-left:3px solid var(--gold);padding-left:13px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="min-width:0"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.cliente||"Cliente"}</div><div style="font-size:11px;color:var(--muted)">${veic} · ${quando}${a.km?" · "+a.km+" km":""}</div></div>${badge}</div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Entregas</div><div style="font-weight:700">${a.qtd||0} un</div></div><div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Valor · Frete</div><div style="font-weight:700;color:var(--gold2)">${valor} · ${frete}</div></div></div>
+    </div>`;
+  }).join("");
 }
 function renderFluxo(){
   const hoje=today();
