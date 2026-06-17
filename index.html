@@ -160,12 +160,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .page-header .sub{font-size:12px;color:var(--muted);margin-top:2px;letter-spacing:.03em;text-transform:uppercase}
 
 /* CARDS */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:10px}
 .card-gold{border-color:var(--gold-border);background:linear-gradient(135deg,#1B1710 0%,#141414 100%)}
 
 /* METRICS */
 .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
-.metric{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;position:relative;overflow:hidden}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:11px 13px;position:relative;overflow:hidden}
 .metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);opacity:.4}
 .metric .lbl{font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
 .metric .val{font-size:19px;font-weight:700;color:var(--text);line-height:1.1}
@@ -294,7 +294,7 @@ tr:last-child td{border-bottom:none}
 .empty{text-align:center;padding:36px 16px;color:var(--muted)}
 .empty i{font-size:44px;opacity:.2;display:block;margin-bottom:12px}
 .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;overflow-y:auto;padding:16px}
-.modal-box{background:var(--surface);border-radius:16px;padding:18px;max-width:480px;margin:0 auto;border:1px solid var(--gold-border)}
+.modal-box{background:var(--surface);border-radius:var(--r-lg);padding:18px;max-width:480px;margin:0 auto;border:1px solid var(--gold-border)}
 
 /* DESKTOP MODAL */
 @media(min-width:1024px){
@@ -309,7 +309,7 @@ tr:last-child td{border-bottom:none}
 }
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .modal-head span{font-size:15px;font-weight:700;letter-spacing:.02em}
-.item-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:7px;transition:border-color .15s}
+.item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 13px;margin-bottom:7px;transition:border-color .15s}
 .item-card:hover{border-color:var(--gold-border)}
 
 /* DESKTOP ITEM-CARD */
@@ -483,13 +483,13 @@ body{background:var(--bg)}
 .page-header h2{font-family:'Space Grotesk',-apple-system,sans-serif;font-weight:700;letter-spacing:-.01em}
 
 /* Cartões */
-.card{border-radius:18px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(20,16,8,.04)}
+.card{border-radius:var(--r-lg);border:1px solid var(--border);box-shadow:var(--sh-1)}
 .card-gold{border:1px solid var(--gold-border);background:linear-gradient(180deg,#1B1710,#141414)}
-.metric{border-radius:16px;border:1px solid var(--border);background:var(--surface);padding:15px 14px;box-shadow:0 1px 2px rgba(20,16,8,.03)}
+.metric{border-radius:var(--r-lg);border:1px solid var(--border);background:var(--surface);padding:15px 14px;box-shadow:var(--sh-1)}
 .metric .lbl{letter-spacing:.12em;color:var(--muted)}
 .metric .val{font-size:23px;line-height:1.05}
 .metric .val.gold{color:var(--gold-deep)}
-.item-card{border-radius:14px;box-shadow:0 1px 2px rgba(20,16,8,.03)}
+.item-card{border-radius:var(--r-md);box-shadow:var(--sh-1)}
 .section-label{letter-spacing:.13em;color:var(--muted)}
 
 /* Topo e barra inferior premium */
@@ -500,7 +500,7 @@ body{background:var(--bg)}
 .bnav-btn.active{color:var(--gold2)}
 
 /* Botões */
-.btn{border-radius:12px;letter-spacing:.02em}
+.btn{border-radius:var(--r-sm);letter-spacing:.02em}
 .btn-gold{background:linear-gradient(180deg,var(--gold2),var(--gold));border-color:var(--gold);color:#1a1407}
 .btn-primary{background:var(--black);color:var(--gold2);border-color:var(--black)}
 
@@ -538,7 +538,7 @@ body{background:var(--bg)}
 .seletor-foot{padding:12px 14px;border-top:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:8px;flex:none}
 .seletor-foot .tot{display:flex;justify-content:space-between;font-weight:700;font-size:14px}
 /* Estado de boas-vindas (conta nova, sem dados) */
-.welcome-card{background:var(--surface);border:1px solid var(--gold-border);border-radius:18px;padding:22px 18px;box-shadow:0 1px 2px rgba(20,16,8,.04);margin-top:6px}
+.welcome-card{background:var(--surface);border:1px solid var(--gold-border);border-radius:18px;padding:22px 18px;box-shadow:var(--sh-1);margin-top:6px}
 .welcome-eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-deep);font-weight:700}
 .welcome-title{font-family:'Space Grotesk',-apple-system,sans-serif;font-weight:700;font-size:22px;letter-spacing:-.01em;margin:6px 0 4px;color:var(--text);text-wrap:balance}
 .welcome-sub{color:var(--muted);font-size:13.5px;margin:0 0 16px;line-height:1.45}
@@ -550,7 +550,7 @@ body{background:var(--bg)}
 .welcome-card .btn-gold{width:100%;justify-content:center;padding:13px}
 /* Agrupador recolhível de análises do dashboard */
 .dash-zona{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:6px 2px 8px}
-.dash-extra{margin-bottom:10px;border:1px solid var(--border);border-radius:16px;background:var(--surface);overflow:hidden;box-shadow:0 1px 2px rgba(20,16,8,.03)}
+.dash-extra{margin-bottom:10px;border:1px solid var(--border);border-radius:16px;background:var(--surface);overflow:hidden;box-shadow:var(--sh-1)}
 .dash-extra>summary{list-style:none;cursor:pointer;padding:14px 16px;font-weight:700;font-size:13px;color:var(--gold-deep);display:flex;align-items:center;justify-content:space-between}
 .dash-extra>summary::-webkit-details-marker{display:none}
 .dash-extra>summary::after{content:"▾";color:var(--muted);transition:transform .2s}
@@ -594,7 +594,7 @@ body{background:var(--bg)}
 .estq-alert .ea-btn{margin-left:auto;color:var(--danger);font-weight:700;font-size:12px;background:none;border:none;cursor:pointer;flex:none;align-self:center}
 /* KPIs do dashboard (estilo mockup IMG_1285) */
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:13px}
-.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 16px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 16px}
 .kpi-card .k-lbl{font-size:13px;color:var(--muted);font-weight:400}
 .kpi-card .k-val{font-size:24px;font-weight:700;color:#fff;margin-top:8px;font-family:'Space Grotesk',-apple-system,sans-serif;letter-spacing:-.01em;line-height:1.1}
 .kpi-card .k-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-left:7px;vertical-align:middle}
@@ -902,7 +902,7 @@ body{background:var(--bg)}
     <div style="margin-bottom:10px">
       <button class="btn" style="font-size:11px;padding:6px 10px" onclick="document.getElementById('filtro-avancado-vendas').style.display=document.getElementById('filtro-avancado-vendas').style.display==='none'?'block':'none'">🔍 Filtro avançado</button>
     </div>
-    <div id="filtro-avancado-vendas" style="display:none;background:#141414;padding:10px;border-radius:6px;margin-bottom:10px">
+    <div id="filtro-avancado-vendas" style="display:none;background:#141414;padding:10px;border-radius:8px;margin-bottom:10px">
       <div class="form-row">
         <div class="fg"><label>Cliente</label><input type="text" id="filtro-cliente" placeholder="Nome do cliente"></div>
         <div class="fg"><label>Vendedor</label><select id="filtro-vendedor"><option value="">Todos</option></select></div>
@@ -962,10 +962,10 @@ body{background:var(--bg)}
     <div style="margin-bottom:12px">
       <button class="btn" style="font-size:11px;padding:6px 10px" onclick="document.getElementById('filtro-producoes-avancado').style.display=document.getElementById('filtro-producoes-avancado').style.display==='none'?'block':'none'">🔍 Filtro avançado</button>
     </div>
-    <div id="filtro-producoes-avancado" style="display:none;background:var(--gold-light);padding:12px;border-radius:6px;margin-bottom:12px;border:1px solid var(--gold-border)">
+    <div id="filtro-producoes-avancado" style="display:none;background:var(--gold-light);padding:12px;border-radius:8px;margin-bottom:12px;border:1px solid var(--gold-border)">
       <div class="form-row">
-        <div class="fg"><label style="font-size:12px">Mês</label><select id="filtro-prod-mes" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
-        <div class="fg"><label style="font-size:12px">Sabor</label><select id="filtro-prod-sabor" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todos</option><option value="coco">Coco</option><option value="morango">Morango</option><option value="maracuja">Maracujá</option><option value="maca">Maçã</option><option value="manga">Manga</option><option value="melancia">Melancia</option><option value="limao">Limão</option><option value="iceblue">Ice Blue</option><option value="energetico">Energético</option><option value="frutas">Frutas Vermelhas</option><option value="amora">Amora</option><option value="abacaxi">Abacaxi</option><option value="salLimao">Sal Limão</option><option value="uva">Uva</option><option value="chiclete">Chiclete</option><option value="cereja">Cereja</option><option value="morPessego">Morango Pêssego</option><option value="brasil">Brasil</option><option value="bobMarley">Bob Marley</option><option value="laranja">Laranja</option><option value="balaHouse">Bala House</option></select></div>
+        <div class="fg"><label style="font-size:12px">Mês</label><select id="filtro-prod-mes" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
+        <div class="fg"><label style="font-size:12px">Sabor</label><select id="filtro-prod-sabor" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todos</option><option value="coco">Coco</option><option value="morango">Morango</option><option value="maracuja">Maracujá</option><option value="maca">Maçã</option><option value="manga">Manga</option><option value="melancia">Melancia</option><option value="limao">Limão</option><option value="iceblue">Ice Blue</option><option value="energetico">Energético</option><option value="frutas">Frutas Vermelhas</option><option value="amora">Amora</option><option value="abacaxi">Abacaxi</option><option value="salLimao">Sal Limão</option><option value="uva">Uva</option><option value="chiclete">Chiclete</option><option value="cereja">Cereja</option><option value="morPessego">Morango Pêssego</option><option value="brasil">Brasil</option><option value="bobMarley">Bob Marley</option><option value="laranja">Laranja</option><option value="balaHouse">Bala House</option></select></div>
       </div>
       <button class="btn btn-primary" style="width:100%;font-size:12px" onclick="filtrarProducoesAvancado()">🔍 Filtrar</button>
     </div>
@@ -993,10 +993,10 @@ body{background:var(--bg)}
     <div class="page-header" style="margin-top:16px"><h2><i class="ti ti-list"></i> Gastos do mês</h2></div>
     <div style="display:flex;gap:6px;margin-bottom:12px;justify-content:center;flex-wrap:wrap">
       <button class="btn" style="padding:6px 10px;font-size:12px" onclick="gasto_mesAnterior()"><i class="ti ti-chevron-left"></i></button>
-      <select id="gasto-mes-select" onchange="renderLG()" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer">
+      <select id="gasto-mes-select" onchange="renderLG()" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer">
         <option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
       </select>
-      <select id="gasto-ano-select" onchange="renderLG()" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"></select>
+      <select id="gasto-ano-select" onchange="renderLG()" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"></select>
       <button class="btn" style="padding:6px 10px;font-size:12px" onclick="gasto_mesProximo()"><i class="ti ti-chevron-right"></i></button>
       <button class="btn" style="padding:6px 10px;font-size:12px" onclick="gasto_mesHoje()">Hoje</button>
     </div>
@@ -1005,10 +1005,10 @@ body{background:var(--bg)}
     <div style="margin-bottom:12px">
       <button class="btn" style="font-size:11px;padding:6px 10px" onclick="document.getElementById('filtro-gastos-avancado').style.display=document.getElementById('filtro-gastos-avancado').style.display==='none'?'block':'none'">🔍 Filtro avançado</button>
     </div>
-    <div id="filtro-gastos-avancado" style="display:none;background:var(--gold-light);padding:12px;border-radius:6px;margin-bottom:12px;border:1px solid var(--gold-border)">
+    <div id="filtro-gastos-avancado" style="display:none;background:var(--gold-light);padding:12px;border-radius:8px;margin-bottom:12px;border:1px solid var(--gold-border)">
       <div class="form-row">
-        <div class="fg"><label style="font-size:12px">Mês</label><select id="filtro-gasto-mes" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
-        <div class="fg"><label style="font-size:12px">Categoria</label><select id="filtro-gasto-cat" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todas</option><option value="Ingredientes">Ingredientes</option><option value="Embalagens">Embalagens</option><option value="Gás">Gás</option><option value="Energia elétrica">Energia elétrica</option><option value="Água">Água</option><option value="Frete">Frete</option><option value="Combustível">Combustível</option><option value="Marketing">Marketing</option><option value="Tráfego pago">Tráfego pago</option><option value="Comissão">Comissão</option><option value="Manutenção">Manutenção</option><option value="Equipamentos">Equipamentos</option><option value="Taxas bancárias">Taxas bancárias</option><option value="Taxas iFood">Taxas iFood</option><option value="Contabilidade">Contabilidade</option><option value="Administrativo">Administrativo</option><option value="Outros">Outros</option></select></div>
+        <div class="fg"><label style="font-size:12px">Mês</label><select id="filtro-gasto-mes" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
+        <div class="fg"><label style="font-size:12px">Categoria</label><select id="filtro-gasto-cat" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="">Todas</option><option value="Ingredientes">Ingredientes</option><option value="Embalagens">Embalagens</option><option value="Gás">Gás</option><option value="Energia elétrica">Energia elétrica</option><option value="Água">Água</option><option value="Frete">Frete</option><option value="Combustível">Combustível</option><option value="Marketing">Marketing</option><option value="Tráfego pago">Tráfego pago</option><option value="Comissão">Comissão</option><option value="Manutenção">Manutenção</option><option value="Equipamentos">Equipamentos</option><option value="Taxas bancárias">Taxas bancárias</option><option value="Taxas iFood">Taxas iFood</option><option value="Contabilidade">Contabilidade</option><option value="Administrativo">Administrativo</option><option value="Outros">Outros</option></select></div>
       </div>
       <button class="btn btn-primary" style="width:100%;font-size:12px" onclick="filtrarGastosAvancado()">🔍 Filtrar</button>
     </div>
@@ -1143,7 +1143,7 @@ body{background:var(--bg)}
     <button class="tab-btn" onclick="tab('t-dre-s',this)">Por sabor</button>
     <button class="tab-btn" onclick="tab('t-dre-i',this)">Gastos insumos</button>
   </div>
-  <div id="t-dre-m"><div class="page-header"><h2><i class="ti ti-chart-bar"></i> DRE — <span id="dre-mes"></span></h2></div><div style="display:flex;gap:6px;margin-bottom:12px;justify-content:center;flex-wrap:wrap"><button class="btn" style="padding:6px 10px;font-size:12px" onclick="dre_mesAnterior()"><i class="ti ti-chevron-left"></i></button><select id="dre-mes-select" onchange="renderDRE()" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select><select id="dre-ano-select" onchange="renderDRE()" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"></select><button class="btn" style="padding:6px 10px;font-size:12px" onclick="dre_mesProximo()"><i class="ti ti-chevron-right"></i></button><button class="btn" style="padding:6px 10px;font-size:12px" onclick="dre_mesHoje()">Hoje</button></div><div id="dre-resumo" class="kpi-grid" style="margin-bottom:10px"></div><div class="card" id="dre-mensal"></div></div>
+  <div id="t-dre-m"><div class="page-header"><h2><i class="ti ti-chart-bar"></i> DRE — <span id="dre-mes"></span></h2></div><div style="display:flex;gap:6px;margin-bottom:12px;justify-content:center;flex-wrap:wrap"><button class="btn" style="padding:6px 10px;font-size:12px" onclick="dre_mesAnterior()"><i class="ti ti-chevron-left"></i></button><select id="dre-mes-select" onchange="renderDRE()" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select><select id="dre-ano-select" onchange="renderDRE()" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"></select><button class="btn" style="padding:6px 10px;font-size:12px" onclick="dre_mesProximo()"><i class="ti ti-chevron-right"></i></button><button class="btn" style="padding:6px 10px;font-size:12px" onclick="dre_mesHoje()">Hoje</button></div><div id="dre-resumo" class="kpi-grid" style="margin-bottom:10px"></div><div class="card" id="dre-mensal"></div></div>
   <div id="t-dre-a" style="display:none"><div class="page-header"><h2><i class="ti ti-chart-line"></i> DRE Anual</h2></div><div id="dre-anual"></div></div>
   <div id="t-dre-g" style="display:none"><div class="page-header"><h2><i class="ti ti-brain"></i> Análise gerencial</h2></div><div id="dre-gerencial"></div></div>
   <div id="t-dre-s" style="display:none"><div class="page-header"><h2><i class="ti ti-ice-cream"></i> Por sabor</h2></div><div id="dre-sabor"></div></div>
@@ -1165,7 +1165,7 @@ body{background:var(--bg)}
     <!-- Navegação de meses -->
     <div style="display:flex;gap:6px;margin-bottom:12px;justify-content:center;flex-wrap:wrap">
       <button class="btn" style="padding:6px 10px;font-size:12px" onclick="navMesAnterior()"><i class="ti ti-chevron-left"></i></button>
-      <select id="meta-mes-select" onchange="renderMetasHistorico()" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"></select>
+      <select id="meta-mes-select" onchange="renderMetasHistorico()" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer"></select>
       <button class="btn" style="padding:6px 10px;font-size:12px" onclick="navMesProximo()"><i class="ti ti-chevron-right"></i></button>
       <button class="btn" style="padding:6px 10px;font-size:12px" onclick="renderMetasHoje()">Hoje</button>
     </div>
@@ -1259,13 +1259,13 @@ body{background:var(--bg)}
       <div class="fg"><label>Embalagem (R$/un)</label><input type="number" id="par-cust-embalagem" step="0.01" value="0.18" oninput="atualizarCustosReceitas()"></div>
       <div class="fg">
         <label>Usar última entrada?</label>
-        <select id="par-usar-ultima" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)" oninput="atualizarCustosReceitas()">
+        <select id="par-usar-ultima" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)" oninput="atualizarCustosReceitas()">
           <option value="0">Custo médio ponderado</option>
           <option value="1">Última entrada</option>
         </select>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin:8px 0;padding:8px;background:var(--surface);border-radius:6px">
+    <div style="font-size:11px;color:var(--muted);margin:8px 0;padding:8px;background:var(--surface);border-radius:8px">
       <strong>ℹ️ Nota:</strong> Esses valores são padrão. Quando você registra um insumo em "Estoque → Insumos", o sistema atualiza automaticamente o custo com o valor real da compra.
     </div>
     <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px">
@@ -1548,7 +1548,7 @@ body{background:var(--bg)}
   <div class="page-header">
     <h2><i class="ti ti-file-text"></i> Relatórios</h2>
     <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
-      <select id="rel-mes-sel" onchange="renderRel()" style="padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer">
+      <select id="rel-mes-sel" onchange="renderRel()" style="padding:8px 12px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer">
         <option value="">Mês atual</option>
         <option value="01">Janeiro</option>
         <option value="02">Fevereiro</option>
@@ -1563,7 +1563,7 @@ body{background:var(--bg)}
         <option value="11">Novembro</option>
         <option value="12">Dezembro</option>
       </select>
-      <select id="rel-ano-sel" onchange="renderRel()" style="padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer">
+      <select id="rel-ano-sel" onchange="renderRel()" style="padding:8px 12px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer">
         <option value="">Ano atual</option>
       </select>
     </div>
@@ -1581,8 +1581,8 @@ body{background:var(--bg)}
     <div style="margin-bottom:16px">
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Comparar 2 períodos</div>
       <div class="form-row">
-        <div class="fg"><label style="font-size:12px">Mês 1</label><select id="comp-mes1" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)"><option value="">Selecione</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
-        <div class="fg"><label style="font-size:12px">Mês 2</label><select id="comp-mes2" style="padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)"><option value="">Selecione</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
+        <div class="fg"><label style="font-size:12px">Mês 1</label><select id="comp-mes1" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)"><option value="">Selecione</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
+        <div class="fg"><label style="font-size:12px">Mês 2</label><select id="comp-mes2" style="padding:6px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)"><option value="">Selecione</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
       </div>
       <button class="btn btn-primary" style="width:100%;font-size:12px" onclick="analisarComparativoMeses()">📈 Comparar períodos</button>
     </div>
@@ -1591,7 +1591,7 @@ body{background:var(--bg)}
       <button class="btn" style="width:100%;font-size:12px" onclick="analisarMargemPorSabor()">💰 Margem por sabor</button>
     </div>
     
-    <div id="resultado-analise" style="margin-top:12px;padding:12px;background:var(--gold-light);border-radius:6px;display:none;font-size:12px;font-family:monospace;white-space:pre-wrap;line-height:1.6"></div>
+    <div id="resultado-analise" style="margin-top:12px;padding:12px;background:var(--gold-light);border-radius:8px;display:none;font-size:12px;font-family:monospace;white-space:pre-wrap;line-height:1.6"></div>
   </div>
   
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
@@ -4277,7 +4277,7 @@ function renderDashboardAnalises(){
   
   const dMeta=document.getElementById("d-meta-gauge");
   if(dMeta){
-    dMeta.innerHTML=`<div style="padding:16px;text-align:center;background:linear-gradient(135deg,var(--black) 0%,var(--black2) 100%);border:1px solid var(--gold-border);border-radius:6px;color:var(--gold2)">
+    dMeta.innerHTML=`<div style="padding:16px;text-align:center;background:linear-gradient(135deg,var(--black) 0%,var(--black2) 100%);border:1px solid var(--gold-border);border-radius:8px;color:var(--gold2)">
       <div style="font-size:48px;font-weight:700;margin-bottom:8px">${percentual}%</div>
       <div style="font-size:13px;opacity:0.9">Meta atingida</div>
       <div style="margin-top:12px;font-size:11px">
@@ -4325,7 +4325,7 @@ function renderDashboardAnalises(){
   
   const dTopVend=document.getElementById("d-top-vendedor");
   if(dTopVend && topVendedor){
-    dTopVend.innerHTML=`<div style="padding:16px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);border-radius:6px;color:var(--black);text-align:center">
+    dTopVend.innerHTML=`<div style="padding:16px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);border-radius:8px;color:var(--black);text-align:center">
       <div style="font-size:24px;margin-bottom:8px">🏆</div>
       <div style="font-weight:700;font-size:16px;margin-bottom:4px">${topVendedor[0]}</div>
       <div style="font-size:13px;opacity:0.9">${R(topVendedor[1])} em vendas</div>
@@ -4343,7 +4343,7 @@ function renderDashboardAnalises(){
   
   const dComp=document.getElementById("d-comparacao");
   if(dComp){
-    dComp.innerHTML=`<div style="padding:12px;background:var(--surface);border-radius:6px">
+    dComp.innerHTML=`<div style="padding:12px;background:var(--surface);border-radius:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <span style="color:var(--muted);font-size:12px">vs Período Anterior</span>
         <span style="font-weight:700;color:${cor};font-size:20px">${sinal} ${crescimento}%</span>
@@ -4392,7 +4392,7 @@ function renderEst(){
   // Histórico recente de produção (estilo mockup)
   const elHP=document.getElementById("est-hist-prod");
   if(elHP){const ps=getPr().slice().sort((a,b)=>(b.data||"").localeCompare(a.data||"")).slice(0,5);
-    elHP.innerHTML=ps.length?ps.map(p=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="min-width:0"><div style="font-weight:700;font-size:14px">${SB[p.sabor]||p.sabor}</div><div style="font-size:11px;color:var(--muted)">${p.data}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-weight:700;color:var(--gold2);font-size:15px">+${(p.qtd||0).toLocaleString("pt-BR")}</div><div style="font-size:10px;color:var(--muted)">unidades</div></div></div><div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">${p.codigoLote?`<span style="font-size:11px;background:#1f1f1f;border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:var(--muted)">Lote: ${p.codigoLote}</span>`:""}<span class="badge b-green" style="border:1px solid rgba(52,211,153,.4)">Concluído</span></div></div>`).join(""):'<div class="empty"><i class="ti ti-history"></i>Sem produções registradas</div>';}
+    elHP.innerHTML=ps.length?ps.map(p=>`<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="min-width:0"><div style="font-weight:700;font-size:14px">${SB[p.sabor]||p.sabor}</div><div style="font-size:11px;color:var(--muted)">${p.data}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-weight:700;color:var(--gold2);font-size:15px">+${(p.qtd||0).toLocaleString("pt-BR")}</div><div style="font-size:10px;color:var(--muted)">unidades</div></div></div><div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">${p.codigoLote?`<span style="font-size:11px;background:#1f1f1f;border:1px solid var(--border);border-radius:8px;padding:3px 8px;color:var(--muted)">Lote: ${p.codigoLote}</span>`:""}<span class="badge b-green" style="border:1px solid rgba(52,211,153,.4)">Concluído</span></div></div>`).join(""):'<div class="empty"><i class="ti ti-history"></i>Sem produções registradas</div>';}
   // Popula o seletor de sabores do ajuste manual (mantém a seleção atual)
   const ajSel=document.getElementById("aj-sabor");
   if(ajSel){const cur=ajSel.value;ajSel.innerHTML=sabores.map(k=>`<option value="${k}">${SB[k]} — ${est[k]||0} un</option>`).join("");if(cur)ajSel.value=cur;}
@@ -4559,7 +4559,7 @@ function renderEst(){
           </div>
         </div>
         
-        <div style="margin-bottom:8px;padding:8px;background:var(--surface);border-radius:6px">
+        <div style="margin-bottom:8px;padding:8px;background:var(--surface);border-radius:8px">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px">
             <span>Comprado: ${qtdComprada.toFixed(2)} ${unDisplay}</span>
             <span style="color:${corUso};font-weight:700">Usado: ${qtdUsada.toFixed(2)} ${unDisplay}</span>
@@ -4744,12 +4744,12 @@ function renderDREAnual(){
     <div class="card">
       <div class="section-label">Destaques</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-        <div style="padding:8px;background:#10261C;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:8px">
           <div style="color:#15803D;font-size:11px;font-weight:700">🏆 Melhor mês</div>
           <div style="font-weight:700;color:#15803D">${MESES[parseInt(melhorMes[0])-1]}</div>
           <div style="color:#6B6B6B;font-size:11px">Lucro: ${R(melhorMes[1].lucroL)}</div>
         </div>
-        <div style="padding:8px;background:#2A1517;border-radius:6px">
+        <div style="padding:8px;background:#2A1517;border-radius:8px">
           <div style="color:#B91C1C;font-size:11px;font-weight:700">📉 Pior mês</div>
           <div style="font-weight:700;color:#B91C1C">${MESES[parseInt(piorMes[0])-1]}</div>
           <div style="color:#6B6B6B;font-size:11px">Lucro: ${R(piorMes[1].lucroL)}</div>
@@ -4761,7 +4761,7 @@ function renderDREAnual(){
       ${Object.entries(meses).map(([m,d])=>{
         const mNome=MESES[parseInt(m)-1];
         const status=d.lucroL>0?"🟢":"🔴";
-        return `<div class="dre-row" style="padding:8px;background:#16130C;border-radius:6px;margin-bottom:6px">
+        return `<div class="dre-row" style="padding:8px;background:#16130C;border-radius:8px;margin-bottom:6px">
           <div>
             <div style="font-weight:700">${status} ${mNome}</div>
             <div style="font-size:11px;color:#6B6B6B">${d.unid} un · ${R(d.fat)}</div>
@@ -4891,12 +4891,12 @@ function renderGerencial(){
     <div class="card">
       <div class="section-label">Ponto de equilíbrio</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="padding:8px;background:#241E10;border-radius:6px">
+        <div style="padding:8px;background:#241E10;border-radius:8px">
           <div style="color:#92400E;font-size:11px;font-weight:700">Quantidade</div>
           <div style="font-weight:700;font-size:18px;color:#92400E">${pe}</div>
           <div style="color:#6B6B6B;font-size:10px">unidades/mês</div>
         </div>
-        <div style="padding:8px;background:#241E10;border-radius:6px">
+        <div style="padding:8px;background:#241E10;border-radius:8px">
           <div style="color:#92400E;font-size:11px;font-weight:700">Faturamento</div>
           <div style="font-weight:700;font-size:18px;color:#92400E">${R(peR)}</div>
           <div style="color:#6B6B6B;font-size:10px">para break-even</div>
@@ -5581,12 +5581,12 @@ function renderFluxo(){
   
   html+=`<div class="card">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-      <div style="padding:8px;background:#10261C;border-radius:6px">
+      <div style="padding:8px;background:#10261C;border-radius:8px">
         <div style="color:#15803D;font-size:11px;font-weight:700">💰 Entradas</div>
         <div style="font-weight:700;font-size:16px;color:#15803D">${R(entradas)}</div>
         <div style="color:#6B6B6B;font-size:10px">${vs.length} vendas</div>
       </div>
-      <div style="padding:8px;background:#2A1517;border-radius:6px">
+      <div style="padding:8px;background:#2A1517;border-radius:8px">
         <div style="color:#B91C1C;font-size:11px;font-weight:700">💸 Saídas</div>
         <div style="font-weight:700;font-size:16px;color:#B91C1C">${R(saidas)}</div>
         <div style="color:#6B6B6B;font-size:10px">${gs.length+cs.length} movimentos</div>
@@ -5699,11 +5699,11 @@ function renderFluxoPrevisao(){
     </div>
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:12px">
-        <div style="padding:8px;background:#10261C;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:8px">
           <div style="color:#15803D;font-size:11px;font-weight:700">Previsão de entradas</div>
           <div style="font-weight:700;font-size:16px;color:#15803D">${R(aReceberProx)}</div>
         </div>
-        <div style="padding:8px;background:#2A1517;border-radius:6px">
+        <div style="padding:8px;background:#2A1517;border-radius:8px">
           <div style="color:#B91C1C;font-size:11px;font-weight:700">Previsão de saídas</div>
           <div style="font-weight:700;font-size:16px;color:#B91C1C">${R(aPagarProx)}</div>
         </div>
@@ -5775,7 +5775,7 @@ function calcularPrevisaoVendas(){
     <div class="card">
       <div class="section-label">Distribuição por sabor</div>
       <div style="display:grid;grid-template-columns:1fr;gap:8px">
-        <div style="padding:8px;background:#241E10;border-radius:6px">
+        <div style="padding:8px;background:#241E10;border-radius:8px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="fl fl-coco" style="font-size:11px">Coco</span>
             <span style="font-weight:700">${coco}%</span>
@@ -5789,7 +5789,7 @@ function calcularPrevisaoVendas(){
           </div>
         </div>
         
-        <div style="padding:8px;background:#241826;border-radius:6px">
+        <div style="padding:8px;background:#241826;border-radius:8px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="fl fl-morango" style="font-size:11px">Morango</span>
             <span style="font-weight:700">${morango}%</span>
@@ -5803,7 +5803,7 @@ function calcularPrevisaoVendas(){
           </div>
         </div>
         
-        <div style="padding:8px;background:#241E10;border-radius:6px">
+        <div style="padding:8px;background:#241E10;border-radius:8px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="fl fl-maracuja" style="font-size:11px">Maracujá</span>
             <span style="font-weight:700">${maracuja}%</span>
@@ -5817,7 +5817,7 @@ function calcularPrevisaoVendas(){
           </div>
         </div>
         
-        <div style="padding:8px;background:#10261C;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:8px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="fl fl-maca" style="font-size:11px">Maçã Verde</span>
             <span style="font-weight:700">${maca}%</span>
@@ -5836,11 +5836,11 @@ function calcularPrevisaoVendas(){
     <div class="card">
       <div class="section-label">Análise diária</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-        <div style="padding:8px;background:#10261C;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:8px">
           <div style="color:#15803D;font-size:11px;font-weight:700">Faturamento/dia</div>
           <div style="font-weight:700;font-size:16px;color:#15803D">${R(fat>0?fat/22:0)}</div>
         </div>
-        <div style="padding:8px;background:#10261C;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:8px">
           <div style="color:#15803D;font-size:11px;font-weight:700">Unidades/dia</div>
           <div style="font-weight:700;font-size:16px;color:#15803D">${qtd>0?Math.round(qtd/22):0}</div>
         </div>
@@ -5945,7 +5945,7 @@ function renderCalendario(){
     if(vs.length)tooltip+=`Vendas: ${vs.length}\\n`;
     if(lotesVenc.length)tooltip+=`⚠️ ${lotesVenc.length} lote(s) vencem\\n`;
     
-    html+=`<div style="background:${bg};border:${border};border-radius:6px;padding:6px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;min-height:40px;display:flex;align-items:center;justify-content:center" title="${tooltip.trim()}" onclick="showDiaDetalhes('${data}')">${dia}</div>`;
+    html+=`<div style="background:${bg};border:${border};border-radius:8px;padding:6px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;min-height:40px;display:flex;align-items:center;justify-content:center" title="${tooltip.trim()}" onclick="showDiaDetalhes('${data}')">${dia}</div>`;
   }
   html+='</div>';
   document.getElementById("calendario-grid").innerHTML=html;
