@@ -1033,6 +1033,23 @@ body{background:var(--bg)}
   <div id="t-est-p">
     <div class="page-header"><h2><i class="ti ti-package"></i> Estoque de produtos</h2></div>
     <div id="est-produtos"></div>
+    <div class="card card-gold" style="margin-top:16px">
+      <div class="section-label">✏️ Ajuste manual de estoque</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Corrige o saldo direto, <b>sem</b> registrar produção nem consumir insumos. Use para acertar divergências (ex.: estoque que não voltou após um erro).</div>
+      <div class="form-row">
+        <div class="fg"><label>Sabor</label><select id="aj-sabor"></select></div>
+        <div class="fg"><label>Operação</label><select id="aj-op">
+          <option value="add">Acrescentar (+)</option>
+          <option value="sub">Remover (−)</option>
+          <option value="set">Definir saldo total (=)</option>
+        </select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Quantidade</label><input type="number" id="aj-qtd" min="0" step="1" placeholder="0"></div>
+        <div class="fg" style="display:flex;align-items:flex-end"><button class="btn btn-gold btn-full" onclick="ajustarEstoque()"><i class="ti ti-adjustments"></i> Aplicar ajuste</button></div>
+      </div>
+      <div id="aj-msg" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+    </div>
   </div>
   <div id="t-est-l" style="display:none">
     <div class="page-header"><h2><i class="ti ti-box-seam"></i> Lotes</h2></div>
@@ -4056,10 +4073,35 @@ function renderDashboardAnalises(){
 
 
 
+// Ajuste manual do saldo de estoque (não mexe em produção/insumos/lotes)
+function ajustarEstoque(){
+  const sabor=document.getElementById("aj-sabor").value;
+  const op=document.getElementById("aj-op").value;
+  const qtd=parseFloat(document.getElementById("aj-qtd").value);
+  const msg=document.getElementById("aj-msg");
+  if(!sabor){if(msg)msg.textContent="Selecione um sabor.";return;}
+  if(isNaN(qtd)||qtd<0){if(msg){msg.style.color="var(--danger)";msg.textContent="❌ Informe uma quantidade válida (≥ 0).";}return;}
+  const est=getEst();
+  const atual=est[sabor]||0;
+  let novo=atual;
+  if(op==="add")novo=atual+qtd;
+  else if(op==="sub")novo=Math.max(0,atual-qtd);
+  else novo=qtd; // set
+  const opTxt=op==="add"?`+${qtd}`:(op==="sub"?`−${qtd}`:`= ${qtd}`);
+  if(!confirm(`Ajustar estoque de ${SB[sabor]||sabor}?\n\nAtual: ${atual} un  ${opTxt}  →  Novo: ${novo} un\n\nIsso NÃO altera produção nem insumos.`))return;
+  est[sabor]=novo;
+  set("estoque",est);
+  document.getElementById("aj-qtd").value="";
+  renderEst();
+  if(msg){msg.style.color="var(--success)";msg.textContent=`✅ ${SB[sabor]||sabor}: ${atual} → ${novo} un (${opTxt}).`;}
+}
 function renderEst(){
   const est=getEst();
   const sabores=["coco","morango","maracuja","maca","manga","melancia","limao","iceblue","energetico","frutas","amora","abacaxi","salLimao","uva","chiclete","cereja","morPessego","brasil","bobMarley","laranja","balaHouse"];
   document.getElementById("est-produtos").innerHTML=sabores.map(k=>{const v=est[k]||0,low=v<20;return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><span class="fl ${SC[k]}">${SB[k]}</span><span class="badge ${low?"b-red":"b-green"}">${low?"⚠️ Baixo":"✅ OK"}</span></div><div style="display:flex;justify-content:space-between;margin-top:8px"><span style="color:var(--muted);font-size:13px">Estoque atual</span><span style="font-size:22px;font-weight:700;${low?"color:var(--danger)":"color:var(--success)"}">${v} unid.</span></div></div>`;}).join("");
+  // Popula o seletor de sabores do ajuste manual (mantém a seleção atual)
+  const ajSel=document.getElementById("aj-sabor");
+  if(ajSel){const cur=ajSel.value;ajSel.innerHTML=sabores.map(k=>`<option value="${k}">${SB[k]} — ${est[k]||0} un</option>`).join("");if(cur)ajSel.value=cur;}
   
   // LOTES COM VALIDAÇÃO DE VALIDADE
   const lotes=getLot().sort((a,b)=>new Date(a.data)-new Date(b.data));
