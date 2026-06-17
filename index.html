@@ -82,7 +82,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 /* Ícones do topo (menu hambúrguer + sino de alertas) */
 .nav-icon{background:none;border:none;color:var(--gold);cursor:pointer;padding:8px;display:flex;align-items:center;position:relative;flex-shrink:0}
 .nav-icon i{font-size:22px}
+
 .nav-bell{margin-left:auto}
+.nav-profile{flex-shrink:0;margin-left:4px;padding:6px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(201,168,76,.18);border:1.5px solid var(--gold);color:var(--gold2);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(201,168,76,.12);overflow:hidden}
+.nav-avatar img{width:100%;height:100%;object-fit:cover}
+.nav-bell .alert-badge{width:9px;min-width:9px;height:9px;border-radius:50%;font-size:0;padding:0;top:5px;right:5px;border:1.5px solid var(--black)}
 .alert-badge{position:absolute;top:0;right:0;background:var(--danger);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:none;padding:0 3px;line-height:16px;text-align:center;box-sizing:border-box}
 .hamb{display:none}
 @media(max-width:1023px){ .hamb{display:flex} }
@@ -612,6 +617,8 @@ body{background:var(--bg)}
 .kpi-card .k-lbl{font-size:13px;color:var(--muted);font-weight:400}
 .kpi-card .k-val{font-size:24px;font-weight:700;color:#fff;margin-top:8px;font-family:'Space Grotesk',-apple-system,sans-serif;letter-spacing:-.01em;line-height:1.1}
 .kpi-card .k-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-left:7px;vertical-align:middle}
+.est-card .k-val{font-size:32px;line-height:1}
+.kpi-card.acc{border-top:2px solid var(--gold)}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.18/500.css">
@@ -659,6 +666,7 @@ body{background:var(--bg)}
   <button class="nav-btn" onclick="nav('relatorios',this)"><i class="ti ti-file-text"></i><span>Relatórios</span></button>
   <button class="nav-btn" onclick="nav('exportacao',this)"><i class="ti ti-file-export"></i><span>Exportação</span></button>
   <button class="nav-icon nav-bell" onclick="mostrarAlertas()" aria-label="Alertas"><i class="ti ti-bell"></i><span class="alert-badge"></span></button>
+  <button class="nav-icon nav-profile" onclick="navMais('parametros')" aria-label="Perfil"><span class="nav-avatar" id="nav-avatar">GN</span></button>
   <button class="nav-btn" onclick="mostrarAlertas()" style="position:relative"><i class="ti ti-alert-circle"></i><span>Alertas</span><span class="alert-badge" style="position:absolute;top:-5px;right:-5px;background:var(--danger);color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;display:none">0</span></button>
 </nav>
 
@@ -1094,15 +1102,18 @@ body{background:var(--bg)}
     <button class="tab-btn" onclick="tab('t-est-i',this)">Insumos</button>
   </div>
   <div id="t-est-p">
-    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
       <h2 style="margin:0"><i class="ti ti-package"></i> Gestão de produção</h2>
-      <button class="btn btn-gold btn-sm" onclick="atalho('lancamentos','t-prod')"><i class="ti ti-plus"></i> Registrar produção</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-gold btn-sm" onclick="atalho('lancamentos','t-prod')"><i class="ti ti-plus"></i> Registrar produção</button>
+        <button class="btn btn-sm" onclick="document.getElementById('card-ajuste-estoque').scrollIntoView({behavior:'smooth',block:'center'})"><i class="ti ti-adjustments"></i> Ajustar estoque</button>
+      </div>
     </div>
     <div class="dash-zona">Estoque atual</div>
     <div id="est-produtos" class="kpi-grid" style="margin-top:0"></div>
     <div class="dash-zona">Histórico recente</div>
     <div id="est-hist-prod"></div>
-    <div class="card card-gold" style="margin-top:16px">
+    <div class="card card-gold" style="margin-top:16px" id="card-ajuste-estoque">
       <div class="section-label">✏️ Ajuste manual de estoque</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Corrige o saldo direto, <b>sem</b> registrar produção nem consumir insumos. Use para acertar divergências (ex.: estoque que não voltou após um erro).</div>
       <div class="form-row">
@@ -1220,8 +1231,8 @@ body{background:var(--bg)}
     <button class="btn btn-sm" onclick="gerarCSVVendas()"><i class="ti ti-download"></i> Exportar</button>
   </div>
   <div class="kpi-grid" style="margin-top:4px">
-    <div class="kpi-card"><div class="k-lbl">Faturamento (30d)</div><div class="k-val" id="vc-fat">R$ 0</div><div class="k-lbl" id="vc-fat-delta" style="margin-top:4px"></div></div>
-    <div class="kpi-card"><div class="k-lbl">Pedidos (30d)</div><div class="k-val" id="vc-ped">0</div><div class="k-lbl" id="vc-ped-sub" style="margin-top:4px"></div></div>
+    <div class="kpi-card acc"><div class="k-lbl">Faturamento (30d)</div><div class="k-val" id="vc-fat">R$ 0</div><div class="k-lbl" id="vc-fat-delta" style="margin-top:4px"></div></div>
+    <div class="kpi-card acc"><div class="k-lbl">Pedidos (30d)</div><div class="k-val" id="vc-ped">0</div><div class="k-lbl" id="vc-ped-sub" style="margin-top:4px"></div></div>
   </div>
   <div class="dash-zona">Vendas recentes</div>
   <div id="vc-recentes"></div>
@@ -4367,7 +4378,7 @@ function renderEst(){
   document.getElementById("est-produtos").innerHTML=sabores.map(k=>{
     const v=est[k]||0; let status,bc;
     if(v<=0){status="ZERADO";bc="b-red";}else if(v<20){status="CRÍTICO";bc="b-red";}else if(v<100){status="ATENÇÃO";bc="b-gold";}else{status="ESTÁVEL";bc="b-green";}
-    return `<div class="kpi-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="k-lbl" style="text-transform:uppercase">${SB[k]}</span><span class="badge ${bc}">${status}</span></div><div class="k-val" style="margin-top:8px">${v.toLocaleString("pt-BR")}</div><div class="k-lbl">unidades${v>0&&v<100?" (mín. 100)":""}</div></div>`;
+    return `<div class="kpi-card est-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="k-lbl" style="text-transform:uppercase">${SB[k]}</span><span class="badge ${bc}">${status}</span></div><div class="k-val" style="margin-top:8px">${v.toLocaleString("pt-BR")}</div><div class="k-lbl">unidades${v>0&&v<100?" (mín. 100)":""}</div></div>`;
   }).join("");
   // Histórico recente de produção (estilo mockup)
   const elHP=document.getElementById("est-hist-prod");
