@@ -1728,6 +1728,20 @@ body{background:var(--bg)}
     <button class="btn btn-primary btn-full" onclick="salvarCliente()"><i class="ti ti-check"></i> Salvar</button>
   </div>
 </div>
+<div id="modal-cli-det" class="modal-backdrop" onclick="closeModalOutside(event,'modal-cli-det')">
+  <div class="modal-box">
+    <div class="modal-head"><span id="det-nome">Cliente</span><button class="btn btn-sm" onclick="closeModal('modal-cli-det')"><i class="ti ti-x"></i></button></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px" id="det-sub"></div>
+    <div class="kpi-grid" style="margin-bottom:10px">
+      <div class="kpi-card acc"><div class="k-lbl">Total comprado</div><div class="k-val" style="color:var(--gold2)" id="det-total">R$ 0</div><div class="k-lbl" id="det-ultima" style="margin-top:2px"></div></div>
+      <div class="kpi-card"><div class="k-lbl">Pedidos</div><div class="k-val" id="det-pedidos">0</div></div>
+    </div>
+    <div class="section-label">Compras no ano</div>
+    <div class="chart-wrap" style="height:150px"><canvas id="det-chart" role="img" aria-label="Compras por mês">Gráfico de compras por mês.</canvas></div>
+    <div class="section-label" style="margin-top:10px">Compras recentes</div>
+    <div id="det-recentes"></div>
+  </div>
+</div>
 <div id="modal-insumo" class="modal-backdrop" onclick="closeModalOutside(event,'modal-insumo')">
   <div class="modal-box">
     <div class="modal-head"><span>Entrada de insumo</span><button class="btn btn-sm" onclick="closeModal('modal-insumo')"><i class="ti ti-x"></i></button></div>
@@ -5252,7 +5266,25 @@ function renderCli(){
   // Maior comprador primeiro
   const lista=cs.map(c=>{const d=agg[(c.nome||"").trim().toLowerCase()]||{total:0,ultima:""};return {c,total:d.total,ultima:d.ultima};})
     .sort((a,b)=>b.total-a.total);
-  el.innerHTML=lista.map(({c,total,ultima})=>`<div class="item-card"><div style="display:flex;align-items:center;gap:10px"><div style="width:38px;height:38px;border-radius:50%;background:var(--gold-light);border:1px solid var(--gold-border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--gold);flex-shrink:0">${(c.nome||"?")[0].toUpperCase()}</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${c.nome}</div><div style="font-size:11px;color:var(--muted)">${c.tipo||"—"} · ${c.bairro||"—"}</div></div><div style="text-align:right"><div style="font-weight:700;color:var(--success)">${R(total)}</div><div style="font-size:10px;color:var(--muted)">${ultima||"—"}</div></div><button class="btn btn-sm btn-danger" style="margin-left:8px" onclick="deletarCliente(${c.id})"><i class="ti ti-trash"></i></button></div></div>`).join("");
+  el.innerHTML=lista.map(({c,total,ultima})=>`<div class="item-card" style="cursor:pointer" onclick="abrirDetalheCliente(${c.id})"><div style="display:flex;align-items:center;gap:10px"><div style="width:38px;height:38px;border-radius:50%;background:var(--gold-light);border:1px solid var(--gold-border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--gold);flex-shrink:0">${(c.nome||"?")[0].toUpperCase()}</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${c.nome}</div><div style="font-size:11px;color:var(--muted)">${c.tipo||"—"} · ${c.bairro||"—"}</div></div><div style="text-align:right"><div style="font-weight:700;color:var(--success)">${R(total)}</div><div style="font-size:10px;color:var(--muted)">${ultima||"—"}</div></div><button class="btn btn-sm btn-danger" style="margin-left:8px" onclick="event.stopPropagation();deletarCliente(${c.id})"><i class="ti ti-trash"></i></button></div></div>`).join("");
+}
+function abrirDetalheCliente(id){
+  const c=getCli().find(x=>String(x.id)===String(id)); if(!c)return;
+  const nomeKey=(c.nome||"").trim().toLowerCase();
+  const compras=getV().filter(v=>(v.cliente||"").trim().toLowerCase()===nomeKey).sort((a,b)=>(b.data||"").localeCompare(a.data||""));
+  const total=compras.reduce((s,v)=>s+(v.bruto||0),0);
+  const setT=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
+  setT("det-nome",c.nome||"Cliente");
+  setT("det-sub",`${c.tipo||"—"} · ${c.bairro||"—"}${c.tel?" · "+c.tel:""}`);
+  setT("det-total",R(total));
+  setT("det-pedidos",compras.length+" pedido(s)");
+  setT("det-ultima",compras[0]?("Última: "+compras[0].data):"Sem compras");
+  const elR=document.getElementById("det-recentes");
+  if(elR)elR.innerHTML=compras.slice(0,6).map(v=>{const badge=v.recebido?'<span class="badge b-green">PAGO</span>':'<span class="badge" style="background:var(--warning-bg);color:var(--warning)">PENDENTE</span>';return `<div class="item-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-size:12px;font-weight:600">${v.data}</div><div style="font-size:11px;color:var(--muted)">${v.itens&&v.itens.length>1?v.itens.length+" sabores":(SB[v.produto]||v.produto||"")}</div></div><div style="text-align:right"><div style="font-weight:700">${R(v.bruto||0)}</div>${badge}</div></div>`;}).join("")||'<div class="empty"><i class="ti ti-receipt-off"></i>Sem compras</div>';
+  openModal("modal-cli-det");
+  const ano=new Date().getFullYear().toString(), meses=Array(12).fill(0);
+  compras.forEach(v=>{if(v.data&&v.data.startsWith(ano)){const m=parseInt(v.data.split("-")[1])-1;if(m>=0&&m<12)meses[m]+=v.bruto||0;}});
+  setTimeout(()=>{const cv=document.getElementById("det-chart");if(cv&&window.Chart){if(window.cCliDet)window.cCliDet.destroy();window.cCliDet=new Chart(cv,{type:"bar",data:{labels:["J","F","M","A","M","J","J","A","S","O","N","D"],datasets:[{data:meses,backgroundColor:"rgba(230,195,100,.8)",borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:false}},scales:{x:{ticks:{font:{size:9},color:"#888"}},y:{ticks:{font:{size:9},color:"#888",callback:x=>"R$"+x}}}}});}},150);
 }
 function deletarCliente(id){
   if(!confirm("Tem certeza que quer deletar este cliente?"))return;
