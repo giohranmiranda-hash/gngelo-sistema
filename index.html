@@ -3657,12 +3657,12 @@ function renderTabelaInsumosGastos(){
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead>
           <tr style="background:var(--gold-light);border-bottom:2px solid var(--gold)">
-            <th style="padding:10px;text-align:left;font-weight:700">Insumo</th>
-            <th style="padding:10px;text-align:right;font-weight:700">Quantidade</th>
-            <th style="padding:10px;text-align:right;font-weight:700">Unidade</th>
-            <th style="padding:10px;text-align:right;font-weight:700">Custo/un (R$)</th>
-            <th style="padding:10px;text-align:right;font-weight:700">Total (R$)</th>
-            <th style="padding:10px;text-align:right;font-weight:700">% Gasto</th>
+            <th style="text-align:left">Insumo</th>
+            <th style="text-align:right">Quantidade</th>
+            <th style="text-align:right">Unidade</th>
+            <th style="text-align:right">Custo/un (R$)</th>
+            <th style="text-align:right">Total (R$)</th>
+            <th style="text-align:right">% Gasto</th>
           </tr>
         </thead>
         <tbody>
@@ -4236,7 +4236,7 @@ function renderDashboard(){
     const totalInsumos=Object.values(porInsumo).reduce((s,i)=>s+i.valor,0);
     const dGastosInsumos=document.getElementById("d-gastos-insumos");
     if(dGastosInsumos){
-      let html='<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--gold-light);border-bottom:1px solid var(--gold)"><th style="padding:6px;text-align:left">Insumo</th><th style="padding:6px;text-align:right">Qtd</th><th style="padding:6px;text-align:right">Total</th><th style="padding:6px;text-align:right">%</th></tr></thead><tbody>';
+      let html='<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--gold-light);border-bottom:1px solid var(--gold)"><th style="text-align:left">Insumo</th><th style="text-align:right">Qtd</th><th style="text-align:right">Total</th><th style="text-align:right">%</th></tr></thead><tbody>';
       Object.entries(porInsumo).sort((a,b)=>b[1].valor-a[1].valor).slice(0,5).forEach(([nome,d])=>{
         const pct=totalInsumos>0?(d.valor/totalInsumos*100):0;
         html+=`<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px;font-weight:700;color:var(--gold)">${nome}</td><td style="padding:6px;text-align:right">${d.qtd}</td><td style="padding:6px;text-align:right;color:var(--danger)">${R(d.valor)}</td><td style="padding:6px;text-align:right">${P(pct)}</td></tr>`;
@@ -4825,11 +4825,11 @@ function renderDREInsumos(){
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead>
           <tr style="background:var(--gold-light);border-bottom:2px solid var(--gold)">
-            <th style="padding:10px;text-align:left;font-weight:700">Insumo</th>
-            <th style="padding:10px;text-align:right;font-weight:700">Quantidade</th>
-            <th style="padding:10px;text-align:right;font-weight:700">Total (R$)</th>
-            <th style="padding:10px;text-align:right;font-weight:700">Custo/un</th>
-            <th style="padding:10px;text-align:right;font-weight:700">% Gasto</th>
+            <th style="text-align:left">Insumo</th>
+            <th style="text-align:right">Quantidade</th>
+            <th style="text-align:right">Total (R$)</th>
+            <th style="text-align:right">Custo/un</th>
+            <th style="text-align:right">% Gasto</th>
           </tr>
         </thead>
         <tbody>`;
