@@ -25,7 +25,7 @@
 <title>GN Gelo — Sistema de Gestão</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F5F5F0;color:#0A0A0A;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 :root{
   --gold:#C9A84C;
   --gold2:#E8C97A;
@@ -175,7 +175,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 /* CARDS */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
-.card-gold{border-color:var(--gold-border);background:linear-gradient(135deg,#FFFDF7 0%,#FDF8EE 100%)}
+.card-gold{border-color:var(--gold-border);background:linear-gradient(135deg,#1B1710 0%,#141414 100%)}
 
 /* METRICS */
 .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
@@ -207,10 +207,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .b-green{background:var(--success-bg);color:var(--success)}
 .b-red{background:var(--danger-bg);color:var(--danger)}
 .b-gold{background:var(--gold-light);color:var(--warning)}
-.b-gray{background:#F3F4F6;color:var(--muted)}
+.b-gray{background:#141414;color:var(--muted)}
 
 /* PROGRESS */
-.progress{background:#EDE8DC;border-radius:4px;height:7px;overflow:hidden}
+.progress{background:#1A1814;border-radius:4px;height:7px;overflow:hidden}
 .progress-fill{height:100%;border-radius:4px;transition:width .4s}
 
 /* FORMS */
@@ -260,7 +260,7 @@ textarea{height:60px;resize:vertical}
 
 /* TABLE */
 table{width:100%;font-size:12px;border-collapse:collapse}
-th{background:#F8F6F1;font-size:10px;font-weight:700;color:var(--muted);padding:7px 8px;text-align:left;text-transform:uppercase;letter-spacing:.05em}
+th{background:#16130C;font-size:10px;font-weight:700;color:var(--muted);padding:7px 8px;text-align:left;text-transform:uppercase;letter-spacing:.05em}
 td{padding:8px 8px;border-bottom:1px solid var(--border);color:var(--text)}
 tr:last-child td{border-bottom:none}
 
@@ -274,7 +274,7 @@ tr:last-child td{border-bottom:none}
 /* DRE */
 .dre-row{display:flex;justify-content:space-between;align-items:flex-end;padding:5px 0;font-size:13px;border-bottom:1px solid var(--border);gap:8px}
 .dre-row:last-child{border-bottom:none}
-.dre-sec{font-weight:700;color:var(--gold-deep);background:#F8F5EE;padding:5px 10px;margin:4px -16px 4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.dre-sec{font-weight:700;color:var(--gold-deep);background:#16130C;padding:5px 10px;margin:4px -16px 4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 .dre-total{font-weight:700;font-size:14px;padding-top:6px}
 .dre-pos{color:var(--success)}
 .dre-neg{color:var(--danger)}
@@ -282,28 +282,28 @@ tr:last-child td{border-bottom:none}
 
 /* FLAVOR PILLS */
 .fl{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;margin:2px;letter-spacing:.02em}
-.fl-coco{background:#FEF3C7;color:#92400E}
-.fl-morango{background:#FCE7F3;color:#9D174D}
-.fl-maracuja{background:#FFF7ED;color:#C2410C}
-.fl-maca{background:#F0FDF4;color:#166534}
-.fl-manga{background:#FFE4B5;color:#FF8C00}
-.fl-melancia{background:#FFE0EC;color:#E91E63}
-.fl-limao{background:#FFFDE7;color:#FFEB3B}
-.fl-iceblue{background:#E0F7FA;color:#00BCD4}
-.fl-energetico{background:#FFEBEE;color:#FF5722}
-.fl-frutas{background:#FFEBEE;color:#D32F2F}
-.fl-amora{background:#F3E5F5;color:#4A148C}
-.fl-abacaxi{background:#FFF9C4;color:#FFC107}
-.fl-salLimao{background:#FFFDE7;color:#76FF03}
-.fl-uva{background:#EDE7F6;color:#7C4DFF}
-.fl-chiclete{background:#FCE4EC;color:#FF1493}
-.fl-cereja{background:#FFEBEE;color:#F50057}
-.fl-morPessego{background:#FCE4EC;color:#E91E63}
-.fl-brasil{background:#FFFDE7;color:#FFD700}
-.fl-bobMarley{background:#FFFDE7;color:#FFD700}
-.fl-laranja{background:#FFE0B2;color:#FF6F00}
-.fl-balaHouse{background:#FCE4EC;color:#FF69B4}
-.fl-combo{background:#EDE9FE;color:#4C1D95}
+.fl-coco{background:#241E10;color:#92400E}
+.fl-morango{background:#241826;color:#9D174D}
+.fl-maracuja{background:#241B10;color:#C2410C}
+.fl-maca{background:#10261C;color:#166534}
+.fl-manga{background:#241B10;color:#FF8C00}
+.fl-melancia{background:#2A1720;color:#E91E63}
+.fl-limao{background:#241E10;color:#FFEB3B}
+.fl-iceblue{background:#102426;color:#00BCD4}
+.fl-energetico{background:#2A1517;color:#FF5722}
+.fl-frutas{background:#2A1517;color:#D32F2F}
+.fl-amora{background:#1F1826;color:#4A148C}
+.fl-abacaxi{background:#241E10;color:#FFC107}
+.fl-salLimao{background:#241E10;color:#76FF03}
+.fl-uva{background:#1B1826;color:#7C4DFF}
+.fl-chiclete{background:#2A1720;color:#FF1493}
+.fl-cereja{background:#2A1517;color:#F50057}
+.fl-morPessego{background:#2A1720;color:#E91E63}
+.fl-brasil{background:#241E10;color:#FFD700}
+.fl-bobMarley{background:#241E10;color:#FFD700}
+.fl-laranja{background:#241B10;color:#FF6F00}
+.fl-balaHouse{background:#2A1720;color:#FF69B4}
+.fl-combo{background:#1B1826;color:#4C1D95}
 
 /* MISC */
 .empty{text-align:center;padding:36px 16px;color:var(--muted)}
@@ -481,9 +481,13 @@ input.input-warning{
    REDESIGN PREMIUM — identidade dourado/preto/creme (global)
    ============================================================ */
 :root{
-  --bg:#F6F3EC; --surface:#FFFFFF; --border:#ECE6D8; --muted:#6F6A60;
-  --gold:#C9A84C; --gold2:#E8C97A; --gold-deep:#A8852F; --gold-light:#FBF6EA; --gold-border:#E2D2A6;
-  --black:#0E0E10; --black2:#1A1A1E;
+  --bg:#0A0A0A; --surface:#141414; --surface2:#1F1F1F; --border:#262626; --muted:#9A9285;
+  --text:#E5E2E1; --white:#141414;
+  --gold:#C9A84C; --gold2:#E6C364; --gold-deep:#E6C364; --gold-light:#17140C; --gold-border:#3A3320;
+  --black:#0A0A0A; --black2:#141414;
+  --danger:#FF6B6B; --danger-bg:#2A1517;
+  --success:#34D399; --success-bg:#10261C;
+  --warning:#E6C364; --warning-bg:#241E10;
 }
 body{background:var(--bg)}
 
@@ -493,7 +497,7 @@ body{background:var(--bg)}
 
 /* Cartões */
 .card{border-radius:18px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(20,16,8,.04)}
-.card-gold{border:1px solid var(--gold-border);background:linear-gradient(180deg,#FFFDF6,#FFFFFF)}
+.card-gold{border:1px solid var(--gold-border);background:linear-gradient(180deg,#1B1710,#141414)}
 .metric{border-radius:16px;border:1px solid var(--border);background:var(--surface);padding:15px 14px;box-shadow:0 1px 2px rgba(20,16,8,.03)}
 .metric .lbl{letter-spacing:.12em;color:var(--muted)}
 .metric .val{font-size:23px;line-height:1.05}
@@ -516,7 +520,7 @@ body{background:var(--bg)}
 /* Badges e progresso */
 .badge{border-radius:999px;padding:3px 11px}
 .b-gold{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#1a1407}
-.progress{height:9px;background:#EFE9DB;border-radius:999px}
+.progress{height:9px;background:#262626;border-radius:999px}
 .progress-fill{border-radius:999px}
 
 /* Atalho/drawer já alinhados à paleta */
@@ -836,7 +840,7 @@ body{background:var(--bg)}
         <div class="fg"><label>Pagamento</label><select id="v-pagto"><option>PIX</option><option>Dinheiro</option><option>Cartão crédito</option><option>Cartão débito</option><option>iFood</option></select></div>
         <div class="fg"><label>&nbsp;</label><label style="display:flex;align-items:center;gap:6px;margin-top:8px"><input type="checkbox" id="v-recebido" style="width:18px;height:18px;cursor:pointer" onchange="atualizarRecebido()"> ✅ Recebido</label></div>
       </div>
-      <div id="v-resumo" style="background:#FFFDF5;border:1px solid var(--gold-border);border-radius:8px;padding:10px;font-size:12px;margin-bottom:8px;display:none"></div>
+      <div id="v-resumo" style="background:#1B1710;border:1px solid var(--gold-border);border-radius:8px;padding:10px;font-size:12px;margin-bottom:8px;display:none"></div>
       <div class="fg"><label>Observações</label><textarea id="v-obs" placeholder="Notas da venda..."></textarea></div>
       <button class="btn btn-primary btn-full" id="v-btn-lancar" onclick="lancarVenda()"><i class="ti ti-check"></i> Confirmar venda</button>
     </div>
@@ -848,7 +852,7 @@ body{background:var(--bg)}
     <div style="margin-bottom:10px">
       <button class="btn" style="font-size:11px;padding:6px 10px" onclick="document.getElementById('filtro-avancado-vendas').style.display=document.getElementById('filtro-avancado-vendas').style.display==='none'?'block':'none'">🔍 Filtro avançado</button>
     </div>
-    <div id="filtro-avancado-vendas" style="display:none;background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px">
+    <div id="filtro-avancado-vendas" style="display:none;background:#141414;padding:10px;border-radius:6px;margin-bottom:10px">
       <div class="form-row">
         <div class="fg"><label>Cliente</label><input type="text" id="filtro-cliente" placeholder="Nome do cliente"></div>
         <div class="fg"><label>Vendedor</label><select id="filtro-vendedor"><option value="">Todos</option></select></div>
@@ -894,7 +898,7 @@ body{background:var(--bg)}
         <div class="fg"><label>G. Xantana (g)</label><input type="number" id="p-xantana" placeholder="0"></div>
         <div class="fg"><label>Embalagens</label><input type="number" id="p-emb" placeholder="0"></div>
       </div>
-      <div id="p-resumo" style="background:#FFFDF5;border:1px solid var(--gold-border);border-radius:8px;padding:10px;font-size:12px;margin-bottom:8px;display:none"></div>
+      <div id="p-resumo" style="background:#1B1710;border:1px solid var(--gold-border);border-radius:8px;padding:10px;font-size:12px;margin-bottom:8px;display:none"></div>
       <div class="fg"><label>Observações</label><textarea id="p-obs" placeholder="Notas do lote..."></textarea></div>
       <button class="btn btn-primary btn-full" id="p-btn-lancar" onclick="lancarProducao()"><i class="ti ti-check"></i> Registrar produção</button>
     </div>
@@ -1012,7 +1016,7 @@ body{background:var(--bg)}
         <div class="fg"><label>Valor do pedido (R$)</label><input type="number" id="e-valor" value="75" step="0.01" oninput="calcE()"></div>
         <div class="fg"><label>Custo do frete (R$)</label><input type="number" id="e-fretec" value="15" step="0.01" oninput="calcE()"></div>
       </div>
-      <div id="e-res" style="background:#FFFDF5;border:1px solid var(--gold-border);border-radius:8px;padding:10px;font-size:12px;margin-bottom:8px"></div>
+      <div id="e-res" style="background:#1B1710;border:1px solid var(--gold-border);border-radius:8px;padding:10px;font-size:12px;margin-bottom:8px"></div>
       <button class="btn btn-primary btn-full" id="e-btn-lancar" onclick="regEntrega()"><i class="ti ti-check"></i> Registrar entrega</button>
     </div>
     <div class="page-header" style="margin-top:16px"><h2><i class="ti ti-list"></i> Entregas</h2></div>
@@ -1446,10 +1450,10 @@ body{background:var(--bg)}
   <div class="card">
     <div class="section-label">Legenda</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
-      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#FEF3C7;border-radius:3px;border:1px solid #92400E"></span><span>Produção</span></div>
-      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#FCE7F3;border-radius:3px;border:1px solid #9D174D"></span><span>Entrega agendada</span></div>
-      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#FEF2F2;border-radius:3px;border:1px solid #B91C1C"></span><span>Vencimento</span></div>
-      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#F0FDF4;border-radius:3px;border:1px solid #15803D"></span><span>Venda confirmada</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#241E10;border-radius:3px;border:1px solid #92400E"></span><span>Produção</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#241826;border-radius:3px;border:1px solid #9D174D"></span><span>Entrega agendada</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#2A1517;border-radius:3px;border:1px solid #B91C1C"></span><span>Vencimento</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:#10261C;border-radius:3px;border:1px solid #15803D"></span><span>Venda confirmada</span></div>
     </div>
   </div>
   
@@ -1542,7 +1546,7 @@ body{background:var(--bg)}
   @media(min-width:560px){#screen-exportacao .exp-list.two{grid-template-columns:1fr 1fr}}
   .exp-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;
     background:var(--gold-light);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:all .15s;color:var(--text)}
-  .exp-item:hover{border-color:var(--gold);background:#fff}
+  .exp-item:hover{border-color:var(--gold);background:#141414}
   .exp-item b{font-size:13px;font-weight:700;display:block}
   .exp-item small{font-size:11px;color:var(--muted)}
   .exp-item .ico{width:36px;height:36px;flex-shrink:0;border-radius:50%;background:var(--gold);color:var(--black);
@@ -4544,12 +4548,12 @@ function renderDREAnual(){
     <div class="card">
       <div class="section-label">Destaques</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-        <div style="padding:8px;background:#F0FDF4;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:6px">
           <div style="color:#15803D;font-size:11px;font-weight:700">🏆 Melhor mês</div>
           <div style="font-weight:700;color:#15803D">${MESES[parseInt(melhorMes[0])-1]}</div>
           <div style="color:#6B6B6B;font-size:11px">Lucro: ${R(melhorMes[1].lucroL)}</div>
         </div>
-        <div style="padding:8px;background:#FEF2F2;border-radius:6px">
+        <div style="padding:8px;background:#2A1517;border-radius:6px">
           <div style="color:#B91C1C;font-size:11px;font-weight:700">📉 Pior mês</div>
           <div style="font-weight:700;color:#B91C1C">${MESES[parseInt(piorMes[0])-1]}</div>
           <div style="color:#6B6B6B;font-size:11px">Lucro: ${R(piorMes[1].lucroL)}</div>
@@ -4561,7 +4565,7 @@ function renderDREAnual(){
       ${Object.entries(meses).map(([m,d])=>{
         const mNome=MESES[parseInt(m)-1];
         const status=d.lucroL>0?"🟢":"🔴";
-        return `<div class="dre-row" style="padding:8px;background:#F8F6F1;border-radius:6px;margin-bottom:6px">
+        return `<div class="dre-row" style="padding:8px;background:#16130C;border-radius:6px;margin-bottom:6px">
           <div>
             <div style="font-weight:700">${status} ${mNome}</div>
             <div style="font-size:11px;color:#6B6B6B">${d.unid} un · ${R(d.fat)}</div>
@@ -4691,12 +4695,12 @@ function renderGerencial(){
     <div class="card">
       <div class="section-label">Ponto de equilíbrio</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="padding:8px;background:#FFFBEB;border-radius:6px">
+        <div style="padding:8px;background:#241E10;border-radius:6px">
           <div style="color:#92400E;font-size:11px;font-weight:700">Quantidade</div>
           <div style="font-weight:700;font-size:18px;color:#92400E">${pe}</div>
           <div style="color:#6B6B6B;font-size:10px">unidades/mês</div>
         </div>
-        <div style="padding:8px;background:#FFFBEB;border-radius:6px">
+        <div style="padding:8px;background:#241E10;border-radius:6px">
           <div style="color:#92400E;font-size:11px;font-weight:700">Faturamento</div>
           <div style="font-weight:700;font-size:18px;color:#92400E">${R(peR)}</div>
           <div style="color:#6B6B6B;font-size:10px">para break-even</div>
@@ -5323,12 +5327,12 @@ function renderFluxo(){
   
   html+=`<div class="card">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-      <div style="padding:8px;background:#F0FDF4;border-radius:6px">
+      <div style="padding:8px;background:#10261C;border-radius:6px">
         <div style="color:#15803D;font-size:11px;font-weight:700">💰 Entradas</div>
         <div style="font-weight:700;font-size:16px;color:#15803D">${R(entradas)}</div>
         <div style="color:#6B6B6B;font-size:10px">${vs.length} vendas</div>
       </div>
-      <div style="padding:8px;background:#FEF2F2;border-radius:6px">
+      <div style="padding:8px;background:#2A1517;border-radius:6px">
         <div style="color:#B91C1C;font-size:11px;font-weight:700">💸 Saídas</div>
         <div style="font-weight:700;font-size:16px;color:#B91C1C">${R(saidas)}</div>
         <div style="color:#6B6B6B;font-size:10px">${gs.length+cs.length} movimentos</div>
@@ -5441,11 +5445,11 @@ function renderFluxoPrevisao(){
     </div>
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:12px">
-        <div style="padding:8px;background:#F0FDF4;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:6px">
           <div style="color:#15803D;font-size:11px;font-weight:700">Previsão de entradas</div>
           <div style="font-weight:700;font-size:16px;color:#15803D">${R(aReceberProx)}</div>
         </div>
-        <div style="padding:8px;background:#FEF2F2;border-radius:6px">
+        <div style="padding:8px;background:#2A1517;border-radius:6px">
           <div style="color:#B91C1C;font-size:11px;font-weight:700">Previsão de saídas</div>
           <div style="font-weight:700;font-size:16px;color:#B91C1C">${R(aPagarProx)}</div>
         </div>
@@ -5460,7 +5464,7 @@ function renderFluxoPrevisao(){
     </div>
     <div class="card">
       <div style="font-size:11px;color:#6B6B6B;margin-bottom:8px">💡 Dica: Monitore o fluxo para evitar falta de caixa. Se negativo, aumente entradas ou reduza saídas.</div>
-      ${saldoMes<0?'<div style="padding:8px;background:#FEF2F2;border:1px solid #F3C4C4;border-radius:4px;font-size:11px">⚠️ <strong>Atenção:</strong> Saldo previsto negativo! Considere revisar despesas ou acelerar cobranças.</div>':''}
+      ${saldoMes<0?'<div style="padding:8px;background:#2A1517;border:1px solid #F3C4C4;border-radius:4px;font-size:11px">⚠️ <strong>Atenção:</strong> Saldo previsto negativo! Considere revisar despesas ou acelerar cobranças.</div>':''}
     </div>
   `;
   
@@ -5477,7 +5481,7 @@ function calcularPrevisaoVendas(){
   const qtd=parseFloat(document.getElementById("prev-qtd").value)||0;
   
   if(fat<=0||qtd<=0){
-    document.getElementById("prev-resultado").innerHTML='<div style="background:#FEF2F2;border:1px solid #F3C4C4;padding:8px;border-radius:4px;font-size:11px">⚠️ Preencha faturamento e quantidade</div>';
+    document.getElementById("prev-resultado").innerHTML='<div style="background:#2A1517;border:1px solid #F3C4C4;padding:8px;border-radius:4px;font-size:11px">⚠️ Preencha faturamento e quantidade</div>';
     return;
   }
   
@@ -5488,7 +5492,7 @@ function calcularPrevisaoVendas(){
   
   const total=coco+morango+maracuja+maca;
   if(total!==100){
-    document.getElementById("prev-resultado").innerHTML='<div style="background:#FEF2F2;border:1px solid #F3C4C4;padding:8px;border-radius:4px;font-size:11px">⚠️ <strong>Atenção:</strong> A soma dos percentuais deve ser 100% (atual: '+total+'%)</div>';
+    document.getElementById("prev-resultado").innerHTML='<div style="background:#2A1517;border:1px solid #F3C4C4;padding:8px;border-radius:4px;font-size:11px">⚠️ <strong>Atenção:</strong> A soma dos percentuais deve ser 100% (atual: '+total+'%)</div>';
     return;
   }
   
@@ -5517,7 +5521,7 @@ function calcularPrevisaoVendas(){
     <div class="card">
       <div class="section-label">Distribuição por sabor</div>
       <div style="display:grid;grid-template-columns:1fr;gap:8px">
-        <div style="padding:8px;background:#FFFBEB;border-radius:6px">
+        <div style="padding:8px;background:#241E10;border-radius:6px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="fl fl-coco" style="font-size:11px">Coco</span>
             <span style="font-weight:700">${coco}%</span>
@@ -5531,7 +5535,7 @@ function calcularPrevisaoVendas(){
           </div>
         </div>
         
-        <div style="padding:8px;background:#FCE7F3;border-radius:6px">
+        <div style="padding:8px;background:#241826;border-radius:6px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="fl fl-morango" style="font-size:11px">Morango</span>
             <span style="font-weight:700">${morango}%</span>
@@ -5545,7 +5549,7 @@ function calcularPrevisaoVendas(){
           </div>
         </div>
         
-        <div style="padding:8px;background:#FEF3C7;border-radius:6px">
+        <div style="padding:8px;background:#241E10;border-radius:6px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="fl fl-maracuja" style="font-size:11px">Maracujá</span>
             <span style="font-weight:700">${maracuja}%</span>
@@ -5559,7 +5563,7 @@ function calcularPrevisaoVendas(){
           </div>
         </div>
         
-        <div style="padding:8px;background:#F0FDF4;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:6px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="fl fl-maca" style="font-size:11px">Maçã Verde</span>
             <span style="font-weight:700">${maca}%</span>
@@ -5578,11 +5582,11 @@ function calcularPrevisaoVendas(){
     <div class="card">
       <div class="section-label">Análise diária</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-        <div style="padding:8px;background:#F0FDF4;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:6px">
           <div style="color:#15803D;font-size:11px;font-weight:700">Faturamento/dia</div>
           <div style="font-weight:700;font-size:16px;color:#15803D">${R(fat>0?fat/22:0)}</div>
         </div>
-        <div style="padding:8px;background:#F0FDF4;border-radius:6px">
+        <div style="padding:8px;background:#10261C;border-radius:6px">
           <div style="color:#15803D;font-size:11px;font-weight:700">Unidades/dia</div>
           <div style="font-weight:700;font-size:16px;color:#15803D">${qtd>0?Math.round(qtd/22):0}</div>
         </div>
@@ -5707,25 +5711,25 @@ function renderEventosDia(mes,ano){
 
   if(ags.length){
     html+=`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#9D174D;margin-bottom:4px">🚚 Entregas agendadas (${ags.length})</div>`;
-    html+=ags.map(a=>{const dia=a.data.split("-")[2];const st=a.status==="entregue"?" ✅":(a.data<today()?" ⏰":"");const desc=a.itens&&a.itens.length>1?`${a.qtd} un (${a.itens.length} sabores)`:`${a.qtd} un ${SB[a.sabor]||a.sabor}`;return `<div style="font-size:11px;padding:4px;background:#FCE7F3;border-radius:4px;margin-bottom:2px">${dia}${a.hora?" "+a.hora:""}: ${a.cliente} — ${desc}${st}</div>`;}).join("");
+    html+=ags.map(a=>{const dia=a.data.split("-")[2];const st=a.status==="entregue"?" ✅":(a.data<today()?" ⏰":"");const desc=a.itens&&a.itens.length>1?`${a.qtd} un (${a.itens.length} sabores)`:`${a.qtd} un ${SB[a.sabor]||a.sabor}`;return `<div style="font-size:11px;padding:4px;background:#241826;border-radius:4px;margin-bottom:2px">${dia}${a.hora?" "+a.hora:""}: ${a.cliente} — ${desc}${st}</div>`;}).join("");
     html+="</div>";
   }
 
   if(ps.length){
     html+=`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#92400E;margin-bottom:4px">🏭 Produções (${ps.length})</div>`;
-    html+=ps.map(p=>`<div style="font-size:11px;padding:4px;background:#FEF3C7;border-radius:4px;margin-bottom:2px">${p.data}: ${p.qtd} un ${SB[p.sabor]}</div>`).join("");
+    html+=ps.map(p=>`<div style="font-size:11px;padding:4px;background:#241E10;border-radius:4px;margin-bottom:2px">${p.data}: ${p.qtd} un ${SB[p.sabor]}</div>`).join("");
     html+="</div>";
   }
   
   if(vs.length){
     html+=`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#15803D;margin-bottom:4px">💰 Vendas (${vs.length})</div>`;
-    html+=vs.map(v=>`<div style="font-size:11px;padding:4px;background:#F0FDF4;border-radius:4px;margin-bottom:2px">${v.data}: ${v.qtd} un - ${R(v.bruto)}</div>`).join("");
+    html+=vs.map(v=>`<div style="font-size:11px;padding:4px;background:#10261C;border-radius:4px;margin-bottom:2px">${v.data}: ${v.qtd} un - ${R(v.bruto)}</div>`).join("");
     html+="</div>";
   }
   
   if(lotesVenc.length){
     html+=`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#B91C1C;margin-bottom:4px">⚠️ Vencimentos (${lotesVenc.length})</div>`;
-    html+=lotesVenc.map(l=>`<div style="font-size:11px;padding:4px;background:#FEF2F2;border-radius:4px;margin-bottom:2px">${l.validade}: ${l.codigo} (${l.qtdProduzida-l.qtdVendida} un)</div>`).join("");
+    html+=lotesVenc.map(l=>`<div style="font-size:11px;padding:4px;background:#2A1517;border-radius:4px;margin-bottom:2px">${l.validade}: ${l.codigo} (${l.qtdProduzida-l.qtdVendida} un)</div>`).join("");
     html+="</div>";
   }
   
@@ -5774,7 +5778,7 @@ function renderVendedores(){
       </div>`;
     }).join("");
   }
-  html+='<div style="margin-top:12px;padding:12px;background:#FFFBEB;border-radius:8px;border:1px solid #ECDCB0;font-size:11px;color:#6B6B6B"><strong>💡 Dica:</strong> As comissões são calculadas automaticamente quando uma venda é confirmada (status "Pago" ou "Entregue").</div>';
+  html+='<div style="margin-top:12px;padding:12px;background:#241E10;border-radius:8px;border:1px solid #ECDCB0;font-size:11px;color:#6B6B6B"><strong>💡 Dica:</strong> As comissões são calculadas automaticamente quando uma venda é confirmada (status "Pago" ou "Entregue").</div>';
   document.getElementById("lista-vendedores").innerHTML=html;
 }
 function salvarVendedor(){
@@ -6062,7 +6066,7 @@ function renderReceitas(){
           <input type="number" id="rec-${s}-embalagem" step="0.1" value="${r.embalagem||1}" oninput="calcCustoReceita('${s}')">
         </div>
       </div>
-      <div style="background:#FFF;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px">
+      <div style="background:#141414;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px">
         <div id="rec-custo-${s}" style="margin-bottom:8px"></div>
         <div id="rec-total-${s}" style="margin-top:8px"></div>
       </div>
