@@ -33,6 +33,12 @@
   .view.active{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   nav a{cursor:pointer}
+  .sw{width:44px;height:25px;border-radius:999px;position:relative;border:1px solid var(--line);flex-shrink:0;transition:.2s;cursor:pointer}
+  .sw.on{background:linear-gradient(135deg,var(--gold),#a07f2e);border-color:transparent}
+  .sw.off{background:#221f1b}
+  .sw i{position:absolute;top:2px;width:19px;height:19px;border-radius:50%;transition:.2s}
+  .sw.on i{left:21px;background:#1a1408}
+  .sw.off i{left:2px;background:#6b6358}
   /* SIDEBAR */
   aside{background:linear-gradient(180deg,#0d0c0b, #0a0908);border-right:1px solid var(--line);padding:22px 16px;display:flex;flex-direction:column;gap:6px}
   .brand{display:flex;align-items:center;gap:12px;padding:6px 8px 18px}
@@ -437,6 +443,11 @@
       <h3><span class="sym">admin_panel_settings</span>Papéis e o que cada um pode fazer</h3>
       <div class="csub">Os níveis de permissão do sistema</div>
       <div id="cf-papeis" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="sym">notifications</span>Notificações</h3>
+      <div class="csub">Escolha quais avisos você quer receber</div>
+      <div id="cf-notif" style="display:flex;flex-direction:column;gap:2px;margin-top:4px"></div>
     </div>
    </div><!-- /view-config -->
 
@@ -872,8 +883,28 @@ function renderLogistica(){
   }).join("");
 }
 
-/* ===== TELA CONFIGURAÇÕES / EQUIPE ===== */
+/* ===== TELA CONFIGURAÇÕES / EQUIPE + NOTIFICAÇÕES ===== */
+const NOTIF=[
+ {ic:"inventory_2",nome:"Estoque baixo",desc:"Avisar quando um sabor estiver acabando"},
+ {ic:"payments",nome:"Contas a receber",desc:"Vendas marcadas como “a receber”"},
+ {ic:"flag",nome:"Metas do mês",desc:"Progresso e quando bater a meta"},
+ {ic:"local_shipping",nome:"Entregas do dia",desc:"Rotas pendentes ou atrasadas"},
+ {ic:"format_list_numbered",nome:"Fila de produção",desc:"Ordens de prioridade ALTA paradas"},
+ {ic:"summarize",nome:"Resumo diário",desc:"Fechamento do dia (faturamento e lucro)"}
+];
+function getNotif(){return get("notifPrefs",null)||{0:true,1:true,2:true,3:false,4:true,5:false};}
+function toggleNotif(i){const p=getNotif();p[i]=!p[i];set("notifPrefs",p);renderConfig();}
 function renderConfig(){
+  const prefs=getNotif();
+  document.getElementById("cf-notif").innerHTML=NOTIF.map((n,i)=>{
+    const on=!!prefs[i];
+    return `<div style="display:flex;align-items:center;gap:13px;padding:13px 4px;border-top:${i?'1px solid var(--line)':'none'}">
+      <span style="width:36px;height:36px;border-radius:9px;display:grid;place-items:center;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.22);color:var(--gold-soft)"><span class="sym" style="font-size:19px">${n.ic}</span></span>
+      <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">${n.nome}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${n.desc}</div></div>
+      <div class="sw ${on?'on':'off'}" onclick="toggleNotif(${i})"><i></i></div>
+    </div>`;
+  }).join("");
   const eq=getEquipe();
   T("cf-tot",eq.length);
   T("cf-ativ",eq.filter(e=>e.status==="Ativo").length);
