@@ -1,7 +1,16 @@
 # Regras do sistema — GN Gelo
 
-Decisões combinadas para guiar a evolução do sistema (`index.html`) e a integração
-do novo visual "Premium Industrial".
+Decisões combinadas para guiar a evolução do sistema.
+
+## Direção do projeto (decidido)
+- O **app novo** (visual Premium, `preview-dashboard-premium.html`) **vira o sistema de
+  verdade**. O `index.html` antigo fica de lado.
+- O app novo grava no **mesmo armazenamento** do sistema atual (`gng_*`), então os
+  dados são compartilhados — não há migração.
+- Ele passa a **registrar** (venda, produção, gasto, entrega), não só visualizar.
+- Construção **incremental**, mostrando cada parte funcionando no preview.
+- **Não mexer no `index.html` (o antigo) enquanto o app novo não estiver 100%
+  funcional.** Só depois de pronto é que decidimos o que fazer com o antigo.
 
 ## 1. Visual / Identidade
 - Aproveitar **apenas o visual** do app gerado no Google AI Studio (`gn-gelo-erp`) —
