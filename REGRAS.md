@@ -50,3 +50,31 @@ Ordem do resultado do mês:
   **estoque de picolés prontos** (do sabor vendido).
 - Se a venda for apagada/cancelada, o estoque **volta**.
 - Estoque nunca fica negativo silenciosamente — se faltar, avisar.
+
+## 9. Novos recursos a acrescentar (inspirados no app do AI Studio)
+
+Recursos que o app do AI Studio (`gn-gelo-erp`) mostrou e que o sistema ainda
+não tem. Aqui devem ser construídos **de verdade** (não só a tela), seguindo as
+regras acima (dados reais, custo real, offline, identidade GN Gelo).
+
+1. **Mapa / monitoramento de rotas (GPS)**
+   Tela de logística com mapa mostrando as entregas "Em rota" ao vivo.
+   O sistema já tem agendamento, frete e calendário — falta o mapa.
+
+2. **Equipe com permissões**
+   Cadastro de integrantes com papéis (Gerente / Analista / Operador) e opção de
+   "bloquear acesso". Hoje é um login por conta, sem níveis de permissão.
+
+3. **Acompanhamento de produção em etapas**
+   "Lotes em andamento" passando por fases (Preparo → Maturação → Resfriamento).
+   Hoje o sistema registra o lote pronto com custo, mas não acompanha o passo a
+   passo da fabricação.
+
+4. **Ordens de produção (fila com prioridade)**
+   Planejar o que vai produzir, com prioridade ALTA/MÉDIA e status
+   Iniciado / Em produção / Concluído. Hoje só registra a produção já feita.
+
+5. **Notificações configuráveis**
+   Tela para ligar/desligar tipos de aviso. Já existe o sino de alertas, falta a
+   configuração.
+
