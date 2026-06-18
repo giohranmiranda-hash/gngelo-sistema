@@ -177,6 +177,7 @@
       <a data-view="producao"><span class="sym">ac_unit</span> Produção</a>
       <a data-view="insumos"><span class="sym">science</span> Insumos</a>
       <a data-view="clientes"><span class="sym">groups</span> Clientes</a>
+      <a data-view="comissoes"><span class="sym">badge</span> Comissões</a>
       <a data-view="ia"><span class="sym">auto_awesome</span> Assistente IA</a>
       <a data-view="config"><span class="sym">settings</span> Configurações</a>
     </nav>
@@ -486,6 +487,32 @@
     </div>
    </div><!-- /view-metas -->
 
+   <!-- ============ TELA: COMISSÕES ============ -->
+   <div class="view" id="view-comissoes">
+    <div class="top">
+      <div>
+        <div class="eyebrow"><span class="sym" style="font-size:15px">badge</span> Comissões de <span id="cm-mes">—</span></div>
+        <h1>A pagar: <b id="cm-total">—</b></h1>
+        <p>Quanto cada vendedor vendeu e quanto recebe de comissão.</p>
+      </div>
+      <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent;cursor:pointer" onclick="abrirVendedor()"><span class="sym" style="color:#1a1408">person_add</span> Novo vendedor</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="ic"><span class="sym">payments</span></div><div class="k-lbl">Total a pagar</div><div class="k-val" id="cm-k-tot">—</div><div class="k-foot">no mês</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">badge</span></div><div class="k-lbl">Vendedores</div><div class="k-val" id="cm-k-n">—</div><div class="k-foot">com venda no mês</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">trophy</span></div><div class="k-lbl">Maior comissão</div><div class="k-val" id="cm-k-top">—</div><div class="k-foot" id="cm-k-topn">—</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">point_of_sale</span></div><div class="k-lbl">Venda direta</div><div class="k-val" id="cm-k-dir">—</div><div class="k-foot">sem comissão</div></div>
+    </div>
+    <div class="card">
+      <h3><span class="sym">leaderboard</span>Comissão por vendedor</h3>
+      <div class="csub">Calculada sobre o faturamento de cada um no mês</div>
+      <table>
+        <thead><tr><th>Vendedor</th><th>Vendas</th><th>Faturou</th><th>%</th><th style="text-align:right">Comissão</th></tr></thead>
+        <tbody id="cm-tab"></tbody>
+      </table>
+    </div>
+   </div><!-- /view-comissoes -->
+
    <!-- ============ TELA: CLIENTES ============ -->
    <div class="view" id="view-clientes">
     <div class="top">
@@ -568,7 +595,10 @@
         <div class="f-row"><label>Pagamento</label>
           <select class="f-in" id="v-pagto"><option>PIX</option><option>Dinheiro</option><option>Cartão</option><option>iFood</option></select></div>
       </div>
-      <div class="f-row"><label>Cliente</label><input class="f-in" id="v-cliente" placeholder="Ex: Bar do Zé (ou Avulso)" value="Avulso"></div>
+      <div class="f-grid2">
+        <div class="f-row"><label>Cliente</label><input class="f-in" id="v-cliente" placeholder="Ex: Bar do Zé" value="Avulso"></div>
+        <div class="f-row"><label>Vendedor</label><select class="f-in" id="v-vendedor"></select></div>
+      </div>
       <label style="font-size:12px;color:var(--muted);font-weight:600">Sabores do pedido</label>
       <div id="v-linhas" style="margin-top:6px"></div>
       <button class="btn-ghost" id="v-add" onclick="addLinhaV()"><span class="sym" style="font-size:16px;vertical-align:-3px">add</span> Adicionar sabor</button>
@@ -673,6 +703,18 @@
   </div>
 </div>
 
+<!-- ===== MODAL: NOVO VENDEDOR ===== -->
+<div class="modal-bg" id="modal-vendedor" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3>Novo vendedor</h3><span class="sym x" onclick="fecharModal()">close</span></div>
+    <div class="modal-body">
+      <div class="f-row"><label>Nome</label><input class="f-in" id="vd-nome" placeholder="Ex: Dudu"></div>
+      <div class="f-row"><label>Comissão (%)</label><input type="number" step="0.5" class="f-in" id="vd-com" value="5"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-gold" onclick="salvarVendedor()">Salvar vendedor</button></div>
+  </div>
+</div>
+
 <script>
 /* ===== Mesmo modelo de dados do sistema (chaves gng_*) ===== */
 const SB={coco:"Coco",morango:"Morango",maracuja:"Maracujá",maca:"Maçã Verde",manga:"Manga",melancia:"Melancia",limao:"Limão",iceblue:"Ice Blue",energetico:"Energético",frutas:"Frutas Vermelhas",amora:"Blackberry (Amora)",abacaxi:"Abacaxi",salLimao:"Sal e Limão",uva:"Uva Verde",chiclete:"Chiclete",cereja:"Cereja",morPessego:"Morango c/ Pêssego",brasil:"Brasil",bobMarley:"Bob Marley",laranja:"Laranja",balaHouse:"Bala House",combo10:"Combo 10",combo20:"Combo 20",combo50:"Combo 50",combo100:"Combo 100"};
@@ -687,11 +729,15 @@ const SEED={
   {data:"2026-06-04",cliente:"Avulso",produto:"maracuja",qtd:5,bruto:5.5,liq:5.17,lucro:2.82},
   {data:"2026-06-04",cliente:"Avulso",produto:"coco",qtd:20,bruto:22,liq:20.68,lucro:11.28},
   {data:"2026-06-04",cliente:"Toshiba",produto:"maracuja",qtd:8,bruto:16,liq:15.04,lucro:11.28},
-  {data:"2026-06-05",cliente:"Toshiba",produto:"coco",qtd:10,bruto:20,liq:18.8,lucro:14.1},
-  {data:"2026-06-05",cliente:"João",produto:"coco",qtd:10,bruto:20,liq:18.8,lucro:14.1},
-  {data:"2026-06-06",cliente:"Avulso",produto:"coco",qtd:15,bruto:30,liq:28.2,lucro:21.15},
+  {data:"2026-06-05",cliente:"Toshiba",produto:"coco",qtd:10,bruto:20,liq:18.8,lucro:14.1,vendedor:"v1"},
+  {data:"2026-06-05",cliente:"João",produto:"coco",qtd:10,bruto:20,liq:18.8,lucro:14.1,vendedor:"v2"},
+  {data:"2026-06-06",cliente:"Avulso",produto:"coco",qtd:15,bruto:30,liq:28.2,lucro:21.15,vendedor:"v1"},
   {data:"2026-06-06",cliente:"Avulso",produto:"maracuja",qtd:10,bruto:20,liq:18.8,lucro:14.1},
-  {data:"2026-06-10",cliente:"Toshiba",produto:"morango",qtd:10,bruto:20,liq:18.8,lucro:14.1}
+  {data:"2026-06-10",cliente:"Toshiba",produto:"morango",qtd:10,bruto:20,liq:18.8,lucro:14.1,vendedor:"v1"}
+ ],
+ vendedores:[
+  {id:"v1",nome:"Dudu",com:5},
+  {id:"v2",nome:"Bianca",com:5}
  ],
  producoes:[
   {data:"2026-05-23",sabor:"coco",qtd:288,custoPorUnid:0.5151},
@@ -772,6 +818,8 @@ function getG(){const v=get("gastos",null);return (v&&v.length)?v:SEED.gastos;}
 function getEnt(){const v=get("entregas",null);return (v&&v.length)?v:SEED.entregas;}
 function getEquipe(){const v=get("equipe",null);return (v&&v.length)?v:SEED.equipe;}
 function getInsE(){const v=get("insumoEst",null);return (v&&Object.keys(v).length)?v:SEED.insumoEst;}
+function getVendedores(){const v=get("vendedores",null);return (v&&v.length)?v:SEED.vendedores;}
+function fillVendedores(sel,val){const vs=getVendedores();sel.innerHTML='<option value="">Venda direta (sem comissão)</option>'+vs.map(v=>`<option value="${v.id}">${v.nome} (${v.com}%)</option>`).join("");if(val)sel.value=val;}
 // Quanto cada gelo saborizado consome de cada insumo (receita real); açúcar entra no custo base
 const RECEITA={"Base/Aroma":2,"Glicose":5,"Goma Xantana":0.08,"Embalagens":1};
 const INSUMOS_DEF={"Base/Aroma":"ml","Glicose":"g","Goma Xantana":"g","Embalagens":"un","Açúcar":"g"};
@@ -1230,7 +1278,7 @@ const SABORES_VENDA=Object.keys(SB).filter(k=>!k.startsWith("combo"));
 const hoje=()=>new Date().toISOString().slice(0,10);
 const sabOpts=()=>SABORES_VENDA.map(k=>`<option value="${k}">${SB[k]}</option>`).join("");
 function fecharModal(){document.querySelectorAll(".modal-bg").forEach(m=>m.style.display="none");}
-function rerenderAll(){render();renderVendas();renderEstoque();renderLogistica();renderFinanceiro();renderMetas();renderProducao();renderInsumos();renderClientes();renderIA();renderConfig();}
+function rerenderAll(){render();renderVendas();renderEstoque();renderLogistica();renderFinanceiro();renderMetas();renderProducao();renderInsumos();renderClientes();renderComissoes();renderIA();renderConfig();}
 
 /* ---- VENDA ---- */
 var EDIT_V=null,EDIT_P=null,EDIT_G=null,EDIT_E=null;
@@ -1242,6 +1290,7 @@ function abrirVenda(){
   document.getElementById("v-data").value=hoje();
   document.getElementById("v-cliente").value="Avulso";
   document.getElementById("v-pagto").value="PIX";
+  fillVendedores(document.getElementById("v-vendedor"),"");
   document.getElementById("v-linhas").innerHTML=""; addLinhaV();
   document.getElementById("modal-venda").style.display="flex";
 }
@@ -1253,6 +1302,7 @@ function editarVenda(id){
   document.getElementById("v-data").value=v.data;
   document.getElementById("v-cliente").value=v.cliente||"Avulso";
   document.getElementById("v-pagto").value=v.pagto||"PIX";
+  fillVendedores(document.getElementById("v-vendedor"),v.vendedor||"");
   document.getElementById("v-linhas").innerHTML=""; addLinhaV();
   const l=document.querySelector("#v-linhas .linha");
   l.querySelector(".v-sab").value=v.produto;
@@ -1279,7 +1329,7 @@ function calcV(){
   document.getElementById("v-itens").textContent=n+(n===1?" sabor":" sabores");
 }
 function salvarVenda(){
-  const data=document.getElementById("v-data").value,cliente=document.getElementById("v-cliente").value||"Avulso",pagto=document.getElementById("v-pagto").value;
+  const data=document.getElementById("v-data").value,cliente=document.getElementById("v-cliente").value||"Avulso",pagto=document.getElementById("v-pagto").value,vendedor=document.getElementById("v-vendedor").value||"";
   if(EDIT_V!=null){ // edição de 1 venda
     const l=document.querySelector("#v-linhas .linha");
     const sabor=l.querySelector(".v-sab").value,q=+l.querySelector(".v-qtd").value||0,p=+l.querySelector(".v-preco").value||0;
@@ -1290,7 +1340,7 @@ function salvarVenda(){
     est[old.produto]=(est[old.produto]||0)+(old.qtd||0); // reverte o antigo
     const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*CUSTO_UN,lucro=liq-cpv;
     est[sabor]=(est[sabor]||0)-q; // aplica o novo
-    vendas[idx]={...old,data,cliente,pagto,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro};
+    vendas[idx]={...old,data,cliente,pagto,vendedor,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro};
     set("vendas",vendas); set("estoque",est); EDIT_V=null; fecharModal(); rerenderAll(); show("vendas"); return;
   }
   const linhas=[...document.querySelectorAll("#v-linhas .linha")];
@@ -1301,7 +1351,7 @@ function salvarVenda(){
     const sabor=l.querySelector(".v-sab").value,q=+l.querySelector(".v-qtd").value||0,p=+l.querySelector(".v-preco").value||0;
     if(q<=0)return;
     const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*CUSTO_UN,lucro=liq-cpv;
-    vendas.push({id:Date.now()+i,pedido,data,cliente,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro,pagto,recebido:true});
+    vendas.push({id:Date.now()+i,pedido,data,cliente,vendedor,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro,pagto,recebido:true});
     est[sabor]=(est[sabor]||0)-q; add++;
   });
   if(!add){alert("Adicione ao menos um sabor com quantidade.");return;}
@@ -1594,6 +1644,34 @@ function delEntrega(id){
   set("entregas",ent.filter(x=>x.id!==id)); rerenderAll();
 }
 
+/* ===== TELA COMISSÕES ===== */
+function renderComissoes(){
+  const {m,mesNome}=mesCtx();
+  const vMes=getV().filter(v=>(v.data||"").startsWith(m));
+  const vds=getVendedores();
+  const porV={}; vds.forEach(v=>porV[v.id]={...v,n:0,fat:0});
+  let direta=0;
+  vMes.forEach(v=>{ if(v.vendedor && porV[v.vendedor]){ porV[v.vendedor].n++; porV[v.vendedor].fat+=v.bruto||0; } else { direta+=v.bruto||0; } });
+  const lista=Object.values(porV).map(v=>({...v,comissao:v.fat*(v.com||0)/100})).sort((a,b)=>b.comissao-a.comissao);
+  const total=lista.reduce((a,v)=>a+v.comissao,0);
+  const ativos=lista.filter(v=>v.n>0);
+  T("cm-mes",mesNome); T("cm-total",R0(total)); T("cm-k-tot",R0(total));
+  T("cm-k-n",ativos.length); T("cm-k-dir",R0(direta));
+  const top=ativos[0]; T("cm-k-top",top?R0(top.comissao):"R$ 0"); T("cm-k-topn",top?top.nome:"—");
+  document.getElementById("cm-tab").innerHTML=lista.map(v=>`
+    <tr><td><span class="tag"><span style="width:26px;height:26px;border-radius:50%;display:inline-grid;place-items:center;background:rgba(201,168,76,.18);border:1px solid rgba(201,168,76,.4);color:var(--gold-soft);font-weight:700;font-size:11px">${(v.nome||"?")[0]}</span> <b>${v.nome}</b></span></td>
+    <td>${v.n}</td><td class="money">${R0(v.fat)}</td><td>${v.com}%</td>
+    <td class="money pos" style="text-align:right">${R(v.comissao)}</td></tr>`).join("")
+    ||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhum vendedor cadastrado.</td></tr>';
+}
+function abrirVendedor(){ document.getElementById("vd-nome").value=""; document.getElementById("vd-com").value=5; document.getElementById("modal-vendedor").style.display="flex"; }
+function salvarVendedor(){
+  const nome=document.getElementById("vd-nome").value.trim(); if(!nome){alert("Informe o nome.");return;}
+  const vds=get("vendedores",null)||SEED.vendedores.slice();
+  vds.push({id:"v"+Date.now(),nome,com:+document.getElementById("vd-com").value||0});
+  set("vendedores",vds); fecharModal(); rerenderAll(); show("comissoes");
+}
+
 /* ===== TELA METAS ===== */
 function getMetas(){return get("metas",null)||{};}
 function getMeta(m){return getMetas()[m]||{fat:1000,lucro:500,vendas:25};}
@@ -1660,7 +1738,7 @@ function show(view){
 document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>show(a.dataset.view)));
 
 /* Render inicial de todas as telas */
-render(); renderVendas(); renderEstoque(); renderLogistica(); renderFinanceiro(); renderMetas(); renderProducao(); renderInsumos(); renderClientes(); renderIA(); renderConfig();
+render(); renderVendas(); renderEstoque(); renderLogistica(); renderFinanceiro(); renderMetas(); renderProducao(); renderInsumos(); renderClientes(); renderComissoes(); renderIA(); renderConfig();
 const _qv=new URLSearchParams(location.search).get("v");
 if(_qv) show(_qv);
 ensureDepot(); // busca o endereço do depósito no aparelho (1ª vez)
