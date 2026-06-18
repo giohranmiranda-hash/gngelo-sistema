@@ -43,7 +43,9 @@
   .sw.on i{left:21px;background:#1a1408}
   .sw.off i{left:2px;background:#6b6358}
   /* Modal de formulário */
-  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.66);backdrop-filter:blur(3px);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:0}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.66);backdrop-filter:blur(3px);z-index:3000;display:flex;align-items:flex-end;justify-content:center;padding:0}
+  /* Mapa (Leaflet) sempre abaixo de modais e menus */
+  .leaflet-pane,.leaflet-top,.leaflet-bottom,.leaflet-control{z-index:1 !important}
   @media(min-width:760px){.modal-bg{align-items:center;padding:24px}}
   .modal{background:linear-gradient(180deg,#15130f,#100e0b);border:1px solid rgba(201,168,76,.3);
     border-radius:20px 20px 0 0;width:100%;max-width:460px;max-height:92vh;overflow:auto;box-shadow:0 -10px 50px rgba(0,0,0,.6)}
