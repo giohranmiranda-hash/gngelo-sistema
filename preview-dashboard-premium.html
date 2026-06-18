@@ -669,10 +669,10 @@ const SEED={
   "Embalagens":{qtd:5500,un:"un",custoUnit:0.1600,forn:"Shoppe"}
  },
  entregas:[
-  {id:"#ORD-8942",cliente:"Bar do Zé",rota:"Centro",eta:"14:30",status:"Em rota",itens:65,x:62,y:48,lat:-23.5489,lng:-46.6388},
-  {id:"#ORD-8943",cliente:"Restaurante Sabor",rota:"Vila Mariana",eta:"15:15",status:"Pendente",itens:150,x:30,y:66,lat:-23.5893,lng:-46.6340},
-  {id:"#ORD-8945",cliente:"Mercado Central",rota:"Santana",eta:"11:00",status:"Concluída",itens:150,x:48,y:24,lat:-23.5060,lng:-46.6280},
-  {id:"#ORD-8946",cliente:"Distribuidora Litoral",rota:"Mooca",eta:"16:00",status:"Aguardando carga",itens:435,x:78,y:78,lat:-23.5580,lng:-46.5990}
+  {id:"#ORD-8942",cliente:"Bar do Zé",rota:"São João de Meriti - Centro",eta:"14:30",status:"Em rota",itens:65,x:62,y:48,lat:-22.8035,lng:-43.3720},
+  {id:"#ORD-8943",cliente:"Restaurante Sabor",rota:"Nilópolis",eta:"15:15",status:"Pendente",itens:150,x:30,y:66,lat:-22.8085,lng:-43.4140},
+  {id:"#ORD-8945",cliente:"Mercado Central",rota:"Duque de Caxias",eta:"11:00",status:"Concluída",itens:150,x:48,y:24,lat:-22.7850,lng:-43.3110},
+  {id:"#ORD-8946",cliente:"Distribuidora Litoral",rota:"Nova Iguaçu",eta:"16:00",status:"Aguardando carga",itens:435,x:78,y:78,lat:-22.7590,lng:-43.4510}
  ],
  equipe:[
   {nome:"GN (você)",email:"gn@gngelo.app",papel:"Administrador",area:"Dono(a)",status:"Ativo"},
@@ -1017,7 +1017,14 @@ const ST_COR={"Em rota":"#C9A84C","Pendente":"#d4604f","Concluída":"#46b17b","A
 const ST_IC={"Em rota":"navigation","Pendente":"pending","Concluída":"task_alt","Aguardando carga":"hourglass_top"};
 /* IA de rota: melhor ordem de entrega (vizinho mais próximo a partir do depósito) */
 var rotaOtim=null;
-var DEPOT=[-23.5505,-46.6333]; // local do depósito (ajustável); usado no mapa real
+// Depósito real do GN Gelo (geocodificado no aparelho na 1ª abertura)
+var DEPOT_ADDR="Rua Gama Cruz, Praça do Cruzeiro, São João de Meriti, RJ, 25571-220";
+var DEPOT=get("depotLL",null)||[-22.7956,-43.3729]; // ponto inicial: São João de Meriti
+async function ensureDepot(){
+  if(get("depotLL",null))return;            // já buscado antes
+  const g=await geocode(DEPOT_ADDR);
+  if(g){ DEPOT=g; set("depotLL",g); if(document.getElementById("view-logistica")) renderLogistica(); }
+}
 function _dist(a,b){ if(a.lat!=null&&b.lat!=null){const dx=a.lat-b.lat,dy=a.lng-b.lng;return dx*dx+dy*dy;} return (a.x-b.x)**2+(a.y-b.y)**2; }
 function otimizarRota(){
   const pend=getEnt().filter(e=>e.status!=="Concluída" && (e.x!=null||e.lat!=null));
@@ -1437,6 +1444,7 @@ document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>sho
 render(); renderVendas(); renderEstoque(); renderLogistica(); renderFinanceiro(); renderProducao(); renderInsumos(); renderClientes(); renderIA(); renderConfig();
 const _qv=new URLSearchParams(location.search).get("v");
 if(_qv) show(_qv);
+ensureDepot(); // busca o endereço do depósito no aparelho (1ª vez)
 </script>
 </body>
 </html>
