@@ -587,6 +587,8 @@ function renderFinanceiro(){
   const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), liq=vMes.reduce((a,v)=>a+(v.liq||0),0),
         luc=vMes.reduce((a,v)=>a+(v.lucro||0),0);
   const ded=fat-liq, cpv=liq-luc, fixos=gMes.filter(g=>g.tipo==="Custo fixo").reduce((a,g)=>a+(g.valor||0),0);
+  const mkt=gMes.filter(g=>g.tipo==="Custo fixo"&&(g.cat||"").toLowerCase()==="marketing").reduce((a,g)=>a+(g.valor||0),0);
+  const outrosFixos=fixos-mkt;
   const saidas=cpv+fixos, resultado=liq-saidas, marg=fat?Math.round(luc/fat*100):0;
   T("fi-mes",nome); T("fi-chip",nome);
   T("fi-in",R0(liq)); T("fi-out",R0(saidas));
@@ -595,7 +597,8 @@ function renderFinanceiro(){
   T("fi-res-f",resultado>=0?"sobrou no mês":"ficou no vermelho"); T("fi-marg",marg+"%");
   const dre=[["Faturamento",fat,0],["(–) Impostos/taxas/frete",-ded,1],["(=) Receita líquida",liq,2],
     ["(–) Custo de produção",-cpv,1],["(=) Lucro das vendas",luc,2],
-    ["(–) Custos fixos do mês",-fixos,1],["(=) Resultado operacional",resultado,3]];
+    ["(–) Marketing",-mkt,1],["(–) Outros custos fixos",-outrosFixos,1],
+    ["(=) Resultado operacional",resultado,3]];
   document.getElementById("fi-dre").innerHTML=dre.map(([lb,val,t])=>`
     <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:${t===0?'none':'1px solid var(--line)'};
       ${t>=2?'font-weight:700;':''}${t===3?'font-size:15px;color:'+(val>=0?'var(--green)':'var(--red)')+';':''}">
