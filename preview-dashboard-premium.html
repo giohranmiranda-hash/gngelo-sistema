@@ -173,6 +173,7 @@
       <a data-view="estoque"><span class="sym">inventory_2</span> Estoque</a>
       <a data-view="logistica"><span class="sym">local_shipping</span> Logística</a>
       <a data-view="financeiro"><span class="sym">payments</span> Financeiro</a>
+      <a data-view="metas"><span class="sym">flag</span> Metas</a>
       <a data-view="producao"><span class="sym">ac_unit</span> Produção</a>
       <a data-view="insumos"><span class="sym">science</span> Insumos</a>
       <a data-view="clientes"><span class="sym">groups</span> Clientes</a>
@@ -449,6 +450,42 @@
     </div>
    </div><!-- /view-insumos -->
 
+   <!-- ============ TELA: METAS ============ -->
+   <div class="view" id="view-metas">
+    <div class="top">
+      <div>
+        <div class="eyebrow"><span class="sym" style="font-size:15px">flag</span> Metas de <span id="mt-mes">—</span></div>
+        <h1>Meta do mês: <b id="mt-pct">—</b> atingida</h1>
+        <p id="mt-sub">—</p>
+      </div>
+      <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent;cursor:pointer" onclick="abrirMeta()"><span class="sym" style="color:#1a1408">tune</span> Definir metas</div>
+    </div>
+    <div class="hero" style="margin-bottom:16px">
+      <div style="position:relative">
+        <div class="lbl">Faturamento do mês</div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:6px 0 4px">
+          <div class="big" id="mt-fat" style="font-size:38px"><small>R$</small>—</div>
+          <div style="color:var(--muted);font-size:15px">de <b id="mt-fatmeta" style="color:var(--gold-soft)">—</b></div>
+        </div>
+        <div style="height:14px;background:#221f1b;border-radius:8px;overflow:hidden;margin-top:10px">
+          <div id="mt-barra" style="height:100%;width:0%;border-radius:8px;background:linear-gradient(90deg,var(--gold),var(--gold-soft));transition:width .6s"></div>
+        </div>
+        <div id="mt-falta" style="color:var(--muted);font-size:12.5px;margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="ic"><span class="sym">request_quote</span></div><div class="k-lbl">Meta faturamento</div><div class="k-val" id="mt-k-meta">—</div><div class="k-foot" id="mt-k-meta-f">—</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">savings</span></div><div class="k-lbl">Meta de lucro</div><div class="k-val" id="mt-k-luc">—</div><div class="k-foot" id="mt-k-luc-f">—</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">shopping_bag</span></div><div class="k-lbl">Meta de vendas</div><div class="k-val" id="mt-k-vend">—</div><div class="k-foot" id="mt-k-vend-f">—</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">calendar_month</span></div><div class="k-lbl">Dias restantes</div><div class="k-val" id="mt-k-dias">—</div><div class="k-foot">no mês</div></div>
+    </div>
+    <div class="card">
+      <h3><span class="sym">flag</span>Progresso das metas</h3>
+      <div class="csub">O quanto você já alcançou de cada uma</div>
+      <div id="mt-bars" style="margin-top:8px"></div>
+    </div>
+   </div><!-- /view-metas -->
+
    <!-- ============ TELA: CLIENTES ============ -->
    <div class="view" id="view-clientes">
     <div class="top">
@@ -620,6 +657,19 @@
         <select class="f-in" id="e-status"><option>Aguardando carga</option><option>Pendente</option><option>Em rota</option><option>Concluída</option></select></div>
     </div>
     <div class="modal-foot"><button class="btn-gold" onclick="salvarEntrega()">Agendar entrega</button></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: DEFINIR METAS ===== -->
+<div class="modal-bg" id="modal-meta" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3>Definir metas do mês</h3><span class="sym x" onclick="fecharModal()">close</span></div>
+    <div class="modal-body">
+      <div class="f-row"><label>Meta de faturamento (R$)</label><input type="number" step="0.01" class="f-in" id="mt-i-fat" placeholder="Ex: 5000"></div>
+      <div class="f-row"><label>Meta de lucro (R$)</label><input type="number" step="0.01" class="f-in" id="mt-i-luc" placeholder="Ex: 2500"></div>
+      <div class="f-row"><label>Meta de vendas (nº de pedidos)</label><input type="number" class="f-in" id="mt-i-vend" placeholder="Ex: 60"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-gold" onclick="salvarMeta()">Salvar metas</button></div>
   </div>
 </div>
 
@@ -1180,7 +1230,7 @@ const SABORES_VENDA=Object.keys(SB).filter(k=>!k.startsWith("combo"));
 const hoje=()=>new Date().toISOString().slice(0,10);
 const sabOpts=()=>SABORES_VENDA.map(k=>`<option value="${k}">${SB[k]}</option>`).join("");
 function fecharModal(){document.querySelectorAll(".modal-bg").forEach(m=>m.style.display="none");}
-function rerenderAll(){render();renderVendas();renderEstoque();renderLogistica();renderFinanceiro();renderProducao();renderInsumos();renderClientes();renderIA();renderConfig();}
+function rerenderAll(){render();renderVendas();renderEstoque();renderLogistica();renderFinanceiro();renderMetas();renderProducao();renderInsumos();renderClientes();renderIA();renderConfig();}
 
 /* ---- VENDA ---- */
 var EDIT_V=null,EDIT_P=null,EDIT_G=null,EDIT_E=null;
@@ -1544,6 +1594,61 @@ function delEntrega(id){
   set("entregas",ent.filter(x=>x.id!==id)); rerenderAll();
 }
 
+/* ===== TELA METAS ===== */
+function getMetas(){return get("metas",null)||{};}
+function getMeta(m){return getMetas()[m]||{fat:1000,lucro:500,vendas:25};}
+function diasRestantes(m){
+  const hoje=new Date(), atual=hoje.toISOString().slice(0,7);
+  if(m!==atual)return null;
+  const [a,mes]=m.split("-"); const ult=new Date(+a,+mes,0).getDate();
+  return Math.max(0,ult-hoje.getDate());
+}
+function barraMeta(nome,atual,meta,fmt){
+  const pct=meta>0?Math.min(100,atual/meta*100):0;
+  const ok=pct>=100;
+  return `<div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+      <span style="font-weight:600">${nome}</span>
+      <span style="color:var(--muted)"><b style="color:${ok?'var(--green)':'var(--cream)'}">${fmt(atual)}</b> / ${fmt(meta)} · ${Math.round(pct)}%</span>
+    </div>
+    <div style="height:10px;background:#221f1b;border-radius:6px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;border-radius:6px;background:${ok?'linear-gradient(90deg,#46b17b,#5fce95)':'linear-gradient(90deg,var(--gold),var(--gold-soft))'}"></div>
+    </div></div>`;
+}
+function renderMetas(){
+  const {m,nome,mesNome}=mesCtx();
+  const vMes=getV().filter(v=>(v.data||"").startsWith(m));
+  const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), luc=vMes.reduce((a,v)=>a+(v.lucro||0),0), nv=vMes.length;
+  const meta=getMeta(m);
+  const pct=meta.fat>0?Math.min(100,fat/meta.fat*100):0;
+  T("mt-mes",mesNome); T("mt-pct",Math.round(pct)+"%");
+  T("mt-sub",`Faltam ${R0(Math.max(0,meta.fat-fat))} para bater a meta de faturamento.`);
+  document.getElementById("mt-fat").innerHTML=`<small>R$</small>${fat.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  T("mt-fatmeta",R0(meta.fat));
+  document.getElementById("mt-barra").style.width=pct+"%";
+  document.getElementById("mt-falta").innerHTML = pct>=100 ? "🎉 Meta de faturamento batida!" : `Falta <b style="color:var(--cream)">${R0(meta.fat-fat)}</b> · ${Math.round(pct)}% concluído`;
+  T("mt-k-meta",R0(meta.fat)); T("mt-k-meta-f",`Atingido ${R0(fat)}`);
+  T("mt-k-luc",R0(meta.lucro)); T("mt-k-luc-f",`Atingido ${R0(luc)}`);
+  T("mt-k-vend",meta.vendas); T("mt-k-vend-f",`Feitas ${nv}`);
+  const dias=diasRestantes(m); T("mt-k-dias",dias==null?"—":dias);
+  document.getElementById("mt-bars").innerHTML=
+    barraMeta("Faturamento",fat,meta.fat,R0)+
+    barraMeta("Lucro",luc,meta.lucro,R0)+
+    barraMeta("Vendas",nv,meta.vendas,v=>v+" pedidos");
+}
+function abrirMeta(){
+  const {m}=mesCtx(); const meta=getMeta(m);
+  document.getElementById("mt-i-fat").value=meta.fat;
+  document.getElementById("mt-i-luc").value=meta.lucro;
+  document.getElementById("mt-i-vend").value=meta.vendas;
+  document.getElementById("modal-meta").style.display="flex";
+}
+function salvarMeta(){
+  const {m}=mesCtx(); const metas=getMetas();
+  metas[m]={fat:+document.getElementById("mt-i-fat").value||0,lucro:+document.getElementById("mt-i-luc").value||0,vendas:+document.getElementById("mt-i-vend").value||0};
+  set("metas",metas); fecharModal(); rerenderAll(); show("metas");
+}
+
 /* ===== Navegação entre telas ===== */
 function show(view){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
@@ -1555,7 +1660,7 @@ function show(view){
 document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>show(a.dataset.view)));
 
 /* Render inicial de todas as telas */
-render(); renderVendas(); renderEstoque(); renderLogistica(); renderFinanceiro(); renderProducao(); renderInsumos(); renderClientes(); renderIA(); renderConfig();
+render(); renderVendas(); renderEstoque(); renderLogistica(); renderFinanceiro(); renderMetas(); renderProducao(); renderInsumos(); renderClientes(); renderIA(); renderConfig();
 const _qv=new URLSearchParams(location.search).get("v");
 if(_qv) show(_qv);
 ensureDepot(); // busca o endereço do depósito no aparelho (1ª vez)
