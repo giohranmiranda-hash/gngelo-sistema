@@ -136,6 +136,7 @@
       <a class="active" data-view="dashboard"><span class="sym">dashboard</span> Início</a>
       <a data-view="vendas"><span class="sym">point_of_sale</span> Vendas</a>
       <a data-view="estoque"><span class="sym">inventory_2</span> Estoque</a>
+      <a data-view="logistica"><span class="sym">local_shipping</span> Logística</a>
       <a data-view="financeiro"><span class="sym">payments</span> Financeiro</a>
       <a data-view="producao"><span class="sym">ac_unit</span> Produção</a>
       <a data-view="clientes"><span class="sym">groups</span> Clientes</a>
@@ -286,6 +287,35 @@
     </div>
    </div><!-- /view-estoque -->
 
+   <!-- ============ TELA: LOGÍSTICA ============ -->
+   <div class="view" id="view-logistica">
+    <div class="top">
+      <div>
+        <div class="eyebrow"><span class="sym" style="font-size:15px">local_shipping</span> Logística & Entregas</div>
+        <h1>Entregas de <b>hoje</b></h1>
+        <p>Acompanhe as rotas e o status de cada entrega no mapa.</p>
+      </div>
+      <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent"><span class="sym" style="color:#1a1408">add_location_alt</span> Agendar rota</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="ic"><span class="sym">inventory</span></div><div class="k-lbl">Entregas hoje</div><div class="k-val" id="lg-tot">—</div><div class="k-foot">no total</div></div>
+      <div class="kpi"><div class="ic" style="background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.25);color:var(--gold-soft)"><span class="sym">navigation</span></div><div class="k-lbl">Em rota</div><div class="k-val" id="lg-rota">—</div><div class="k-foot">a caminho</div></div>
+      <div class="kpi"><div class="ic" style="background:rgba(212,96,79,.12);border-color:rgba(212,96,79,.3);color:var(--red)"><span class="sym">pending</span></div><div class="k-lbl">Pendentes</div><div class="k-val" id="lg-pend">—</div><div class="k-foot">aguardando</div></div>
+      <div class="kpi"><div class="ic" style="background:rgba(70,177,123,.12);border-color:rgba(70,177,123,.3);color:var(--green)"><span class="sym">task_alt</span></div><div class="k-lbl">Concluídas</div><div class="k-val" id="lg-ok">—</div><div class="k-foot">entregues</div></div>
+    </div>
+    <div class="row2">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:20px 20px 0"><h3><span class="sym">map</span>Monitoramento de rotas</h3><div class="csub">Posição das entregas por status</div></div>
+        <div id="lg-map" style="position:relative;margin-top:8px"></div>
+      </div>
+      <div class="card">
+        <h3><span class="sym">list_alt</span>Entregas do dia</h3>
+        <div class="csub">Toque para ver no mapa</div>
+        <div id="lg-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </div>
+   </div><!-- /view-logistica -->
+
    <!-- ============ TELA: FINANCEIRO ============ -->
    <div class="view" id="view-financeiro">
     <div class="top">
@@ -413,6 +443,12 @@ const SEED={
   {data:"2026-05-24",desc:"Compra de insumo: Embalagens",cat:"Embalagens",valor:638.03,tipo:"Custo variável"},
   {data:"2026-05-18",desc:"Álcool (combustível)",cat:"Combustível",valor:220.1,tipo:"Custo fixo"},
   {data:"2026-04-07",desc:"Máquina teknofrio",cat:"Equipamentos",valor:12380,tipo:"Custo fixo"}
+ ],
+ entregas:[
+  {id:"#ORD-8942",cliente:"Bar do Zé",rota:"Zona Sul / Rota A",bairro:"Centro",eta:"14:30",status:"Em rota",itens:65,x:62,y:48},
+  {id:"#ORD-8943",cliente:"Restaurante Sabor",rota:"Zona Oeste / Rota B",bairro:"Jd. das Flores",eta:"15:15",status:"Pendente",itens:150,x:30,y:66},
+  {id:"#ORD-8945",cliente:"Mercado Central",rota:"Zona Norte / Rota C",bairro:"Alto da Boa Vista",eta:"11:00",status:"Concluída",itens:150,x:48,y:24},
+  {id:"#ORD-8946",cliente:"Distribuidora Litoral",rota:"Baixada / Rota D",bairro:"Praia Grande",eta:"16:00",status:"Aguardando carga",itens:435,x:78,y:78}
  ]
 };
 
@@ -421,6 +457,7 @@ function getV(){const v=get("vendas",null);return (v&&v.length)?v:SEED.vendas;}
 function getPr(){const v=get("producoes",null);return (v&&v.length)?v:SEED.producoes;}
 function getEst(){const v=get("estoque",null);return v||SEED.estoque;}
 function getG(){const v=get("gastos",null);return (v&&v.length)?v:SEED.gastos;}
+function getEnt(){const v=get("entregas",null);return (v&&v.length)?v:SEED.entregas;}
 const CUSTO_UN=0.5151; // custo de produção por picolé (params reais)
 
 const R=v=>"R$ "+(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -672,6 +709,56 @@ function renderIA(){
     '<div class="foot-note" style="margin-top:18px"><span class="sym" style="color:var(--gold);font-size:15px">info</span> Sinais calculados localmente dos seus dados — sem enviar nada para fora. (Pode evoluir para a Gemini de verdade depois.)</div>';
 }
 
+/* ===== TELA LOGÍSTICA (mapa estilizado offline) ===== */
+const ST_COR={"Em rota":"#C9A84C","Pendente":"#d4604f","Concluída":"#46b17b","Aguardando carga":"#9a9183"};
+const ST_IC={"Em rota":"navigation","Pendente":"pending","Concluída":"task_alt","Aguardando carga":"hourglass_top"};
+function renderLogistica(){
+  const ent=getEnt();
+  T("lg-tot",ent.length);
+  T("lg-rota",ent.filter(e=>e.status==="Em rota").length);
+  T("lg-pend",ent.filter(e=>e.status==="Pendente").length);
+  T("lg-ok",ent.filter(e=>e.status==="Concluída").length);
+  // base (depósito) no centro
+  const bx=50,by=50;
+  // ruas estilizadas
+  let ruas="";
+  for(let i=1;i<6;i++){ruas+=`<line x1="0" y1="${i*16.6}" x2="100" y2="${i*16.6}" stroke="#221f1b" stroke-width="0.5"/>`;
+    ruas+=`<line x1="${i*16.6}" y1="0" x2="${i*16.6}" y2="100" stroke="#221f1b" stroke-width="0.5"/>`;}
+  // linhas do depósito até cada entrega + pinos
+  let rotas="", pinos="";
+  ent.forEach(e=>{
+    const cor=ST_COR[e.status]||"#888";
+    rotas+=`<line x1="${bx}" y1="${by}" x2="${e.x}" y2="${e.y}" stroke="${cor}" stroke-width="0.6" stroke-dasharray="${e.status==='Concluída'?'0':'2 1.5'}" opacity=".55"/>`;
+    pinos+=`<circle cx="${e.x}" cy="${e.y}" r="3.4" fill="${cor}"/><circle cx="${e.x}" cy="${e.y}" r="6" fill="${cor}" opacity=".18"/>`;
+  });
+  document.getElementById("lg-map").innerHTML=`
+   <svg viewBox="0 0 100 100" width="100%" style="display:block;aspect-ratio:1.35/1;background:radial-gradient(circle at 50% 45%,#16140f,#0d0c0a)">
+     <rect x="0" y="0" width="100" height="100" fill="url(#grid)"/>
+     ${ruas}
+     <circle cx="${bx}" cy="${by}" r="9" fill="#C9A84C" opacity=".10"/>
+     ${rotas}
+     ${pinos}
+     <g transform="translate(${bx},${by})"><circle r="4.2" fill="#1a1408" stroke="#C9A84C" stroke-width="1"/>
+       <text x="0" y="1.4" font-size="4" text-anchor="middle" fill="#e6c364" font-family="Material Symbols Outlined">factory</text></g>
+   </svg>
+   <div style="position:absolute;left:14px;bottom:12px;display:flex;gap:12px;flex-wrap:wrap;font-size:11px">
+     ${Object.entries(ST_COR).map(([s,c])=>`<span style="display:flex;align-items:center;gap:5px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:${c}"></span>${s}</span>`).join("")}
+   </div>`;
+  document.getElementById("lg-list").innerHTML=ent.map(e=>{
+    const cor=ST_COR[e.status]||"#888";
+    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)">
+      <span style="width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:${cor}1a;border:1px solid ${cor}44;color:${cor}"><span class="sym" style="font-size:18px">${ST_IC[e.status]||'place'}</span></span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:700">${e.cliente}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${e.rota} · ${e.itens} un</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;font-weight:700;color:${cor}">${e.status}</div>
+        <div style="font-size:11px;color:var(--muted)"><span class="sym" style="font-size:12px;vertical-align:-2px">schedule</span> ${e.eta}</div>
+      </div></div>`;
+  }).join("");
+}
+
 /* ===== Navegação entre telas ===== */
 function show(view){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
@@ -682,7 +769,7 @@ function show(view){
 document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>show(a.dataset.view)));
 
 /* Render inicial de todas as telas */
-render(); renderVendas(); renderEstoque(); renderFinanceiro(); renderProducao(); renderClientes(); renderIA();
+render(); renderVendas(); renderEstoque(); renderLogistica(); renderFinanceiro(); renderProducao(); renderClientes(); renderIA();
 const _qv=new URLSearchParams(location.search).get("v");
 if(_qv) show(_qv);
 </script>
