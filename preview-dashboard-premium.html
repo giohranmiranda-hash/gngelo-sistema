@@ -141,6 +141,7 @@
       <a data-view="producao"><span class="sym">ac_unit</span> Produção</a>
       <a data-view="clientes"><span class="sym">groups</span> Clientes</a>
       <a data-view="ia"><span class="sym">auto_awesome</span> Assistente IA</a>
+      <a data-view="config"><span class="sym">settings</span> Configurações</a>
     </nav>
     <div class="side-foot">
       <div class="avatar">G</div>
@@ -398,6 +399,37 @@
     <div id="ia-cards"></div>
    </div><!-- /view-ia -->
 
+   <!-- ============ TELA: CONFIGURAÇÕES / EQUIPE ============ -->
+   <div class="view" id="view-config">
+    <div class="top">
+      <div>
+        <div class="eyebrow"><span class="sym" style="font-size:15px">settings</span> Configurações</div>
+        <h1>Equipe & <b>permissões</b></h1>
+        <p>Quem acessa o sistema e o que cada um pode fazer.</p>
+      </div>
+      <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent"><span class="sym" style="color:#1a1408">person_add</span> Adicionar integrante</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="ic"><span class="sym">group</span></div><div class="k-lbl">Integrantes</div><div class="k-val" id="cf-tot">—</div><div class="k-foot">cadastrados</div></div>
+      <div class="kpi"><div class="ic" style="background:rgba(70,177,123,.12);border-color:rgba(70,177,123,.3);color:var(--green)"><span class="sym">how_to_reg</span></div><div class="k-lbl">Ativos</div><div class="k-val" id="cf-ativ">—</div><div class="k-foot">com acesso</div></div>
+      <div class="kpi"><div class="ic" style="background:rgba(212,96,79,.12);border-color:rgba(212,96,79,.3);color:var(--red)"><span class="sym">block</span></div><div class="k-lbl">Bloqueados</div><div class="k-val" id="cf-bloq">—</div><div class="k-foot">sem acesso</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">badge</span></div><div class="k-lbl">Papéis</div><div class="k-val">4</div><div class="k-foot">níveis de acesso</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h3><span class="sym">groups</span>Integrantes</h3>
+      <div class="csub">Toque em bloquear para tirar o acesso na hora</div>
+      <table>
+        <thead><tr><th>Nome</th><th>Área</th><th>Papel</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody id="cf-tab"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3><span class="sym">admin_panel_settings</span>Papéis e o que cada um pode fazer</h3>
+      <div class="csub">Os níveis de permissão do sistema</div>
+      <div id="cf-papeis" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px"></div>
+    </div>
+   </div><!-- /view-config -->
+
     <div class="foot-note">
       <span class="sym" style="font-size:15px;color:var(--gold)">database</span>
       <span id="origem">Lendo dos seus dados reais (mesmo armazenamento do sistema atual).</span>
@@ -449,7 +481,20 @@ const SEED={
   {id:"#ORD-8943",cliente:"Restaurante Sabor",rota:"Zona Oeste / Rota B",bairro:"Jd. das Flores",eta:"15:15",status:"Pendente",itens:150,x:30,y:66},
   {id:"#ORD-8945",cliente:"Mercado Central",rota:"Zona Norte / Rota C",bairro:"Alto da Boa Vista",eta:"11:00",status:"Concluída",itens:150,x:48,y:24},
   {id:"#ORD-8946",cliente:"Distribuidora Litoral",rota:"Baixada / Rota D",bairro:"Praia Grande",eta:"16:00",status:"Aguardando carga",itens:435,x:78,y:78}
+ ],
+ equipe:[
+  {nome:"GN (você)",email:"gn@gngelo.app",papel:"Administrador",area:"Dono(a)",status:"Ativo"},
+  {nome:"Bianca",email:"bianca@gngelo.app",papel:"Gerente",area:"Produção",status:"Ativo"},
+  {nome:"Dudu",email:"dudu@gngelo.app",papel:"Vendedor",area:"Vendas",status:"Ativo"},
+  {nome:"Carlos",email:"carlos@gngelo.app",papel:"Operador",area:"Logística",status:"Bloqueado"}
  ]
+};
+// Papéis e o que cada um pode fazer
+const PAPEIS={
+ "Administrador":{cor:"#C9A84C",ic:"shield_person",desc:"Acesso total: vendas, financeiro, equipe e configurações."},
+ "Gerente":{cor:"#cdb98a",ic:"manage_accounts",desc:"Vendas, estoque, produção e financeiro. Não mexe na equipe."},
+ "Vendedor":{cor:"#6fb3d4",ic:"point_of_sale",desc:"Registra vendas e consulta o estoque."},
+ "Operador":{cor:"#9a9183",ic:"local_shipping",desc:"Logística e entregas. Sem acesso ao financeiro."}
 };
 
 const get=(k,d)=>{try{const v=localStorage.getItem("gng_"+k);return v?JSON.parse(v):d;}catch{return d;}};
@@ -458,6 +503,7 @@ function getPr(){const v=get("producoes",null);return (v&&v.length)?v:SEED.produ
 function getEst(){const v=get("estoque",null);return v||SEED.estoque;}
 function getG(){const v=get("gastos",null);return (v&&v.length)?v:SEED.gastos;}
 function getEnt(){const v=get("entregas",null);return (v&&v.length)?v:SEED.entregas;}
+function getEquipe(){const v=get("equipe",null);return (v&&v.length)?v:SEED.equipe;}
 const CUSTO_UN=0.5151; // custo de produção por picolé (params reais)
 
 const R=v=>"R$ "+(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -759,6 +805,36 @@ function renderLogistica(){
   }).join("");
 }
 
+/* ===== TELA CONFIGURAÇÕES / EQUIPE ===== */
+function renderConfig(){
+  const eq=getEquipe();
+  T("cf-tot",eq.length);
+  T("cf-ativ",eq.filter(e=>e.status==="Ativo").length);
+  T("cf-bloq",eq.filter(e=>e.status!=="Ativo").length);
+  const inicial=n=>(n||"?").trim()[0].toUpperCase();
+  document.getElementById("cf-tab").innerHTML=eq.map(e=>{
+    const p=PAPEIS[e.papel]||{cor:"#888",ic:"person"};
+    const ativo=e.status==="Ativo";
+    return `<tr>
+      <td><span class="tag"><span style="width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;
+        background:${p.cor}22;border:1px solid ${p.cor}55;color:${p.cor};font-weight:700;font-size:12px">${inicial(e.nome)}</span>
+        <span><span style="font-weight:600">${e.nome}</span><br><span style="font-size:11px;color:var(--muted)">${e.email}</span></span></span></td>
+      <td>${e.area}</td>
+      <td><span class="tag" style="color:${p.cor};font-weight:700"><span class="sym" style="font-size:16px">${p.ic}</span>${e.papel}</span></td>
+      <td><span class="tag" style="color:${ativo?'var(--green)':'var(--red)'}"><span class="dot" style="background:${ativo?'var(--green)':'var(--red)'}"></span>${e.status}</span></td>
+      <td style="text-align:right"><span class="sym" style="font-size:18px;color:${ativo?'var(--red)':'var(--green)'};cursor:pointer" title="${ativo?'Bloquear acesso':'Liberar acesso'}">${ativo?'block':'lock_open'}</span></td>
+    </tr>`;
+  }).join("");
+  document.getElementById("cf-papeis").innerHTML=Object.entries(PAPEIS).map(([nome,p])=>`
+    <div style="border:1px solid ${p.cor}33;border-radius:12px;padding:14px;background:var(--panel2)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+        <span style="width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:${p.cor}1a;border:1px solid ${p.cor}44;color:${p.cor}"><span class="sym" style="font-size:18px">${p.ic}</span></span>
+        <b style="font-size:13.5px;color:${p.cor}">${nome}</b>
+      </div>
+      <p style="margin:0;font-size:12.5px;color:var(--muted);line-height:1.45">${p.desc}</p>
+    </div>`).join("");
+}
+
 /* ===== Navegação entre telas ===== */
 function show(view){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
@@ -769,7 +845,7 @@ function show(view){
 document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>show(a.dataset.view)));
 
 /* Render inicial de todas as telas */
-render(); renderVendas(); renderEstoque(); renderLogistica(); renderFinanceiro(); renderProducao(); renderClientes(); renderIA();
+render(); renderVendas(); renderEstoque(); renderLogistica(); renderFinanceiro(); renderProducao(); renderClientes(); renderIA(); renderConfig();
 const _qv=new URLSearchParams(location.search).get("v");
 if(_qv) show(_qv);
 </script>
