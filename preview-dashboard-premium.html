@@ -329,7 +329,7 @@
         <h1>Entregas de <b>hoje</b></h1>
         <p>Acompanhe as rotas e o status de cada entrega no mapa.</p>
       </div>
-      <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent"><span class="sym" style="color:#1a1408">add_location_alt</span> Agendar rota</div>
+      <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent;cursor:pointer" onclick="abrirEntrega()"><span class="sym" style="color:#1a1408">add_location_alt</span> Agendar rota</div>
     </div>
     <div class="kpis">
       <div class="kpi"><div class="ic"><span class="sym">inventory</span></div><div class="k-lbl">Entregas hoje</div><div class="k-val" id="lg-tot">—</div><div class="k-foot">no total</div></div>
@@ -594,6 +594,24 @@
       </div>
     </div>
     <div class="modal-foot"><button class="btn-gold" onclick="salvarInsumo()">Salvar compra</button></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: NOVA ENTREGA ===== -->
+<div class="modal-bg" id="modal-entrega" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3>Agendar entrega</h3><span class="sym x" onclick="fecharModal()">close</span></div>
+    <div class="modal-body">
+      <div class="f-row"><label>Cliente</label><input class="f-in" id="e-cliente" placeholder="Ex: Bar do Zé"></div>
+      <div class="f-row"><label>Rota / Bairro</label><input class="f-in" id="e-rota" placeholder="Ex: Zona Sul / Rota A"></div>
+      <div class="f-grid2">
+        <div class="f-row"><label>Horário (ETA)</label><input class="f-in" id="e-eta" placeholder="Ex: 14:30" value="14:00"></div>
+        <div class="f-row"><label>Itens (un)</label><input type="number" class="f-in" id="e-itens" min="1" value="50"></div>
+      </div>
+      <div class="f-row"><label>Status</label>
+        <select class="f-in" id="e-status"><option>Aguardando carga</option><option>Pendente</option><option>Em rota</option><option>Concluída</option></select></div>
+    </div>
+    <div class="modal-foot"><button class="btn-gold" onclick="salvarEntrega()">Agendar entrega</button></div>
   </div>
 </div>
 
@@ -1023,6 +1041,7 @@ function renderLogistica(){
    </div>`;
   document.getElementById("lg-list").innerHTML=ent.map(e=>{
     const cor=ST_COR[e.status]||"#888";
+    const prox=e.status!=="Concluída";
     return `<div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)">
       <span style="width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:${cor}1a;border:1px solid ${cor}44;color:${cor}"><span class="sym" style="font-size:18px">${ST_IC[e.status]||'place'}</span></span>
       <div style="flex:1;min-width:0">
@@ -1030,9 +1049,10 @@ function renderLogistica(){
         <div style="font-size:11.5px;color:var(--muted)">${e.rota} · ${e.itens} un</div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:12px;font-weight:700;color:${cor}">${e.status}</div>
+        <div onclick="avancarEntrega('${e.id}')" title="${prox?'Avançar status':'Entregue'}" style="font-size:12px;font-weight:700;color:${cor};cursor:${prox?'pointer':'default'}">${e.status}${prox?' ▸':''}</div>
         <div style="font-size:11px;color:var(--muted)"><span class="sym" style="font-size:12px;vertical-align:-2px">schedule</span> ${e.eta}</div>
-      </div></div>`;
+      </div>
+      ${lixo("delEntrega('"+e.id+"')")}</div>`;
   }).join("");
 }
 
@@ -1299,6 +1319,39 @@ function delGasto(id){
   set("gastos",gastos.filter(x=>x.id!=id)); rerenderAll();
 }
 const lixo=fn=>`<span class="sym" style="font-size:18px;color:var(--muted);cursor:pointer" onclick="${fn}" title="Apagar">delete</span>`;
+
+/* ===== ENTREGA (agendar / avançar status / apagar) ===== */
+const STATUS_ORDER=["Aguardando carga","Pendente","Em rota","Concluída"];
+function abrirEntrega(){
+  document.getElementById("e-cliente").value="";
+  document.getElementById("e-rota").value="";
+  document.getElementById("e-eta").value="14:00";
+  document.getElementById("e-itens").value=50;
+  document.getElementById("e-status").value="Aguardando carga";
+  document.getElementById("modal-entrega").style.display="flex";
+}
+function salvarEntrega(){
+  const cliente=document.getElementById("e-cliente").value.trim();
+  if(!cliente){alert("Informe o cliente.");return;}
+  const ent=get("entregas",null)||SEED.entregas.slice();
+  const n=ent.filter(e=>/^#ORD-\d+$/.test(e.id||"")).length;
+  ent.push({id:"#ORD-"+(8947+n),cliente,rota:document.getElementById("e-rota").value||"Rota a definir",
+    bairro:"",eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
+    itens:+document.getElementById("e-itens").value||0,
+    x:15+Math.round(Math.random()*70),y:15+Math.round(Math.random()*70)});
+  set("entregas",ent); fecharModal(); rerenderAll(); show("logistica");
+}
+function avancarEntrega(id){
+  const ent=get("entregas",null)||SEED.entregas.slice();
+  const e=ent.find(x=>x.id===id); if(!e)return;
+  const i=STATUS_ORDER.indexOf(e.status); e.status=STATUS_ORDER[Math.min(i+1,STATUS_ORDER.length-1)];
+  set("entregas",ent); rerenderAll();
+}
+function delEntrega(id){
+  if(!confirm("Apagar esta entrega?"))return;
+  const ent=get("entregas",null)||SEED.entregas.slice();
+  set("entregas",ent.filter(x=>x.id!==id)); rerenderAll();
+}
 
 /* ===== Navegação entre telas ===== */
 function show(view){
