@@ -163,6 +163,12 @@
   .money{font-weight:700}
   .pos{color:var(--green)}
   .foot-note{margin-top:26px;color:var(--muted);font-size:11.5px;display:flex;align-items:center;gap:8px}
+  /* Sub-abas dos grupos */
+  #subtabs{display:flex;gap:7px;flex-wrap:wrap;padding:0 30px;margin:2px 0 16px}
+  .subtab{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+  .subtab:hover{color:var(--cream)}
+  .subtab.on{background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent}
+  @media(max-width:900px){#subtabs{padding:0 16px;margin-top:0;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}}
   /* Barra de menu mobile */
   .mobile-bar{display:none}
   .backdrop{display:none}
@@ -195,21 +201,13 @@
       <div><b>GN Gelo</b><span>Gourmet</span></div>
     </div>
     <nav>
-      <a class="active" data-view="dashboard"><span class="sym">dashboard</span> Início</a>
-      <a data-view="vendas"><span class="sym">point_of_sale</span> Vendas</a>
-      <a data-view="estoque"><span class="sym">inventory_2</span> Estoque</a>
-      <a data-view="logistica"><span class="sym">local_shipping</span> Logística</a>
-      <a data-view="calendario"><span class="sym">calendar_month</span> Calendário</a>
-      <a data-view="financeiro"><span class="sym">payments</span> Financeiro</a>
-      <a data-view="metas"><span class="sym">flag</span> Metas</a>
-      <a data-view="relatorios"><span class="sym">assessment</span> Relatórios</a>
-      <a data-view="producao"><span class="sym">ac_unit</span> Produção</a>
-      <a data-view="insumos"><span class="sym">science</span> Insumos</a>
-      <a data-view="receitas"><span class="sym">menu_book</span> Receitas</a>
-      <a data-view="clientes"><span class="sym">groups</span> Clientes</a>
-      <a data-view="comissoes"><span class="sym">badge</span> Comissões</a>
-      <a data-view="ia"><span class="sym">auto_awesome</span> Assistente IA</a>
-      <a data-view="config"><span class="sym">settings</span> Configurações</a>
+      <a class="active" data-group="dashboard" data-view="dashboard"><span class="sym">dashboard</span> Início</a>
+      <a data-group="vendas" data-view="vendas"><span class="sym">point_of_sale</span> Vendas</a>
+      <a data-group="producao" data-view="producao"><span class="sym">factory</span> Produção</a>
+      <a data-group="logistica" data-view="logistica"><span class="sym">local_shipping</span> Logística</a>
+      <a data-group="financeiro" data-view="financeiro"><span class="sym">payments</span> Financeiro</a>
+      <a data-group="ia" data-view="ia"><span class="sym">auto_awesome</span> Assistente IA</a>
+      <a data-group="config" data-view="config"><span class="sym">settings</span> Configurações</a>
     </nav>
     <div class="side-foot">
       <div class="avatar">G</div>
@@ -224,6 +222,7 @@
      <div class="logo">GN</div><b>GN Gelo</b>
      <div class="ham" onclick="toggleMenu()"><span class="sym">menu</span></div>
    </div>
+   <div id="subtabs"></div>
    <!-- ============ TELA: INÍCIO ============ -->
    <div class="view active" id="view-dashboard">
     <div class="top">
@@ -409,17 +408,16 @@
     </div>
     <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
       <div class="kpi"><div class="ic"><span class="sym">local_shipping</span></div><div class="k-lbl">Entregas no mês</div><div class="k-val" id="ca-tot">—</div><div class="k-foot">agendadas</div></div>
-      <div class="kpi"><div class="ic"><span class="sym">event_available</span></div><div class="k-lbl">Dias com entrega</div><div class="k-val" id="ca-dias">—</div><div class="k-foot">no mês</div></div>
-      <div class="kpi"><div class="ic"><span class="sym">navigation</span></div><div class="k-lbl">Em rota / pendentes</div><div class="k-val" id="ca-pend">—</div><div class="k-foot">a entregar</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">event_available</span></div><div class="k-lbl">Dias com agenda</div><div class="k-val" id="ca-dias">—</div><div class="k-foot">no mês</div></div>
+      <div class="kpi"><div class="ic" style="background:rgba(212,96,79,.12);border-color:rgba(212,96,79,.3);color:var(--red)"><span class="sym">warning</span></div><div class="k-lbl">Vencimentos</div><div class="k-val" id="ca-pend">—</div><div class="k-foot">gelos vencendo no mês</div></div>
     </div>
     <div class="card">
       <div class="cal-head"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
       <div class="cal-grid" id="ca-grid"></div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;margin-top:14px">
-        <span style="display:flex;align-items:center;gap:5px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:#C9A84C"></span>Em rota</span>
-        <span style="display:flex;align-items:center;gap:5px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:#d4604f"></span>Pendente</span>
-        <span style="display:flex;align-items:center;gap:5px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:#46b17b"></span>Concluída</span>
-        <span style="display:flex;align-items:center;gap:5px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:#9a9183"></span>Aguardando carga</span>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;margin-top:14px">
+        <span style="display:flex;align-items:center;gap:5px;color:var(--muted)"><span style="width:9px;height:9px;border-radius:2px;background:#6fb3d4"></span>🏭 Produção</span>
+        <span style="display:flex;align-items:center;gap:5px;color:var(--muted)"><span style="width:9px;height:9px;border-radius:2px;background:#C9A84C"></span>🚚 Entrega</span>
+        <span style="display:flex;align-items:center;gap:5px;color:var(--muted)"><span style="width:9px;height:9px;border-radius:2px;background:#d4604f"></span>⚠ Vencimento</span>
       </div>
     </div>
    </div><!-- /view-calendario -->
@@ -968,13 +966,13 @@ const SEED={
   {id:"v2",nome:"Bianca",com:5}
  ],
  producoes:[
-  {data:"2026-05-23",sabor:"coco",qtd:288,custoPorUnid:0.5151},
-  {data:"2026-05-23",sabor:"maracuja",qtd:72,custoPorUnid:0.5151},
-  {data:"2026-06-03",sabor:"coco",qtd:100,custoPorUnid:0.5151},
-  {data:"2026-06-04",sabor:"coco",qtd:360,custoPorUnid:0.5151},
-  {data:"2026-06-05",sabor:"coco",qtd:78,custoPorUnid:0.5151},
-  {data:"2026-06-09",sabor:"morango",qtd:72,custoPorUnid:0.5151},
-  {data:"2026-06-09",sabor:"maracuja",qtd:72,custoPorUnid:0.5151}
+  {data:"2026-05-23",sabor:"coco",qtd:288,custoPorUnid:0.5151,validade:"2026-06-12"},
+  {data:"2026-05-23",sabor:"maracuja",qtd:72,custoPorUnid:0.5151,validade:"2026-06-12"},
+  {data:"2026-06-03",sabor:"coco",qtd:100,custoPorUnid:0.5151,validade:"2026-06-23"},
+  {data:"2026-06-04",sabor:"coco",qtd:360,custoPorUnid:0.5151,validade:"2026-06-24"},
+  {data:"2026-06-05",sabor:"coco",qtd:78,custoPorUnid:0.5151,validade:"2026-06-25"},
+  {data:"2026-06-09",sabor:"morango",qtd:72,custoPorUnid:0.5151,validade:"2026-06-29"},
+  {data:"2026-06-09",sabor:"maracuja",qtd:72,custoPorUnid:0.5151,validade:"2026-06-29"}
  ],
  estoque:{coco:845,morango:62,maracuja:121,maca:0,manga:0,melancia:0,limao:0,iceblue:0,energetico:0,frutas:0,amora:0,abacaxi:0,salLimao:0,uva:0,chiclete:0,cereja:0,morPessego:0,brasil:0,bobMarley:0,laranja:0,balaHouse:0,combo10:0,combo20:0,combo50:0,combo100:0},
  gastos:[
@@ -1478,23 +1476,28 @@ function renderLogistica(){
 function renderCalendario(){
   const {m,ano,mes,nome}=mesCtx();
   fillMesNav("ca-mesnav"); T("ca-mes",nome);
+  const porDia={};
+  const addEv=(dataStr,ev)=>{ if(!(dataStr||"").startsWith(m))return; const dd=dataStr.slice(8); (porDia[dd]=porDia[dd]||[]).push(ev); };
   const ent=getEnt().filter(e=>(e.data||"").startsWith(m));
-  T("ca-tot",ent.length);
-  T("ca-pend",ent.filter(e=>e.status==="Em rota"||e.status==="Pendente").length);
-  const porDia={}; ent.forEach(e=>{const d=(e.data||"").slice(8);if(d)(porDia[d]=porDia[d]||[]).push(e);});
-  T("ca-dias",Object.keys(porDia).length);
+  ent.forEach(e=>addEv(e.data,{ordem:1,cor:ST_COR[e.status]||"#888",txt:(e.eta?e.eta+" ":"")+"🚚 "+e.cliente}));
+  let vencimentos=0;
+  getPr().forEach(p=>{
+    addEv(p.data,{ordem:0,cor:"#6fb3d4",txt:"🏭 Produziu "+(SB[p.sabor]||p.sabor)});
+    if(p.validade){ addEv(p.validade,{ordem:2,cor:"#d4604f",txt:"⚠ Vence "+(SB[p.sabor]||p.sabor)}); if(p.validade.startsWith(m))vencimentos++; }
+  });
+  T("ca-tot",ent.length); T("ca-dias",Object.keys(porDia).length); T("ca-pend",vencimentos);
   const a=+ano,mo=+mes;
-  const primeiro=new Date(a,mo-1,1).getDay();      // 0=Dom
+  const primeiro=new Date(a,mo-1,1).getDay();
   const diasNoMes=new Date(a,mo,0).getDate();
   const hojeStr=new Date().toISOString().slice(0,10);
   let cells="";
   for(let i=0;i<primeiro;i++) cells+=`<div class="cal-cell cal-empty"></div>`;
   for(let d=1;d<=diasNoMes;d++){
-    const dd=String(d).padStart(2,"0"); const evs=(porDia[dd]||[]).sort((x,y)=>(x.eta||"").localeCompare(y.eta||""));
+    const dd=String(d).padStart(2,"0"); const evs=(porDia[dd]||[]).sort((x,y)=>x.ordem-y.ordem);
     const isHoje=(a+"-"+String(mo).padStart(2,"0")+"-"+dd)===hojeStr;
     cells+=`<div class="cal-cell${isHoje?' cal-hoje':''}">
       <div class="cal-num">${d}</div>
-      ${evs.slice(0,3).map(e=>`<div class="cal-ev" style="border-left:3px solid ${ST_COR[e.status]||'#888'}" title="${e.cliente} · ${e.status} · ${e.eta||''}">${e.eta?e.eta+' ':''}${e.cliente}</div>`).join("")}
+      ${evs.slice(0,3).map(e=>`<div class="cal-ev" style="border-left:3px solid ${e.cor}" title="${e.txt}">${e.txt}</div>`).join("")}
       ${evs.length>3?`<div class="cal-mais">+${evs.length-3} mais</div>`:''}
     </div>`;
   }
@@ -1588,7 +1591,8 @@ function restaurarBackup(input){
 }
 
 /* ===== REGISTRAR (venda/produção/gasto) — multi-itens, grava de verdade ===== */
-const PARAMS=()=>Object.assign({imp:6,margem:40,acucar:0.005,fkm:2.5,com:0},get("params",null)||{});
+const PARAMS=()=>Object.assign({imp:6,margem:40,acucar:0.005,fkm:2.5,validadeDias:20,com:0},get("params",null)||{});
+function addDias(d,n){const dt=new Date(d+"T00:00:00");dt.setDate(dt.getDate()+n);return dt.toISOString().slice(0,10);}
 const SABORES_VENDA=Object.keys(SB).filter(k=>!k.startsWith("combo"));
 const hoje=()=>new Date().toISOString().slice(0,10);
 const sabOpts=()=>SABORES_VENDA.map(k=>`<option value="${k}">${SB[k]}</option>`).join("");
@@ -1725,7 +1729,7 @@ function salvarProducao(){
     // aplica o novo
     est[sabor]=(est[sabor]||0)+q;
     Object.keys(recIns()).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:Math.max(0,(ie[n].qtd||0)-q*recIns()[n])};});
-    prod[idx]={...old,data,sabor,qtd:q,custoPorUnid:custoSabor(sabor),custoTotal:q*custoSabor(sabor),resp};
+    prod[idx]={...old,data,sabor,qtd:q,custoPorUnid:custoSabor(sabor),custoTotal:q*custoSabor(sabor),resp,validade:addDias(data,PARAMS().validadeDias)};
     set("producoes",prod); set("estoque",est); set("insumoEst",ie); EDIT_P=null; fecharModal(); rerenderAll(); show("producao"); return;
   }
   const linhas=[...document.querySelectorAll("#p-linhas .linha")];
@@ -1736,7 +1740,7 @@ function salvarProducao(){
   linhas.forEach((l,i)=>{
     const sabor=l.querySelector(".p-sab").value,q=+l.querySelector(".p-qtd").value||0;
     if(q<=0)return;
-    prod.push({id:Date.now()+i,data,sabor,qtd:q,custoPorUnid:custoSabor(sabor),custoTotal:q*custoSabor(sabor),resp});
+    prod.push({id:Date.now()+i,data,sabor,qtd:q,custoPorUnid:custoSabor(sabor),custoTotal:q*custoSabor(sabor),resp,validade:addDias(data,PARAMS().validadeDias)});
     est[sabor]=(est[sabor]||0)+q; totalQtd+=q; add++;
   });
   if(!add){alert("Adicione ao menos um sabor com quantidade.");return;}
@@ -2227,22 +2231,38 @@ function salvarCliente(){
   set("clientes",cls); fecharModal(); rerenderAll(); show("clientes");
 }
 
-/* ===== Navegação entre telas ===== */
+/* ===== Navegação: grupos + sub-abas ===== */
+const GRUPOS=[
+  {nav:"dashboard",views:[["dashboard","Início"]]},
+  {nav:"vendas",views:[["vendas","Vendas"],["clientes","Clientes"],["comissoes","Comissões"]]},
+  {nav:"producao",views:[["producao","Produção"],["estoque","Estoque"],["insumos","Insumos"],["receitas","Receitas"]]},
+  {nav:"logistica",views:[["logistica","Entregas & Mapa"],["calendario","Calendário"]]},
+  {nav:"financeiro",views:[["financeiro","Financeiro"],["metas","Metas"],["relatorios","Relatórios"]]},
+  {nav:"ia",views:[["ia","Assistente IA"]]},
+  {nav:"config",views:[["config","Configurações"]]}
+];
+function grupoDoView(view){return GRUPOS.find(g=>g.views.some(v=>v[0]===view));}
 function toggleMenu(){document.querySelector(".shell").classList.toggle("open");}
 function show(view){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   const el=document.getElementById("view-"+view); if(el)el.classList.add("active");
-  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("active",a.dataset.view===view));
+  const g=grupoDoView(view);
+  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("active", g && a.dataset.group===g.nav));
+  // sub-abas do grupo
+  const st=document.getElementById("subtabs");
+  if(g && g.views.length>1){ st.style.display="flex";
+    st.innerHTML=g.views.map(([v,lb])=>`<button class="subtab${v===view?' on':''}" onclick="show('${v}')">${lb}</button>`).join("");
+  } else { st.style.display="none"; st.innerHTML=""; }
   document.querySelector(".shell").classList.remove("open"); // fecha o menu no mobile
   window.scrollTo(0,0);
-  if(view==="logistica") setTimeout(renderLogistica,30); // (re)monta o mapa real já visível
+  if(view==="logistica") setTimeout(renderLogistica,30);
 }
 document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>show(a.dataset.view)));
 
 /* Render inicial de todas as telas */
 render(); renderVendas(); renderEstoque(); renderLogistica(); renderCalendario(); renderFinanceiro(); renderMetas(); renderRelatorios(); renderProducao(); renderInsumos(); renderReceitas(); renderClientes(); renderComissoes(); renderIA(); renderConfig();
 const _qv=new URLSearchParams(location.search).get("v");
-if(_qv) show(_qv);
+show(_qv||"dashboard");
 ensureDepot(); // busca o endereço do depósito no aparelho (1ª vez)
 </script>
 </body>
