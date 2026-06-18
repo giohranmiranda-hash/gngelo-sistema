@@ -363,8 +363,13 @@
       <div class="kpi"><div class="ic"><span class="sym">sell</span></div><div class="k-lbl">Custo médio</div><div class="k-val" id="pr-med">—</div><div class="k-foot">por picolé</div></div>
       <div class="kpi"><div class="ic"><span class="sym">batch_prediction</span></div><div class="k-lbl">Lotes</div><div class="k-val" id="pr-n">—</div><div class="k-foot">no mês</div></div>
     </div>
+    <div class="card" style="margin-bottom:16px">
+      <h3><span class="sym">conveyor_belt</span>Lotes em andamento</h3>
+      <div class="csub">Acompanhe cada lote pelas fases da fabricação</div>
+      <div id="pr-kanban" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:6px"></div>
+    </div>
     <div class="card">
-      <h3><span class="sym">precision_manufacturing</span>Lotes produzidos</h3>
+      <h3><span class="sym">precision_manufacturing</span>Lotes concluídos</h3>
       <div class="csub">Custo real espelhado dos insumos comprados</div>
       <table><thead><tr><th>Data</th><th>Sabor</th><th>Qtd</th><th>Custo/un</th><th>Custo total</th></tr></thead><tbody id="pr-tab"></tbody></table>
     </div>
@@ -487,8 +492,22 @@ const SEED={
   {nome:"Bianca",email:"bianca@gngelo.app",papel:"Gerente",area:"Produção",status:"Ativo"},
   {nome:"Dudu",email:"dudu@gngelo.app",papel:"Vendedor",area:"Vendas",status:"Ativo"},
   {nome:"Carlos",email:"carlos@gngelo.app",papel:"Operador",area:"Logística",status:"Bloqueado"}
+ ],
+ lotesAndamento:[
+  {sabor:"coco",qtd:360,resp:"Bianca",fase:"Preparo",ha:"há 20 min"},
+  {sabor:"maracuja",qtd:120,resp:"Dudu",fase:"Maturação",ha:"há 2 h"},
+  {sabor:"morango",qtd:200,resp:"Bianca",fase:"Congelamento",ha:"há 4 h"},
+  {sabor:"coco",qtd:288,resp:"Bianca",fase:"Pronto",ha:"há 6 h"},
+  {sabor:"maca",qtd:150,resp:"Dudu",fase:"Preparo",ha:"agora"}
  ]
 };
+// Fases da fabricação (na ordem)
+const FASES=[
+ {nome:"Preparo",ic:"blender",cor:"#cdb98a"},
+ {nome:"Maturação",ic:"hourglass_top",cor:"#C9A84C"},
+ {nome:"Congelamento",ic:"ac_unit",cor:"#6fb3d4"},
+ {nome:"Pronto",ic:"check_circle",cor:"#46b17b"}
+];
 // Papéis e o que cada um pode fazer
 const PAPEIS={
  "Administrador":{cor:"#C9A84C",ic:"shield_person",desc:"Acesso total: vendas, financeiro, equipe e configurações."},
@@ -705,6 +724,23 @@ function renderProducao(){
     <tr><td>${fmtD(p.data)}</td><td>${tagSabor(p.sabor)}</td><td>${p.qtd} un</td>
     <td class="money">${R(p.custoPorUnid)}</td><td class="money">${R((p.qtd||0)*(p.custoPorUnid||0))}</td></tr>`).join("")
     ||'<tr><td colspan="5" class="csub" style="padding-top:14px">Sem produção no mês.</td></tr>';
+  // Quadro de fases (lotes em andamento)
+  const lotes=(get("lotesAndamento",null)&&get("lotesAndamento",[]).length)?get("lotesAndamento",[]):SEED.lotesAndamento;
+  document.getElementById("pr-kanban").innerHTML=FASES.map(f=>{
+    const itens=lotes.filter(l=>l.fase===f.nome);
+    return `<div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:120px">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)">
+        <span class="sym" style="color:${f.cor};font-size:18px">${f.ic}</span>
+        <b style="font-size:12.5px;color:${f.cor}">${f.nome}</b>
+        <span style="margin-left:auto;font-size:11px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:1px 7px">${itens.length}</span>
+      </div>
+      ${itens.map(l=>`<div style="background:var(--panel);border:1px solid ${f.cor}33;border-left:3px solid ${f.cor};border-radius:9px;padding:9px 10px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700"><span class="dot" style="background:${CC[l.sabor]||'#888'}"></span>${SB[l.sabor]||l.sabor}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">${l.qtd} un · ${l.resp}</div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:2px"><span class="sym" style="font-size:11px;vertical-align:-1px">schedule</span> ${l.ha}</div>
+      </div>`).join("")||'<div style="font-size:11px;color:var(--muted);opacity:.6;text-align:center;padding:14px 0">—</div>'}
+    </div>`;
+  }).join("");
 }
 
 /* ===== TELA CLIENTES ===== */
