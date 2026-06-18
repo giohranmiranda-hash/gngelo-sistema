@@ -507,7 +507,7 @@
       <h3><span class="sym">leaderboard</span>Comissão por vendedor</h3>
       <div class="csub">Calculada sobre o faturamento de cada um no mês</div>
       <table>
-        <thead><tr><th>Vendedor</th><th>Vendas</th><th>Faturou</th><th>%</th><th style="text-align:right">Comissão</th></tr></thead>
+        <thead><tr><th>Vendedor</th><th>Vendas</th><th>Faturou</th><th>%</th><th style="text-align:right">Comissão</th><th></th></tr></thead>
         <tbody id="cm-tab"></tbody>
       </table>
     </div>
@@ -810,7 +810,7 @@ const PAPEIS={
 const get=(k,d)=>{try{const v=localStorage.getItem("gng_"+k);return v?JSON.parse(v):d;}catch{return d;}};
 const set=(k,v)=>{try{localStorage.setItem("gng_"+k,JSON.stringify(v));localStorage.setItem("gng__local_updated",new Date().toISOString());}catch(e){}};
 // garante id em todo registro de exemplo (pra poder apagar)
-[["vendas",9000001],["producoes",9100001],["gastos",9200001]].forEach(([k,base])=>(SEED[k]||[]).forEach((o,i)=>{if(o.id==null)o.id=base+i;}));
+[["vendas",9000001],["producoes",9100001],["gastos",9200001],["equipe",9300001],["ordens",9400001],["lotesAndamento",9500001]].forEach(([k,base])=>(SEED[k]||[]).forEach((o,i)=>{if(o.id==null)o.id=base+i;}));
 function getV(){const v=get("vendas",null);return (v&&v.length)?v:SEED.vendas;}
 function getPr(){const v=get("producoes",null);return (v&&v.length)?v:SEED.producoes;}
 function getEst(){const v=get("estoque",null);return v||SEED.estoque;}
@@ -819,6 +819,8 @@ function getEnt(){const v=get("entregas",null);return (v&&v.length)?v:SEED.entre
 function getEquipe(){const v=get("equipe",null);return (v&&v.length)?v:SEED.equipe;}
 function getInsE(){const v=get("insumoEst",null);return (v&&Object.keys(v).length)?v:SEED.insumoEst;}
 function getVendedores(){const v=get("vendedores",null);return (v&&v.length)?v:SEED.vendedores;}
+function getOrdens(){const v=get("ordens",null);return (v&&v.length)?v:SEED.ordens;}
+function getLotes(){const v=get("lotesAndamento",null);return (v&&v.length)?v:SEED.lotesAndamento;}
 function fillVendedores(sel,val){const vs=getVendedores();sel.innerHTML='<option value="">Venda direta (sem comissão)</option>'+vs.map(v=>`<option value="${v.id}">${v.nome} (${v.com}%)</option>`).join("");if(val)sel.value=val;}
 // Quanto cada gelo saborizado consome de cada insumo (receita real); açúcar entra no custo base
 const RECEITA={"Base/Aroma":2,"Glicose":5,"Goma Xantana":0.08,"Embalagens":1};
@@ -1040,11 +1042,13 @@ function renderProducao(){
       </div>
       <span style="font-size:10.5px;font-weight:800;letter-spacing:.5px;color:${pc};background:${pc}1a;border:1px solid ${pc}44;border-radius:999px;padding:3px 9px">${o.prioridade}</span>
       <span class="tag" style="color:${st.cor};min-width:108px"><span class="sym" style="font-size:16px">${st.ic}</span>${o.status}</span>
-      <span class="sym" style="font-size:20px;color:${podeIniciar?'var(--gold-soft)':'var(--muted)'};cursor:pointer;opacity:${podeIniciar?1:.4}" title="${podeIniciar?'Iniciar produção':'Já iniciada'}">play_circle</span>
+      <span class="sym" onclick="avancarOrdem('${o.id}')" style="font-size:20px;color:${o.status!=='Concluída'?'var(--gold-soft)':'var(--muted)'};cursor:${o.status!=='Concluída'?'pointer':'default'};opacity:${o.status!=='Concluída'?1:.4}" title="${o.status==='Pendente'?'Iniciar produção':o.status==='Em produção'?'Concluir':'Concluída'}">${o.status==='Concluída'?'check_circle':'play_circle'}</span>
+      ${lixo("delOrdem('"+o.id+"')")}
     </div>`;
   }).join("");
   // Quadro de fases (lotes em andamento)
-  const lotes=(get("lotesAndamento",null)&&get("lotesAndamento",[]).length)?get("lotesAndamento",[]):SEED.lotesAndamento;
+  const lotes=getLotes();
+  const ultimaFase=FASES[FASES.length-1].nome;
   document.getElementById("pr-kanban").innerHTML=FASES.map(f=>{
     const itens=lotes.filter(l=>l.fase===f.nome);
     return `<div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:120px">
@@ -1054,9 +1058,12 @@ function renderProducao(){
         <span style="margin-left:auto;font-size:11px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:1px 7px">${itens.length}</span>
       </div>
       ${itens.map(l=>`<div style="background:var(--panel);border:1px solid ${f.cor}33;border-left:3px solid ${f.cor};border-radius:9px;padding:9px 10px;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700"><span class="dot" style="background:${CC[l.sabor]||'#888'}"></span>${SB[l.sabor]||l.sabor}</div>
+        <div style="display:flex;align-items:center;gap:6px"><span class="dot" style="background:${CC[l.sabor]||'#888'}"></span><span style="font-size:12.5px;font-weight:700;flex:1">${SB[l.sabor]||l.sabor}</span><span class="sym" onclick="delLote('${l.id}')" style="font-size:14px;color:var(--muted);cursor:pointer" title="Apagar">delete</span></div>
         <div style="font-size:11px;color:var(--muted);margin-top:3px">${l.qtd} un · ${l.resp}</div>
-        <div style="font-size:10.5px;color:var(--muted);margin-top:2px"><span class="sym" style="font-size:11px;vertical-align:-1px">schedule</span> ${l.ha}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+          <span style="font-size:10.5px;color:var(--muted)"><span class="sym" style="font-size:11px;vertical-align:-1px">schedule</span> ${l.ha}</span>
+          ${l.fase!==ultimaFase?`<span onclick="avancarLote('${l.id}')" style="font-size:10.5px;font-weight:700;color:var(--gold-soft);cursor:pointer">avançar ▸</span>`:''}
+        </div>
       </div>`).join("")||'<div style="font-size:11px;color:var(--muted);opacity:.6;text-align:center;padding:14px 0">—</div>'}
     </div>`;
   }).join("");
@@ -1259,7 +1266,7 @@ function renderConfig(){
       <td>${e.area}</td>
       <td><span class="tag" style="color:${p.cor};font-weight:700"><span class="sym" style="font-size:16px">${p.ic}</span>${e.papel}</span></td>
       <td><span class="tag" style="color:${ativo?'var(--green)':'var(--red)'}"><span class="dot" style="background:${ativo?'var(--green)':'var(--red)'}"></span>${e.status}</span></td>
-      <td style="text-align:right"><span class="sym" style="font-size:18px;color:${ativo?'var(--red)':'var(--green)'};cursor:pointer" title="${ativo?'Bloquear acesso':'Liberar acesso'}">${ativo?'block':'lock_open'}</span></td>
+      <td style="text-align:right;white-space:nowrap"><span class="sym" style="font-size:18px;color:${ativo?'var(--red)':'var(--green)'};cursor:pointer;margin-right:6px" onclick="toggleBloqueio('${e.id}')" title="${ativo?'Bloquear acesso':'Liberar acesso'}">${ativo?'block':'lock_open'}</span>${e.papel!=="Administrador"?lixo("delIntegrante('"+e.id+"')"):""}</td>
     </tr>`;
   }).join("");
   document.getElementById("cf-papeis").innerHTML=Object.entries(PAPEIS).map(([nome,p])=>`
@@ -1661,16 +1668,31 @@ function renderComissoes(){
   document.getElementById("cm-tab").innerHTML=lista.map(v=>`
     <tr><td><span class="tag"><span style="width:26px;height:26px;border-radius:50%;display:inline-grid;place-items:center;background:rgba(201,168,76,.18);border:1px solid rgba(201,168,76,.4);color:var(--gold-soft);font-weight:700;font-size:11px">${(v.nome||"?")[0]}</span> <b>${v.nome}</b></span></td>
     <td>${v.n}</td><td class="money">${R0(v.fat)}</td><td>${v.com}%</td>
-    <td class="money pos" style="text-align:right">${R(v.comissao)}</td></tr>`).join("")
-    ||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhum vendedor cadastrado.</td></tr>';
+    <td class="money pos" style="text-align:right">${R(v.comissao)}</td><td style="text-align:right;white-space:nowrap">${lapis("editarVendedor('"+v.id+"')")}${lixo("delVendedor('"+v.id+"')")}</td></tr>`).join("")
+    ||'<tr><td colspan="6" class="csub" style="padding-top:14px">Nenhum vendedor cadastrado.</td></tr>';
 }
-function abrirVendedor(){ document.getElementById("vd-nome").value=""; document.getElementById("vd-com").value=5; document.getElementById("modal-vendedor").style.display="flex"; }
+var EDIT_VD=null;
+function abrirVendedor(){ EDIT_VD=null; document.querySelector("#modal-vendedor h3").textContent="Novo vendedor"; document.getElementById("vd-nome").value=""; document.getElementById("vd-com").value=5; document.getElementById("modal-vendedor").style.display="flex"; }
+function editarVendedor(id){ const v=getVendedores().find(x=>x.id===id); if(!v)return; EDIT_VD=id; document.querySelector("#modal-vendedor h3").textContent="Editar vendedor"; document.getElementById("vd-nome").value=v.nome; document.getElementById("vd-com").value=v.com; document.getElementById("modal-vendedor").style.display="flex"; }
 function salvarVendedor(){
   const nome=document.getElementById("vd-nome").value.trim(); if(!nome){alert("Informe o nome.");return;}
+  const com=+document.getElementById("vd-com").value||0;
   const vds=get("vendedores",null)||SEED.vendedores.slice();
-  vds.push({id:"v"+Date.now(),nome,com:+document.getElementById("vd-com").value||0});
+  if(EDIT_VD!=null){ const i=vds.findIndex(x=>x.id===EDIT_VD); if(i>=0)vds[i]={...vds[i],nome,com}; EDIT_VD=null; }
+  else vds.push({id:"v"+Date.now(),nome,com});
   set("vendedores",vds); fecharModal(); rerenderAll(); show("comissoes");
 }
+function delVendedor(id){ if(!confirm("Apagar este vendedor? As comissões dele saem do cálculo."))return; const vds=get("vendedores",null)||SEED.vendedores.slice(); set("vendedores",vds.filter(x=>x.id!==id)); rerenderAll(); }
+/* Equipe (bloquear/liberar/apagar) */
+function toggleBloqueio(id){ const eq=get("equipe",null)||SEED.equipe.slice(); const e=eq.find(x=>x.id==id); if(!e)return; e.status=e.status==="Ativo"?"Bloqueado":"Ativo"; set("equipe",eq); rerenderAll(); }
+function delIntegrante(id){ if(!confirm("Remover este integrante?"))return; const eq=get("equipe",null)||SEED.equipe.slice(); set("equipe",eq.filter(x=>x.id!=id)); rerenderAll(); }
+/* Ordens de produção (avançar/apagar) */
+const ORD_NEXT={"Pendente":"Em produção","Em produção":"Concluída","Concluída":"Concluída"};
+function avancarOrdem(id){ const o=get("ordens",null)||SEED.ordens.slice(); const x=o.find(y=>y.id==id); if(!x)return; x.status=ORD_NEXT[x.status]||x.status; set("ordens",o); rerenderAll(); }
+function delOrdem(id){ if(!confirm("Apagar esta ordem de produção?"))return; const o=get("ordens",null)||SEED.ordens.slice(); set("ordens",o.filter(y=>y.id!=id)); rerenderAll(); }
+/* Lotes em andamento (avançar fase/apagar) */
+function avancarLote(id){ const ls=get("lotesAndamento",null)||SEED.lotesAndamento.slice(); const x=ls.find(y=>y.id==id); if(!x)return; const fases=FASES.map(f=>f.nome); const i=fases.indexOf(x.fase); x.fase=fases[Math.min(i+1,fases.length-1)]; x.ha="agora"; set("lotesAndamento",ls); rerenderAll(); }
+function delLote(id){ if(!confirm("Apagar este lote em andamento?"))return; const ls=get("lotesAndamento",null)||SEED.lotesAndamento.slice(); set("lotesAndamento",ls.filter(y=>y.id!=id)); rerenderAll(); }
 
 /* ===== TELA METAS ===== */
 function getMetas(){return get("metas",null)||{};}
