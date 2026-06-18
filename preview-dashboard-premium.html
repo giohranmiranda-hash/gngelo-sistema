@@ -856,7 +856,7 @@
     <div class="modal-body">
       <div class="f-grid2">
         <div class="f-row"><label>Data da entrega</label><input type="date" class="f-in" id="e-data"></div>
-        <div class="f-row"><label>Cliente</label><input class="f-in" id="e-cliente" placeholder="Ex: Bar do Zé"></div>
+        <div class="f-row"><label>Cliente</label><input class="f-in" id="e-cliente" list="cli-list" placeholder="Ex: Bar do Zé" oninput="puxarCliente()"><datalist id="cli-list"></datalist></div>
       </div>
       <div class="f-row"><label>Bairro / Rota</label><input class="f-in" id="e-rota" placeholder="Ex: Centro"></div>
       <div class="f-row"><label>Endereço (rua, nº, cidade) — pro mapa</label><input class="f-in" id="e-end" placeholder="Ex: Av. Paulista, 1000, São Paulo"></div>
@@ -1920,7 +1920,7 @@ const lixo=fn=>`<span class="sym" style="font-size:18px;color:var(--muted);curso
 /* ===== ENTREGA (agendar / avançar status / apagar) ===== */
 const STATUS_ORDER=["Aguardando carga","Pendente","Em rota","Concluída"];
 function abrirEntrega(){
-  EDIT_E=null;
+  EDIT_E=null; preencherDatalistCli();
   document.querySelector("#modal-entrega h3").textContent="Agendar entrega";
   document.getElementById("e-data").value=hoje();
   document.getElementById("e-cliente").value="";
@@ -1935,6 +1935,7 @@ function abrirEntrega(){
 function calcFrete(){const km=+document.getElementById("e-km").value||0; const fr=km*(PARAMS().fkm||0); const el=document.getElementById("e-frete"); if(el)el.value=R(fr); return fr;}
 function editarEntrega(id){
   const e=getEnt().find(x=>x.id===id); if(!e)return;
+  preencherDatalistCli();
   EDIT_E=id;
   document.querySelector("#modal-entrega h3").textContent="Editar entrega";
   document.getElementById("e-data").value=e.data||hoje();
@@ -1966,7 +1967,9 @@ async function salvarEntrega(){
     ent[idx]={...old,data:document.getElementById("e-data").value||old.data,cliente,rota:document.getElementById("e-rota").value||old.rota,endereco,
       eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
       itens:+document.getElementById("e-itens").value||0,km,frete:km*(PARAMS().fkm||0)};
-    if(endereco && endereco!==old.endereco){ const g=await geocode(endereco); if(g){ent[idx].lat=g[0];ent[idx].lng=g[1];} }
+    const cs=cliSalvo(cliente);
+    if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ ent[idx].lat=cs.lat; ent[idx].lng=cs.lng; }
+    else if(endereco && endereco!==old.endereco){ const g=await geocode(endereco); if(g){ent[idx].lat=g[0];ent[idx].lng=g[1];} }
     set("entregas",ent); EDIT_E=null; fecharModal(); rerenderAll(); show("logistica"); return;
   }
   const ent=get("entregas",null)||SEED.entregas.slice();
@@ -1976,7 +1979,9 @@ async function salvarEntrega(){
     endereco,eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
     itens:+document.getElementById("e-itens").value||0,km,frete:km*(PARAMS().fkm||0),
     x:15+Math.round(Math.random()*70),y:15+Math.round(Math.random()*70)};
-  if(endereco){ const g=await geocode(endereco); if(g){nova.lat=g[0];nova.lng=g[1];} }
+  const cs=cliSalvo(cliente);
+  if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ nova.lat=cs.lat; nova.lng=cs.lng; if(!nova.endereco&&cs.endereco)nova.endereco=cs.endereco; }
+  else if(endereco){ const g=await geocode(endereco); if(g){nova.lat=g[0];nova.lng=g[1];} }
   ent.push(nova); set("entregas",ent); fecharModal(); rerenderAll(); show("logistica");
 }
 function avancarEntrega(id){
@@ -2240,6 +2245,10 @@ function salvarIntegrante(){
 }
 /* ===== NOVO CLIENTE ===== */
 function getCli(){const v=get("clientes",null);return (v&&v.length)?v:SEED.clientes;}
+function cliSalvo(nome){nome=(nome||"").trim().toLowerCase();return getCli().find(c=>(c.nome||"").trim().toLowerCase()===nome);}
+function preencherDatalistCli(){const dl=document.getElementById("cli-list");if(dl)dl.innerHTML=getCli().map(c=>`<option value="${c.nome}">`).join("");}
+function puxarCliente(){const c=cliSalvo(document.getElementById("e-cliente").value);
+  if(c){ const end=document.getElementById("e-end"); if(end&&!end.value&&c.endereco)end.value=c.endereco; const r=document.getElementById("e-rota"); if(r&&!r.value&&c.bairro)r.value=c.bairro; }}
 function mostrarCli(){return !!get("mostrarClientes",false);}
 function toggleClientesMapa(){set("mostrarClientes",!mostrarCli());renderLogistica();}
 function abrirCliente(){
