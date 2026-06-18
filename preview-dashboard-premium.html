@@ -245,7 +245,7 @@
       </div>
       <div class="card">
         <h3><span class="sym">ac_unit</span>Estoque agora</h3>
-        <div class="csub">Picolés prontos por sabor</div>
+        <div class="csub">Gelos saborizados prontos por sabor</div>
         <div class="stock" id="estoque"></div>
       </div>
     </div>
@@ -292,7 +292,7 @@
       <h3><span class="sym">receipt_long</span>Todos os pedidos</h3>
       <div class="csub">Do mais recente ao mais antigo</div>
       <table>
-        <thead><tr><th>Data</th><th>Cliente</th><th>Sabor</th><th>Qtd</th><th>Total</th><th>Pgto</th><th>Lucro</th></tr></thead>
+        <thead><tr><th>Data</th><th>Cliente</th><th>Sabor</th><th>Qtd</th><th>Total</th><th>Pgto</th><th style="text-align:right">Lucro</th><th></th></tr></thead>
         <tbody id="vv-tab"></tbody>
       </table>
     </div>
@@ -303,19 +303,19 @@
     <div class="top">
       <div>
         <div class="eyebrow"><span class="sym" style="font-size:15px">inventory_2</span> Estoque</div>
-        <h1>Estoque — <b id="es-tot">—</b> picolés</h1>
+        <h1>Estoque — <b id="es-tot">—</b> gelos saborizados</h1>
         <p>Quanto você tem pronto, por sabor, e o valor parado.</p>
       </div>
       <div class="chip"><span class="sym">tune</span> Ajustar estoque</div>
     </div>
     <div class="kpis">
-      <div class="kpi"><div class="ic"><span class="sym">ac_unit</span></div><div class="k-lbl">Total em estoque</div><div class="k-val" id="es-k-tot">—</div><div class="k-foot">picolés prontos</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">ac_unit</span></div><div class="k-lbl">Total em estoque</div><div class="k-val" id="es-k-tot">—</div><div class="k-foot">gelos saborizados prontos</div></div>
       <div class="kpi"><div class="ic"><span class="sym">category</span></div><div class="k-lbl">Sabores ativos</div><div class="k-val" id="es-k-sab">—</div><div class="k-foot">com saldo</div></div>
       <div class="kpi"><div class="ic"><span class="sym">payments</span></div><div class="k-lbl">Valor em estoque</div><div class="k-val" id="es-k-val">—</div><div class="k-foot">custo de produção</div></div>
       <div class="kpi"><div class="ic"><span class="sym">trophy</span></div><div class="k-lbl">Maior estoque</div><div class="k-val" id="es-k-top">—</div><div class="k-foot" id="es-k-topq">—</div></div>
     </div>
     <div class="card">
-      <h3><span class="sym">ac_unit</span>Picolés prontos por sabor</h3>
+      <h3><span class="sym">ac_unit</span>Gelos saborizados prontos por sabor</h3>
       <div class="csub">Barras proporcionais ao saldo</div>
       <div id="es-bars"></div>
     </div>
@@ -378,7 +378,7 @@
       <div class="card">
         <h3><span class="sym">payments</span>Gastos do mês</h3>
         <div class="csub">Saídas registradas</div>
-        <table><thead><tr><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead><tbody id="fi-gastos"></tbody></table>
+        <table><thead><tr><th>Descrição</th><th>Tipo</th><th style="text-align:right">Valor</th><th></th></tr></thead><tbody id="fi-gastos"></tbody></table>
       </div>
     </div>
    </div><!-- /view-financeiro -->
@@ -394,9 +394,9 @@
       <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent;cursor:pointer" onclick="abrirProducao()"><span class="sym" style="color:#1a1408">add</span> Nova produção</div>
     </div>
     <div class="kpis">
-      <div class="kpi"><div class="ic"><span class="sym">factory</span></div><div class="k-lbl">Produzido no mês</div><div class="k-val" id="pr-tot">—</div><div class="k-foot">picolés</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">factory</span></div><div class="k-lbl">Produzido no mês</div><div class="k-val" id="pr-tot">—</div><div class="k-foot">gelos saborizados</div></div>
       <div class="kpi"><div class="ic"><span class="sym">payments</span></div><div class="k-lbl">Custo total</div><div class="k-val" id="pr-cus">—</div><div class="k-foot">insumos reais</div></div>
-      <div class="kpi"><div class="ic"><span class="sym">sell</span></div><div class="k-lbl">Custo médio</div><div class="k-val" id="pr-med">—</div><div class="k-foot">por picolé</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">sell</span></div><div class="k-lbl">Custo médio</div><div class="k-val" id="pr-med">—</div><div class="k-foot">por gelo saborizado</div></div>
       <div class="kpi"><div class="ic"><span class="sym">batch_prediction</span></div><div class="k-lbl">Lotes</div><div class="k-val" id="pr-n">—</div><div class="k-foot">no mês</div></div>
     </div>
     <div class="card" style="margin-bottom:16px">
@@ -412,7 +412,7 @@
     <div class="card">
       <h3><span class="sym">precision_manufacturing</span>Lotes concluídos</h3>
       <div class="csub">Custo real espelhado dos insumos comprados</div>
-      <table><thead><tr><th>Data</th><th>Sabor</th><th>Qtd</th><th>Custo/un</th><th>Custo total</th></tr></thead><tbody id="pr-tab"></tbody></table>
+      <table><thead><tr><th>Data</th><th>Sabor</th><th>Qtd</th><th>Custo/un</th><th style="text-align:right">Custo total</th><th></th></tr></thead><tbody id="pr-tab"></tbody></table>
     </div>
    </div><!-- /view-producao -->
 
@@ -430,7 +430,7 @@
       <div class="kpi"><div class="ic"><span class="sym">science</span></div><div class="k-lbl">Insumos</div><div class="k-val" id="in-n">—</div><div class="k-foot">cadastrados</div></div>
       <div class="kpi"><div class="ic"><span class="sym">payments</span></div><div class="k-lbl">Valor em estoque</div><div class="k-val" id="in-val">—</div><div class="k-foot">matéria-prima parada</div></div>
       <div class="kpi"><div class="ic" style="background:rgba(212,96,79,.12);border-color:rgba(212,96,79,.3);color:var(--red)"><span class="sym">warning</span></div><div class="k-lbl">Acabando</div><div class="k-val" id="in-baixo">—</div><div class="k-foot">precisam repor</div></div>
-      <div class="kpi"><div class="ic"><span class="sym">ac_unit</span></div><div class="k-lbl">Dá pra produzir</div><div class="k-val" id="in-rende">—</div><div class="k-foot">picolés (estimativa)</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">ac_unit</span></div><div class="k-lbl">Dá pra produzir</div><div class="k-val" id="in-rende">—</div><div class="k-foot">gelos saborizados (estimativa)</div></div>
     </div>
     <div class="card">
       <h3><span class="sym">inventory_2</span>Estoque de insumos</h3>
@@ -551,7 +551,7 @@
       <button class="btn-ghost" onclick="addLinhaP()"><span class="sym" style="font-size:16px;vertical-align:-3px">add</span> Adicionar sabor</button>
       <div class="resumo">
         <div><small>Custo total (insumos)</small><br><b id="p-custo">R$ 0,00</b></div>
-        <div style="text-align:right"><small id="p-itens"></small><br><small id="p-tot">0 picolés</small></div>
+        <div style="text-align:right"><small id="p-itens"></small><br><small id="p-tot">0 gelos saborizados</small></div>
       </div>
     </div>
     <div class="modal-foot"><button class="btn-gold" onclick="salvarProducao()">Salvar produção</button></div>
@@ -687,6 +687,8 @@ const PAPEIS={
 
 const get=(k,d)=>{try{const v=localStorage.getItem("gng_"+k);return v?JSON.parse(v):d;}catch{return d;}};
 const set=(k,v)=>{try{localStorage.setItem("gng_"+k,JSON.stringify(v));localStorage.setItem("gng__local_updated",new Date().toISOString());}catch(e){}};
+// garante id em todo registro de exemplo (pra poder apagar)
+[["vendas",9000001],["producoes",9100001],["gastos",9200001]].forEach(([k,base])=>(SEED[k]||[]).forEach((o,i)=>{if(o.id==null)o.id=base+i;}));
 function getV(){const v=get("vendas",null);return (v&&v.length)?v:SEED.vendas;}
 function getPr(){const v=get("producoes",null);return (v&&v.length)?v:SEED.producoes;}
 function getEst(){const v=get("estoque",null);return v||SEED.estoque;}
@@ -694,11 +696,11 @@ function getG(){const v=get("gastos",null);return (v&&v.length)?v:SEED.gastos;}
 function getEnt(){const v=get("entregas",null);return (v&&v.length)?v:SEED.entregas;}
 function getEquipe(){const v=get("equipe",null);return (v&&v.length)?v:SEED.equipe;}
 function getInsE(){const v=get("insumoEst",null);return (v&&Object.keys(v).length)?v:SEED.insumoEst;}
-// Quanto cada picolé consome de cada insumo (receita real); açúcar entra no custo base
+// Quanto cada gelo saborizado consome de cada insumo (receita real); açúcar entra no custo base
 const RECEITA={"Base/Aroma":2,"Glicose":5,"Goma Xantana":0.08,"Embalagens":1};
 const INSUMOS_DEF={"Base/Aroma":"ml","Glicose":"g","Goma Xantana":"g","Embalagens":"un","Açúcar":"g"};
 const LIMITE_PIC=2500; // abaixo disso o insumo é "acabando"
-const CUSTO_UN=0.5151; // custo de produção por picolé (params reais)
+const CUSTO_UN=0.5151; // custo de produção por gelo saborizado (params reais)
 
 const R=v=>"R$ "+(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const R0=v=>"R$ "+Math.round(v||0).toLocaleString("pt-BR");
@@ -835,8 +837,8 @@ function renderVendas(){
   document.getElementById("vv-tab").innerHTML=rows.map(v=>`
     <tr><td>${fmtD(v.data)}</td><td>${v.cliente||"—"}</td><td>${tagSabor(v.produto)}</td>
     <td>${v.qtd} un</td><td class="money">${R0(v.bruto)}</td><td>${v.pagto||"PIX"}</td>
-    <td class="money pos">${R(v.lucro)}</td></tr>`).join("")
-    ||'<tr><td colspan="7" class="csub" style="padding-top:14px">Sem vendas no mês.</td></tr>';
+    <td class="money pos" style="text-align:right">${R(v.lucro)}</td><td style="text-align:right">${lixo("delVenda("+v.id+")")}</td></tr>`).join("")
+    ||'<tr><td colspan="8" class="csub" style="padding-top:14px">Sem vendas no mês.</td></tr>';
 }
 
 /* ===== TELA ESTOQUE ===== */
@@ -884,8 +886,8 @@ function renderFinanceiro(){
   document.getElementById("fi-gastos").innerHTML=gMes.sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(g=>`
     <tr><td>${g.desc||g.descricao||"—"}</td>
     <td><span class="tag" style="color:${g.tipo==='Custo fixo'?'var(--gold-soft)':'var(--muted)'}">${g.tipo||"—"}</span></td>
-    <td class="money" style="color:var(--red)">${R(g.valor)}</td></tr>`).join("")
-    ||'<tr><td colspan="3" class="csub" style="padding-top:14px">Sem gastos no mês.</td></tr>';
+    <td class="money" style="color:var(--red);text-align:right">${R(g.valor)}</td><td style="text-align:right">${g.id!=null?lixo("delGasto("+g.id+")"):""}</td></tr>`).join("")
+    ||'<tr><td colspan="4" class="csub" style="padding-top:14px">Sem gastos no mês.</td></tr>';
 }
 
 /* ===== TELA PRODUÇÃO ===== */
@@ -897,8 +899,8 @@ function renderProducao(){
   T("pr-med",R(tot?cus/tot:0)); T("pr-n",pMes.length);
   document.getElementById("pr-tab").innerHTML=[...pMes].sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(p=>`
     <tr><td>${fmtD(p.data)}</td><td>${tagSabor(p.sabor)}</td><td>${p.qtd} un</td>
-    <td class="money">${R(p.custoPorUnid)}</td><td class="money">${R((p.qtd||0)*(p.custoPorUnid||0))}</td></tr>`).join("")
-    ||'<tr><td colspan="5" class="csub" style="padding-top:14px">Sem produção no mês.</td></tr>';
+    <td class="money">${R(p.custoPorUnid)}</td><td class="money" style="text-align:right">${R((p.qtd||0)*(p.custoPorUnid||0))}</td><td style="text-align:right">${lixo("delProducao("+p.id+")")}</td></tr>`).join("")
+    ||'<tr><td colspan="6" class="csub" style="padding-top:14px">Sem produção no mês.</td></tr>';
   // Fila de produção (ordens) — ALTA primeiro
   const ordPeso={"ALTA":0,"MÉDIA":1,"BAIXA":2};
   const ordens=[...((get("ordens",null)&&get("ordens",[]).length)?get("ordens",[]):SEED.ordens)]
@@ -1135,7 +1137,7 @@ function salvarVenda(){
   set("vendas",vendas); set("estoque",est); fecharModal(); rerenderAll(); show("vendas");
 }
 
-/* ---- PRODUÇÃO (cria picolés -> entra no estoque) ---- */
+/* ---- PRODUÇÃO (cria gelos saborizados -> entra no estoque) ---- */
 function abrirProducao(){
   document.getElementById("p-data").value=hoje();
   document.getElementById("p-resp").value="Bianca";
@@ -1151,7 +1153,7 @@ function addLinhaP(){
 }
 function calcP(){
   let tot=0; document.querySelectorAll("#p-linhas .linha").forEach(l=>tot+=(+l.querySelector(".p-qtd").value||0));
-  document.getElementById("p-tot").textContent=tot.toLocaleString("pt-BR")+" picolés";
+  document.getElementById("p-tot").textContent=tot.toLocaleString("pt-BR")+" gelos saborizados";
   document.getElementById("p-custo").textContent=R(tot*CUSTO_UN);
 }
 function salvarProducao(){
@@ -1209,7 +1211,7 @@ function salvarGasto(){
 }
 
 /* ===== TELA INSUMOS ===== */
-function rendePicoles(ie){ // quantos picolés dá pra fazer com o insumo limitante
+function rendeGelos(ie){ // quantos gelos saborizados dá pra fazer com o insumo limitante
   let min=Infinity;
   Object.keys(RECEITA).forEach(nome=>{const q=(ie[nome]&&ie[nome].qtd)||0; min=Math.min(min,q/RECEITA[nome]);});
   return isFinite(min)?Math.floor(min):0;
@@ -1220,13 +1222,13 @@ function renderInsumos(){
   const valor=nomes.reduce((a,n)=>a+(ie[n].qtd||0)*(ie[n].custoUnit||0),0);
   const baixo=nomes.filter(n=>RECEITA[n] && (ie[n].qtd||0)/RECEITA[n] < LIMITE_PIC);
   T("in-n",nomes.length); T("in-val",R0(valor)); T("in-baixo",baixo.length);
-  T("in-rende",rendePicoles(ie).toLocaleString("pt-BR"));
+  T("in-rende",rendeGelos(ie).toLocaleString("pt-BR"));
   document.getElementById("in-tab").innerHTML=nomes.map(n=>{
     const i=ie[n], rende=RECEITA[n]?(i.qtd||0)/RECEITA[n]:null;
     const crit=rende!=null&&rende<LIMITE_PIC;
     return `<tr>
       <td><span class="tag"><span class="sym" style="color:var(--gold-soft);font-size:17px">science</span><b>${n}</b></span></td>
-      <td>${(i.qtd||0).toLocaleString("pt-BR")} ${i.un||''}${rende!=null?`<br><span style="font-size:10.5px;color:var(--muted)">≈ ${Math.floor(rende).toLocaleString("pt-BR")} picolés</span>`:''}</td>
+      <td>${(i.qtd||0).toLocaleString("pt-BR")} ${i.un||''}${rende!=null?`<br><span style="font-size:10.5px;color:var(--muted)">≈ ${Math.floor(rende).toLocaleString("pt-BR")} gelos saborizados</span>`:''}</td>
       <td class="money">${R(i.custoUnit||0)}<span style="font-size:10.5px;color:var(--muted)">/${i.un||''}</span></td>
       <td>${i.forn||'—'}</td>
       <td>${crit?'<span class="tag" style="color:var(--red)"><span class="dot" style="background:var(--red)"></span>Acabando</span>':'<span class="tag" style="color:var(--green)"><span class="dot" style="background:var(--green)"></span>OK</span>'}</td>
@@ -1271,6 +1273,32 @@ function salvarInsumo(){
   if(!add){alert("Adicione ao menos um insumo com quantidade e custo.");return;}
   set("insumoEst",ie); set("gastos",gastos); fecharModal(); rerenderAll(); show("insumos");
 }
+
+/* ===== APAGAR (com devolução de estoque/insumo) ===== */
+function delVenda(id){
+  if(!confirm("Apagar esta venda? A quantidade volta para o estoque."))return;
+  const vendas=get("vendas",null)||SEED.vendas.slice();
+  const v=vendas.find(x=>x.id==id); if(!v)return;
+  const est=get("estoque",null)||Object.assign({},SEED.estoque);
+  est[v.produto]=(est[v.produto]||0)+(v.qtd||0); // devolve (regra 8)
+  set("vendas",vendas.filter(x=>x.id!=id)); set("estoque",est); rerenderAll();
+}
+function delProducao(id){
+  if(!confirm("Apagar esta produção? Os gelos saem do estoque e os insumos voltam."))return;
+  const prod=get("producoes",null)||SEED.producoes.slice();
+  const p=prod.find(x=>x.id==id); if(!p)return;
+  const est=get("estoque",null)||Object.assign({},SEED.estoque);
+  est[p.sabor]=Math.max(0,(est[p.sabor]||0)-(p.qtd||0)); // tira os gelos produzidos
+  const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
+  Object.keys(RECEITA).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:(ie[n].qtd||0)+(p.qtd||0)*RECEITA[n]};}); // devolve insumo (regra 7)
+  set("producoes",prod.filter(x=>x.id!=id)); set("estoque",est); set("insumoEst",ie); rerenderAll();
+}
+function delGasto(id){
+  if(!confirm("Apagar este gasto?"))return;
+  const gastos=get("gastos",null)||SEED.gastos.slice();
+  set("gastos",gastos.filter(x=>x.id!=id)); rerenderAll();
+}
+const lixo=fn=>`<span class="sym" style="font-size:18px;color:var(--muted);cursor:pointer" onclick="${fn}" title="Apagar">delete</span>`;
 
 /* ===== Navegação entre telas ===== */
 function show(view){
