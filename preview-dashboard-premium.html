@@ -546,16 +546,6 @@
       <div class="kpi"><div class="ic"><span class="sym">sell</span></div><div class="k-lbl">Custo médio</div><div class="k-val" id="pr-med">—</div><div class="k-foot">por gelo saborizado</div></div>
       <div class="kpi"><div class="ic"><span class="sym">batch_prediction</span></div><div class="k-lbl">Lotes</div><div class="k-val" id="pr-n">—</div><div class="k-foot">no mês</div></div>
     </div>
-    <div class="card" style="margin-bottom:16px">
-      <h3><span class="sym">format_list_numbered</span>Fila de produção</h3>
-      <div class="csub">O que ainda vai ser produzido — por prioridade</div>
-      <div id="pr-ordens" style="display:flex;flex-direction:column;gap:10px;margin-top:6px"></div>
-    </div>
-    <div class="card" style="margin-bottom:16px">
-      <h3><span class="sym">conveyor_belt</span>Lotes em andamento</h3>
-      <div class="csub">Acompanhe cada lote pelas fases da fabricação</div>
-      <div id="pr-kanban" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:6px"></div>
-    </div>
     <div class="card">
       <h3><span class="sym">precision_manufacturing</span>Lotes concluídos</h3>
       <div class="csub">Custo real espelhado dos insumos comprados</div>
@@ -1490,46 +1480,6 @@ function renderProducao(){
     <tr><td>${fmtD(p.data)}</td><td>${tagSabor(p.sabor)}</td><td>${p.qtd} un</td>
     <td class="money">${R(p.custoPorUnid)}</td><td class="money" style="text-align:right">${R((p.qtd||0)*(p.custoPorUnid||0))}</td><td style="text-align:right;white-space:nowrap">${lapis("editarProducao("+p.id+")")}${lixo("delProducao("+p.id+")")}</td></tr>`).join("")
     ||'<tr><td colspan="6" class="csub" style="padding-top:14px">Sem produção no mês.</td></tr>';
-  // Fila de produção (ordens) — ALTA primeiro
-  const ordPeso={"ALTA":0,"MÉDIA":1,"BAIXA":2};
-  const ordens=[...((get("ordens",null)&&get("ordens",[]).length)?get("ordens",[]):SEED.ordens)]
-    .sort((a,b)=>(ordPeso[a.prioridade]??9)-(ordPeso[b.prioridade]??9));
-  document.getElementById("pr-ordens").innerHTML=ordens.map(o=>{
-    const pc=PRIOR[o.prioridade]||"#888", st=ORD_ST[o.status]||{cor:"#888",ic:"help"};
-    const podeIniciar=o.status==="Pendente";
-    return `<div style="display:flex;align-items:center;gap:13px;padding:12px 13px;border:1px solid var(--line);border-left:3px solid ${pc};border-radius:11px;background:var(--panel2)">
-      <span style="width:36px;height:36px;border-radius:9px;display:grid;place-items:center;background:${(CC[o.sabor]||'#888')}22;border:1px solid ${(CC[o.sabor]||'#888')}55"><span class="sym" style="color:${CC[o.sabor]||'#ccc'};font-size:19px">icecream</span></span>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13.5px;font-weight:700">${SB[o.sabor]||o.sabor} · ${o.qtd.toLocaleString("pt-BR")} un</div>
-        <div style="font-size:11.5px;color:var(--muted)">${o.motivo}</div>
-      </div>
-      <span style="font-size:10.5px;font-weight:800;letter-spacing:.5px;color:${pc};background:${pc}1a;border:1px solid ${pc}44;border-radius:999px;padding:3px 9px">${o.prioridade}</span>
-      <span class="tag" style="color:${st.cor};min-width:108px"><span class="sym" style="font-size:16px">${st.ic}</span>${o.status}</span>
-      <span class="sym" onclick="avancarOrdem('${o.id}')" style="font-size:20px;color:${o.status!=='Concluída'?'var(--gold-soft)':'var(--muted)'};cursor:${o.status!=='Concluída'?'pointer':'default'};opacity:${o.status!=='Concluída'?1:.4}" title="${o.status==='Pendente'?'Iniciar produção':o.status==='Em produção'?'Concluir':'Concluída'}">${o.status==='Concluída'?'check_circle':'play_circle'}</span>
-      ${lixo("delOrdem('"+o.id+"')")}
-    </div>`;
-  }).join("");
-  // Quadro de fases (lotes em andamento)
-  const lotes=getLotes();
-  const ultimaFase=FASES[FASES.length-1].nome;
-  document.getElementById("pr-kanban").innerHTML=FASES.map(f=>{
-    const itens=lotes.filter(l=>l.fase===f.nome);
-    return `<div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:120px">
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)">
-        <span class="sym" style="color:${f.cor};font-size:18px">${f.ic}</span>
-        <b style="font-size:12.5px;color:${f.cor}">${f.nome}</b>
-        <span style="margin-left:auto;font-size:11px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:1px 7px">${itens.length}</span>
-      </div>
-      ${itens.map(l=>`<div style="background:var(--panel);border:1px solid ${f.cor}33;border-left:3px solid ${f.cor};border-radius:9px;padding:9px 10px;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:6px"><span class="dot" style="background:${CC[l.sabor]||'#888'}"></span><span style="font-size:12.5px;font-weight:700;flex:1">${SB[l.sabor]||l.sabor}</span><span class="sym" onclick="delLote('${l.id}')" style="font-size:14px;color:var(--muted);cursor:pointer" title="Apagar">delete</span></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">${l.qtd} un · ${l.resp}</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
-          <span style="font-size:10.5px;color:var(--muted)"><span class="sym" style="font-size:11px;vertical-align:-1px">schedule</span> ${l.ha}</span>
-          ${l.fase!==ultimaFase?`<span onclick="avancarLote('${l.id}')" style="font-size:10.5px;font-weight:700;color:var(--gold-soft);cursor:pointer">avançar ▸</span>`:''}
-        </div>
-      </div>`).join("")||'<div style="font-size:11px;color:var(--muted);opacity:.6;text-align:center;padding:14px 0">—</div>'}
-    </div>`;
-  }).join("");
 }
 
 /* ===== TELA CLIENTES ===== */
