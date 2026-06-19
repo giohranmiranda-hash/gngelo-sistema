@@ -189,6 +189,40 @@
     .row2,.hero-grid{grid-template-columns:1fr!important}
     .hero .big{font-size:38px}
   }
+  /* ===== Ajustes finos de celular (Android) ===== */
+  @media(max-width:760px){
+    main{padding:14px 12px 38px}
+    .top{flex-direction:column;align-items:stretch;gap:12px}
+    .top h1{font-size:20px;line-height:1.25}
+    .top .eyebrow{font-size:10px}
+    .top p{font-size:12px}
+    .hero{padding:18px 16px}
+    .hero .big{font-size:30px}
+    .hero .big small{font-size:17px}
+    .kpis{grid-template-columns:1fr 1fr;gap:9px}
+    .kpi{padding:13px 12px}
+    .kpi .ic{width:32px;height:32px;margin-bottom:9px}
+    .kpi .k-val{font-size:18px}
+    .kpi .k-lbl,.kpi .k-foot{font-size:11px}
+    .card{padding:16px 14px}
+    .card h3{font-size:14px}
+    /* tabelas rolam na horizontal, sem espremer */
+    table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    thead,tbody{display:table;width:100%;min-width:470px}
+    thead th,tbody td{padding:9px 7px;white-space:nowrap;font-size:12.5px}
+    /* fila de produção e kanban: rola na horizontal */
+    #pr-kanban{display:flex!important;overflow-x:auto;gap:10px;-webkit-overflow-scrolling:touch}
+    #pr-kanban>div{min-width:150px;flex:0 0 auto}
+    /* calendário compacto */
+    .cal-grid{gap:4px}.cal-head{gap:4px}
+    .cal-cell{min-height:46px;padding:3px;border-radius:7px}
+    .cal-num{font-size:10px;margin-bottom:2px}
+    .cal-ev{font-size:0;padding:0;height:6px;border-radius:3px;margin-bottom:2px;border-left:none!important;background:var(--c,#888)!important}
+    .cal-mais{display:none}
+    .cal-head span{font-size:9px}
+    /* sub-abas e seletor de mês */
+    #subtabs .subtab{padding:7px 13px;font-size:12.5px}
+  }
 </style>
 </head>
 <body>
@@ -777,6 +811,7 @@
         <div class="f-row"><label>Vendedor</label><select class="f-in" id="v-vendedor"></select></div>
       </div>
       <div class="f-row"><label>Canal de venda</label><select class="f-in" id="v-canal"><option>Venda direta</option><option>Balcão</option><option>iFood</option><option>WhatsApp</option><option>Distribuidor</option></select></div>
+      <div class="f-row"><label>Endereço do cliente (opcional) — salva no mapa</label><input class="f-in" id="v-end" placeholder="Rua, nº, bairro ou CEP — ex: 25571-220"></div>
       <label style="font-size:12px;color:var(--muted);font-weight:600">Sabores do pedido</label>
       <div id="v-linhas" style="margin-top:6px"></div>
       <button class="btn-ghost" id="v-add" onclick="addLinhaV()"><span class="sym" style="font-size:16px;vertical-align:-3px">add</span> Adicionar sabor</button>
@@ -859,7 +894,7 @@
         <div class="f-row"><label>Cliente</label><input class="f-in" id="e-cliente" list="cli-list" placeholder="Ex: Bar do Zé" oninput="puxarCliente()"><datalist id="cli-list"></datalist></div>
       </div>
       <div class="f-row"><label>Bairro / Rota</label><input class="f-in" id="e-rota" placeholder="Ex: Centro"></div>
-      <div class="f-row"><label>Endereço (rua, nº, cidade) — pro mapa</label><input class="f-in" id="e-end" placeholder="Ex: Av. Paulista, 1000, São Paulo"></div>
+      <div class="f-row"><label>Endereço (rua, nº, cidade) — pro mapa</label><input class="f-in" id="e-end" placeholder="Rua, nº, bairro ou CEP (ex: 25571-220)"></div>
       <div class="f-grid2">
         <div class="f-row"><label>Horário (ETA)</label><input class="f-in" id="e-eta" placeholder="Ex: 14:30" value="14:00"></div>
         <div class="f-row"><label>Itens (un)</label><input type="number" class="f-in" id="e-itens" min="1" value="50"></div>
@@ -941,7 +976,7 @@
         <div class="f-row"><label>Telefone</label><input class="f-in" id="cl-tel" placeholder="(21) 9...."></div>
         <div class="f-row"><label>Bairro</label><input class="f-in" id="cl-bairro" placeholder="Ex: Centro"></div>
       </div>
-      <div class="f-row"><label>Endereço (rua, nº, cidade) — fica salvo no mapa</label><input class="f-in" id="cl-end" placeholder="Ex: Rua Gama Cruz, São João de Meriti"></div>
+      <div class="f-row"><label>Endereço (rua, nº, cidade) — fica salvo no mapa</label><input class="f-in" id="cl-end" placeholder="Rua, nº, bairro ou CEP (ex: 25571-220)"></div>
     </div>
     <div class="modal-foot"><button class="btn-gold" onclick="salvarCliente()">Salvar cliente</button></div>
   </div>
@@ -1253,7 +1288,9 @@ function renderFinanceiro(){
   const resEl=document.getElementById("fi-res"); resEl.textContent=R0(resultado);
   resEl.style.color=resultado>=0?"var(--green)":"var(--red)";
   T("fi-res-f",resultado>=0?"sobrou no mês":"ficou no vermelho"); T("fi-marg",marg+"%");
-  const dre=[["Faturamento",fat,0],["(–) Impostos/taxas/frete",-ded,1],["(=) Receita líquida",liq,2],
+  const dre=[["Faturamento",fat,0],
+    ["(–) Imposto / taxas ("+(PARAMS().imp||0)+"%)",-ded,1],
+    ["(=) Receita líquida",liq,2],
     ["(–) Custo de produção",-cpv,1],["(=) Lucro das vendas",luc,2],
     ["(–) Marketing",-mkt,1],["(–) Outros custos fixos",-outrosFixos,1],
     ["(=) Resultado operacional",resultado,3]];
@@ -1516,7 +1553,7 @@ function renderCalendario(){
     const isHoje=(a+"-"+String(mo).padStart(2,"0")+"-"+dd)===hojeStr;
     cells+=`<div class="cal-cell${isHoje?' cal-hoje':''}">
       <div class="cal-num">${d}</div>
-      ${evs.slice(0,3).map(e=>`<div class="cal-ev" style="border-left:3px solid ${e.cor}" title="${e.txt}">${e.txt}</div>`).join("")}
+      ${evs.slice(0,3).map(e=>`<div class="cal-ev" style="--c:${e.cor};border-left:3px solid ${e.cor}" title="${e.txt}">${e.txt}</div>`).join("")}
       ${evs.length>3?`<div class="cal-mais">+${evs.length-3} mais</div>`:''}
     </div>`;
   }
@@ -1630,6 +1667,7 @@ function abrirVenda(){
   document.getElementById("v-pagto").value="PIX";
   fillVendedores(document.getElementById("v-vendedor"),"");
   document.getElementById("v-canal").value="Venda direta";
+  document.getElementById("v-end").value="";
   document.getElementById("v-linhas").innerHTML=""; addLinhaV();
   document.getElementById("modal-venda").style.display="flex";
 }
@@ -1643,6 +1681,7 @@ function editarVenda(id){
   document.getElementById("v-pagto").value=v.pagto||"PIX";
   fillVendedores(document.getElementById("v-vendedor"),v.vendedor||"");
   document.getElementById("v-canal").value=v.canal||"Venda direta";
+  document.getElementById("v-end").value=(cliSalvo(v.cliente)||{}).endereco||"";
   document.getElementById("v-linhas").innerHTML=""; addLinhaV();
   const l=document.querySelector("#v-linhas .linha");
   l.querySelector(".v-sab").value=v.produto;
@@ -1681,7 +1720,7 @@ function salvarVenda(){
     const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*custoSabor(sabor),lucro=liq-cpv;
     est[sabor]=(est[sabor]||0)-q; // aplica o novo
     vendas[idx]={...old,data,cliente,pagto,vendedor,canal,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro};
-    set("vendas",vendas); set("estoque",est); EDIT_V=null; fecharModal(); rerenderAll(); show("vendas"); return;
+    set("vendas",vendas); set("estoque",est); upsertClienteEndereco(cliente,(document.getElementById("v-end").value||"").trim()); EDIT_V=null; fecharModal(); rerenderAll(); show("vendas"); return;
   }
   const linhas=[...document.querySelectorAll("#v-linhas .linha")];
   const vendas=get("vendas",null)||SEED.vendas.slice();
@@ -1695,7 +1734,7 @@ function salvarVenda(){
     est[sabor]=(est[sabor]||0)-q; add++;
   });
   if(!add){alert("Adicione ao menos um sabor com quantidade.");return;}
-  set("vendas",vendas); set("estoque",est); fecharModal(); rerenderAll(); show("vendas");
+  set("vendas",vendas); set("estoque",est); upsertClienteEndereco(cliente,(document.getElementById("v-end").value||"").trim()); fecharModal(); rerenderAll(); show("vendas");
 }
 
 /* ---- PRODUÇÃO (cria gelos saborizados -> entra no estoque) ---- */
@@ -1949,8 +1988,10 @@ function editarEntrega(id){
   calcFrete(); document.getElementById("modal-entrega").style.display="flex";
 }
 async function geocode(q){
+  q=(q||"").trim(); if(!q)return null;
+  if(!/brasil|brazil/i.test(q)) q+=", Brasil";   // mais certeiro (limita ao Brasil)
   try{
-    const r=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q="+encodeURIComponent(q));
+    const r=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=br&limit=1&q="+encodeURIComponent(q));
     const d=await r.json(); if(d&&d[0]) return [parseFloat(d[0].lat),parseFloat(d[0].lon)];
   }catch(e){}
   return null;
@@ -2246,6 +2287,15 @@ function salvarIntegrante(){
 /* ===== NOVO CLIENTE ===== */
 function getCli(){const v=get("clientes",null);return (v&&v.length)?v:SEED.clientes;}
 function cliSalvo(nome){nome=(nome||"").trim().toLowerCase();return getCli().find(c=>(c.nome||"").trim().toLowerCase()===nome);}
+async function upsertClienteEndereco(nome,endereco){
+  nome=(nome||"").trim(); if(!nome||nome.toLowerCase()==="avulso"||!endereco)return;
+  const cls=get("clientes",null)||SEED.clientes.slice();
+  let c=cls.find(x=>(x.nome||"").trim().toLowerCase()===nome.toLowerCase());
+  const g=await geocode(endereco);
+  if(c){ c.endereco=endereco; if(g){c.lat=g[0];c.lng=g[1];} }
+  else { c={id:Date.now(),nome,endereco}; if(g){c.lat=g[0];c.lng=g[1];} cls.push(c); }
+  set("clientes",cls); if(document.querySelector("#view-logistica.active"))renderLogistica();
+}
 function preencherDatalistCli(){const dl=document.getElementById("cli-list");if(dl)dl.innerHTML=getCli().map(c=>`<option value="${c.nome}">`).join("");}
 function puxarCliente(){const c=cliSalvo(document.getElementById("e-cliente").value);
   if(c){ const end=document.getElementById("e-end"); if(end&&!end.value&&c.endereco)end.value=c.endereco; const r=document.getElementById("e-rota"); if(r&&!r.value&&c.bairro)r.value=c.bairro; }}
