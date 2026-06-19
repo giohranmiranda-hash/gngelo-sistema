@@ -497,6 +497,11 @@
         <table><thead><tr><th>Descrição</th><th>Tipo</th><th style="text-align:right">Valor</th><th></th></tr></thead><tbody id="fi-gastos"></tbody></table>
       </div>
     </div>
+    <div class="card" style="margin-top:14px">
+      <h3><span class="sym">request_quote</span>Contas a receber <span id="fi-areceber-tot" class="chip" style="margin-left:8px;background:rgba(212,96,79,.12);border-color:rgba(212,96,79,.3);color:var(--red)">—</span></h3>
+      <div class="csub">Vendas no fiado / ainda não recebidas — marque quando o dinheiro entrar</div>
+      <table><thead><tr><th>Cliente</th><th>Sabor</th><th>Data</th><th style="text-align:right">Valor</th><th></th></tr></thead><tbody id="fi-areceber"></tbody></table>
+    </div>
    </div><!-- /view-financeiro -->
 
    <!-- ============ TELA: PRODUÇÃO ============ -->
@@ -837,8 +842,9 @@
       <div class="f-grid2">
         <div class="f-row"><label>Data</label><input type="date" class="f-in" id="v-data"></div>
         <div class="f-row"><label>Pagamento</label>
-          <select class="f-in" id="v-pagto"><option>PIX</option><option>Dinheiro</option><option>Cartão</option><option>iFood</option></select></div>
+          <select class="f-in" id="v-pagto"><option>PIX</option><option>Dinheiro</option><option>Cartão</option><option>iFood</option><option>Fiado</option></select></div>
       </div>
+      <div class="f-row"><label>Situação</label><select class="f-in" id="v-recebido"><option value="1">Recebido</option><option value="0">A receber (fiado)</option></select></div>
       <div class="f-grid2">
         <div class="f-row"><label>Cliente</label><input class="f-in" id="v-cliente" placeholder="Ex: Bar do Zé" value="Avulso"></div>
         <div class="f-row"><label>Vendedor</label><select class="f-in" id="v-vendedor"></select></div>
@@ -1024,16 +1030,16 @@ const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agos
 /* Fallback: dados REAIS embutidos do sistema (backup_seed do index.html) — usados se o localStorage estiver vazio */
 const SEED={
  vendas:[
-  {data:"2026-05-23",cliente:"Pagode Morro do Cruzeiro",produto:"coco",qtd:200,bruto:400,liq:376,lucro:282},
-  {data:"2026-05-30",cliente:"Bar",produto:"coco",qtd:25,bruto:50,liq:47,lucro:35.25},
-  {data:"2026-06-04",cliente:"Avulso",produto:"maracuja",qtd:5,bruto:5.5,liq:5.17,lucro:2.82},
-  {data:"2026-06-04",cliente:"Avulso",produto:"coco",qtd:20,bruto:22,liq:20.68,lucro:11.28},
-  {data:"2026-06-04",cliente:"Toshiba",produto:"maracuja",qtd:8,bruto:16,liq:15.04,lucro:11.28},
-  {data:"2026-06-05",cliente:"Toshiba",produto:"coco",qtd:10,bruto:20,liq:18.8,lucro:14.1,vendedor:"v1",canal:"iFood"},
-  {data:"2026-06-05",cliente:"João",produto:"coco",qtd:10,bruto:20,liq:18.8,lucro:14.1,vendedor:"v2",canal:"WhatsApp"},
-  {data:"2026-06-06",cliente:"Avulso",produto:"coco",qtd:15,bruto:30,liq:28.2,lucro:21.15,vendedor:"v1",canal:"Balcão"},
-  {data:"2026-06-06",cliente:"Avulso",produto:"maracuja",qtd:10,bruto:20,liq:18.8,lucro:14.1,canal:"Balcão"},
-  {data:"2026-06-10",cliente:"Toshiba",produto:"morango",qtd:10,bruto:20,liq:18.8,lucro:14.1,vendedor:"v1",canal:"iFood"}
+  {id:1001,data:"2026-05-23",cliente:"Pagode Morro do Cruzeiro",produto:"coco",qtd:200,bruto:400,liq:376,lucro:282,recebido:true},
+  {id:1002,data:"2026-05-30",cliente:"Bar",produto:"coco",qtd:25,bruto:50,liq:47,lucro:35.25,recebido:true},
+  {id:1003,data:"2026-06-04",cliente:"Avulso",produto:"maracuja",qtd:5,bruto:5.5,liq:5.17,lucro:2.82,recebido:true},
+  {id:1004,data:"2026-06-04",cliente:"Avulso",produto:"coco",qtd:20,bruto:22,liq:20.68,lucro:11.28,recebido:true},
+  {id:1005,data:"2026-06-04",cliente:"Toshiba",produto:"maracuja",qtd:8,bruto:16,liq:15.04,lucro:11.28,recebido:false},
+  {id:1006,data:"2026-06-05",cliente:"Toshiba",produto:"coco",qtd:10,bruto:20,liq:18.8,lucro:14.1,vendedor:"v1",canal:"iFood",recebido:true},
+  {id:1007,data:"2026-06-05",cliente:"João",produto:"coco",qtd:10,bruto:20,liq:18.8,lucro:14.1,vendedor:"v2",canal:"WhatsApp",recebido:false},
+  {id:1008,data:"2026-06-06",cliente:"Avulso",produto:"coco",qtd:15,bruto:30,liq:28.2,lucro:21.15,vendedor:"v1",canal:"Balcão",recebido:true},
+  {id:1009,data:"2026-06-06",cliente:"Avulso",produto:"maracuja",qtd:10,bruto:20,liq:18.8,lucro:14.1,canal:"Balcão",recebido:true},
+  {id:1010,data:"2026-06-10",cliente:"Toshiba",produto:"morango",qtd:10,bruto:20,liq:18.8,lucro:14.1,vendedor:"v1",canal:"iFood",recebido:true}
  ],
  vendedores:[
   {id:"v1",nome:"Dudu",com:5},
@@ -1374,6 +1380,26 @@ function renderFinanceiro(){
     <td><span class="tag" style="color:${g.tipo==='Custo fixo'?'var(--gold-soft)':'var(--muted)'}">${g.tipo||"—"}</span></td>
     <td class="money" style="color:var(--red);text-align:right">${R(g.valor)}</td><td style="text-align:right;white-space:nowrap">${g.id!=null?lapis("editarGasto("+g.id+")")+lixo("delGasto("+g.id+")"):'<span style="font-size:10px;color:var(--muted)">recorrente</span>'}</td></tr>`).join("")
     ||'<tr><td colspan="4" class="csub" style="padding-top:14px">Sem gastos no mês.</td></tr>';
+  // Contas a receber — todas as vendas em aberto (qualquer mês), mais antigas primeiro
+  const aRec=getV().filter(v=>v.recebido===false).sort((a,b)=>(a.data||"").localeCompare(b.data||""));
+  const totRec=aRec.reduce((a,v)=>a+(v.bruto||0),0);
+  const totEl=document.getElementById("fi-areceber-tot");
+  totEl.textContent=aRec.length?(R0(totRec)+" em "+aRec.length): "tudo em dia";
+  totEl.style.display="inline-block";
+  document.getElementById("fi-areceber").innerHTML=aRec.map(v=>`
+    <tr><td>${v.cliente||v.canal||"—"}</td><td>${tagSabor(v.produto)}</td><td>${fmtD(v.data)}</td>
+    <td class="money" style="color:var(--gold-soft);text-align:right">${R(v.bruto)}</td>
+    <td style="text-align:right;white-space:nowrap"><span class="chip" style="cursor:pointer;font-size:11px;padding:4px 9px;background:rgba(70,177,123,.12);border-color:rgba(70,177,123,.3);color:var(--green)" onclick="markReceived(${v.id})"><span class="sym" style="font-size:14px;color:var(--green)">check_circle</span> Recebi</span></td></tr>`).join("")
+    ||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhuma conta a receber — tudo recebido. 🎉</td></tr>';
+}
+
+/* Marcar uma venda fiada como recebida */
+function markReceived(id){
+  const vendas=getV(), idx=vendas.findIndex(v=>v.id===id);
+  if(idx<0) return;
+  vendas[idx]={...vendas[idx],recebido:true};
+  set("vendas",vendas);
+  rerenderAll();
 }
 
 /* ===== TELA PRODUÇÃO ===== */
@@ -1775,6 +1801,7 @@ function abrirVenda(){
   fillVendedores(document.getElementById("v-vendedor"),"");
   document.getElementById("v-canal").value="Venda direta";
   document.getElementById("v-end").value="";
+  document.getElementById("v-recebido").value="1";
   document.getElementById("v-linhas").innerHTML=""; addLinhaV();
   document.getElementById("modal-venda").style.display="flex";
 }
@@ -1789,6 +1816,7 @@ function editarVenda(id){
   fillVendedores(document.getElementById("v-vendedor"),v.vendedor||"");
   document.getElementById("v-canal").value=v.canal||"Venda direta";
   document.getElementById("v-end").value=(cliSalvo(v.cliente)||{}).endereco||"";
+  document.getElementById("v-recebido").value=v.recebido===false?"0":"1";
   document.getElementById("v-linhas").innerHTML=""; addLinhaV();
   const l=document.querySelector("#v-linhas .linha");
   l.querySelector(".v-sab").value=v.produto;
@@ -1815,7 +1843,7 @@ function calcV(){
   document.getElementById("v-itens").textContent=n+(n===1?" sabor":" sabores");
 }
 function salvarVenda(){
-  const data=document.getElementById("v-data").value,cliente=document.getElementById("v-cliente").value||"Avulso",pagto=document.getElementById("v-pagto").value,vendedor=document.getElementById("v-vendedor").value||"",canal=document.getElementById("v-canal").value||"Venda direta";
+  const data=document.getElementById("v-data").value,cliente=document.getElementById("v-cliente").value||"Avulso",pagto=document.getElementById("v-pagto").value,vendedor=document.getElementById("v-vendedor").value||"",canal=document.getElementById("v-canal").value||"Venda direta",recebido=document.getElementById("v-recebido").value==="1";
   if(EDIT_V!=null){ // edição de 1 venda
     const l=document.querySelector("#v-linhas .linha");
     const sabor=l.querySelector(".v-sab").value,q=+l.querySelector(".v-qtd").value||0,p=+l.querySelector(".v-preco").value||0;
@@ -1826,7 +1854,7 @@ function salvarVenda(){
     est[old.produto]=(est[old.produto]||0)+(old.qtd||0); // reverte o antigo
     const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*custoSabor(sabor),lucro=liq-cpv;
     est[sabor]=(est[sabor]||0)-q; // aplica o novo
-    vendas[idx]={...old,data,cliente,pagto,vendedor,canal,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro};
+    vendas[idx]={...old,data,cliente,pagto,vendedor,canal,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro,recebido};
     set("vendas",vendas); set("estoque",est); upsertClienteEndereco(cliente,(document.getElementById("v-end").value||"").trim()); EDIT_V=null; fecharModal(); rerenderAll(); show("vendas"); return;
   }
   const linhas=[...document.querySelectorAll("#v-linhas .linha")];
@@ -1837,7 +1865,7 @@ function salvarVenda(){
     const sabor=l.querySelector(".v-sab").value,q=+l.querySelector(".v-qtd").value||0,p=+l.querySelector(".v-preco").value||0;
     if(q<=0)return;
     const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*custoSabor(sabor),lucro=liq-cpv;
-    vendas.push({id:Date.now()+i,pedido,data,cliente,vendedor,canal,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro,pagto,recebido:true});
+    vendas.push({id:Date.now()+i,pedido,data,cliente,vendedor,canal,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro,pagto,recebido});
     est[sabor]=(est[sabor]||0)-q; add++;
   });
   if(!add){alert("Adicione ao menos um sabor com quantidade.");return;}
