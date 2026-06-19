@@ -326,11 +326,19 @@
       </div>
     </div>
 
+    <!-- ROW: gráfico mensal -->
+    <div class="card" style="margin:14px 0">
+      <h3><span class="sym">insights</span>Vendas e lucro por mês</h3>
+      <div class="csub">Faturamento (barras) e lucro (linha) — últimos 6 meses</div>
+      <div id="chartMensal"></div>
+    </div>
+
     <!-- ROW: lucro por sabor + estoque -->
     <div class="row2">
       <div class="card">
         <h3><span class="sym">pie_chart</span>De onde vem o lucro</h3>
         <div class="csub">Lucro do mês por sabor — o que mais dá retorno</div>
+        <div id="porSaborDonut"></div>
         <div id="porSabor"></div>
       </div>
       <div class="card">
@@ -1185,6 +1193,56 @@ function mesAtivo(vendas){
   return m;
 }
 
+/* ===== GRÁFICOS (SVG puro, offline) ===== */
+function ultimosMeses(mAtivo,n){
+  let [y,mo]=mAtivo.split("-").map(Number); const out=[];
+  for(let i=0;i<n;i++){ out.unshift(y+"-"+String(mo).padStart(2,"0")); mo--; if(mo<1){mo=12;y--;} }
+  return out;
+}
+function svgChartMensal(vendas,mAtivo){
+  const meses=ultimosMeses(mAtivo,6);
+  const dados=meses.map(mk=>{const vv=vendas.filter(v=>(v.data||"").startsWith(mk));
+    return {mk,fat:vv.reduce((a,v)=>a+(v.bruto||0),0),luc:vv.reduce((a,v)=>a+(v.lucro||0),0)};});
+  const max=Math.max(1,...dados.map(d=>d.fat));
+  const W=340,H=170,padL=10,padR=10,padT=14,padB=26;
+  const cw=(W-padL-padR)/dados.length, bw=Math.min(34,cw*0.5);
+  const yOf=v=>padT+(1-v/max)*(H-padT-padB);
+  let bars="",line="",dots="",labels="";
+  dados.forEach((d,i)=>{
+    const cx=padL+cw*i+cw/2, bh=(d.fat/max)*(H-padT-padB);
+    bars+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${(H-padB-bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="url(#gGold)"/>`;
+    const ly=yOf(d.luc); line+=(i?" L":"M")+cx.toFixed(1)+" "+ly.toFixed(1);
+    dots+=`<circle cx="${cx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3" fill="#46b17b" stroke="#0a0a0a" stroke-width="1.5"/>`;
+    const mm=d.mk.split("-")[1];
+    labels+=`<text x="${cx.toFixed(1)}" y="${H-padB+15}" text-anchor="middle" font-size="10" fill="#8a8170">${MESES[+mm-1].slice(0,3)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;margin-top:8px;max-height:200px">
+    <defs><linearGradient id="gGold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e6c364"/><stop offset="1" stop-color="#a07f2e"/></linearGradient></defs>
+    ${bars}<path d="${line}" fill="none" stroke="#46b17b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}${labels}</svg>
+  <div style="display:flex;gap:18px;justify-content:center;font-size:11.5px;color:var(--muted);margin-top:2px">
+    <span><span style="display:inline-block;width:10px;height:10px;background:var(--gold);border-radius:2px;vertical-align:-1px"></span> Faturamento</span>
+    <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:50%;vertical-align:-1px"></span> Lucro</span></div>`;
+}
+function svgDonut(entries){
+  const data=entries.filter(e=>e[1]>0), total=data.reduce((a,e)=>a+e[1],0);
+  if(total<=0) return '';
+  const cx=60,cy=60,R=52,r=32,mid=(R+r)/2,wRing=R-r; let segs="";
+  if(data.length===1){
+    segs=`<circle cx="${cx}" cy="${cy}" r="${mid}" fill="none" stroke="${CC[data[0][0]]||'#888'}" stroke-width="${wRing}"/>`;
+  } else {
+    let ang=-Math.PI/2;
+    data.forEach(([k,val])=>{
+      const frac=val/total,a2=ang+frac*2*Math.PI,large=frac>0.5?1:0;
+      const x1=cx+R*Math.cos(ang),y1=cy+R*Math.sin(ang),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+      const xr2=cx+r*Math.cos(a2),yr2=cy+r*Math.sin(a2),xr1=cx+r*Math.cos(ang),yr1=cy+r*Math.sin(ang);
+      segs+=`<path d="M${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${xr2.toFixed(2)} ${yr2.toFixed(2)} A${r} ${r} 0 ${large} 0 ${xr1.toFixed(2)} ${yr1.toFixed(2)} Z" fill="${CC[k]||'#888'}"/>`;
+      ang=a2;
+    });
+  }
+  return `<svg viewBox="0 0 120 120" width="118" height="118" style="display:block;margin:4px auto 8px">${segs}
+    <text x="60" y="57" text-anchor="middle" font-size="9" fill="#8a8170">lucro mês</text>
+    <text x="60" y="70" text-anchor="middle" font-size="12.5" font-weight="700" fill="#e6c364">${R0(total)}</text></svg>`;
+}
 function render(){
   const vendas=getV(), prod=getPr(), est=getEst();
   const m=mesAtivo(vendas);
@@ -1228,6 +1286,8 @@ function render(){
       <span class="track"><span class="fill" style="width:${Math.max(6,val/maxS*100)}%"></span></span>
       <span class="vl">${R0(val)}</span>
     </div>`).join("")||'<div class="csub">Sem vendas no mês.</div>';
+  document.getElementById("porSaborDonut").innerHTML=svgDonut(arr);
+  document.getElementById("chartMensal").innerHTML=svgChartMensal(vendas,m);
 
   /* Estoque (só sabores com saldo) */
   const stk=Object.entries(est).filter(([k,q])=>q>0).sort((a,b)=>b[1]-a[1]);
