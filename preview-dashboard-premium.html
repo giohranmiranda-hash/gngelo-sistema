@@ -1578,16 +1578,19 @@ function mapaReal(ent,ordemMap){
   const map=L.map("leafmap",{zoomControl:true,attributionControl:false}); window.__lgmap=map;
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
   const pts=[DEPOT];
-  L.marker(DEPOT,{icon:L.divIcon({className:"",html:'<div style="background:#1a1408;border:2px solid #C9A84C;color:#e6c364;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-family:\'Material Symbols Outlined\';font-size:17px">factory</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(map).bindPopup("Depósito GN Gelo");
+  const mkDep=L.marker(DEPOT,{draggable:true,autoPan:true,icon:L.divIcon({className:"",html:'<div style="background:#1a1408;border:2px solid #C9A84C;color:#e6c364;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-family:\'Material Symbols Outlined\';font-size:17px">factory</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(map).bindPopup('<b>Depósito GN Gelo</b><br><span style="color:#8a7f5a;font-size:11px">📍 arraste p/ ajustar o local da fábrica</span>');
+  mkDep.on("dragend",ev=>{const ll=ev.target.getLatLng();DEPOT=[ll.lat,ll.lng];set("depotLL",DEPOT);toast&&toast("Local da fábrica ajustado");});
   ent.forEach(e=>{ if(e.lat==null)return; const cor=ST_COR[e.status]||"#888"; const num=ordemMap[e.id];
     const html=`<div style="background:${cor};color:#1a1408;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;border:2px solid #0a0a0a;box-shadow:0 0 0 2px ${cor}66">${num||"•"}</div>`;
-    L.marker([e.lat,e.lng],{icon:L.divIcon({className:"",html,iconSize:[26,26],iconAnchor:[13,13]})}).addTo(map).bindPopup("<b>"+e.cliente+"</b><br>"+e.status+" · "+e.eta);
+    const mk=L.marker([e.lat,e.lng],{draggable:true,autoPan:true,icon:L.divIcon({className:"",html,iconSize:[26,26],iconAnchor:[13,13]})}).addTo(map).bindPopup("<b>"+e.cliente+"</b><br>"+e.status+" · "+e.eta+'<br><span style="color:#8a7f5a;font-size:11px">📍 arraste o pino p/ corrigir o local</span>');
+    mk.on("dragend",ev=>{const ll=ev.target.getLatLng();salvarPinoEntrega(e.id,ll.lat,ll.lng);});
     pts.push([e.lat,e.lng]); });
   // clientes salvos (se ligado)
   if(mostrarCli()){
     getCli().forEach(c=>{ if(c.lat==null)return;
       const html=`<div style="background:#15130f;border:2px solid #cdb98a;color:#cdb98a;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:15px">storefront</div>`;
-      L.marker([c.lat,c.lng],{icon:L.divIcon({className:"",html,iconSize:[24,24],iconAnchor:[12,12]})}).addTo(map).bindPopup("<b>"+c.nome+"</b>"+(c.bairro?"<br>"+c.bairro:"")+(c.tel?"<br>"+c.tel:""));
+      const mk=L.marker([c.lat,c.lng],{draggable:true,autoPan:true,icon:L.divIcon({className:"",html,iconSize:[24,24],iconAnchor:[12,12]})}).addTo(map).bindPopup("<b>"+c.nome+"</b>"+(c.bairro?"<br>"+c.bairro:"")+(c.tel?"<br>"+c.tel:"")+'<br><span style="color:#8a7f5a;font-size:11px">📍 arraste o pino p/ corrigir o local</span>');
+      mk.on("dragend",ev=>{const ll=ev.target.getLatLng();salvarPinoCliente(c.id,ll.lat,ll.lng);});
       pts.push([c.lat,c.lng]); });
   }
   if(rotaOtim&&rotaOtim.length){
@@ -1596,6 +1599,30 @@ function mapaReal(ent,ordemMap){
   }
   if(pts.length>1) map.fitBounds(pts,{padding:[40,40],maxZoom:14}); else map.setView(DEPOT,12);
   setTimeout(()=>{try{map.invalidateSize();}catch(e){}},80);
+}
+/* Toast leve (confirmações rápidas) */
+function toast(msg){
+  let t=document.getElementById("gng-toast");
+  if(!t){t=document.createElement("div");t.id="gng-toast";
+    t.style.cssText="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:5000;background:#1a1408;color:#e6c364;border:1px solid var(--gold);border-radius:11px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .2s,bottom .2s;pointer-events:none";
+    document.body.appendChild(t);}
+  t.innerHTML='<span class="sym" style="font-size:16px;vertical-align:-3px;color:var(--gold-soft)">check_circle</span> '+msg;
+  t.style.opacity="1";t.style.bottom="34px";
+  clearTimeout(window.__toastT);window.__toastT=setTimeout(()=>{t.style.opacity="0";t.style.bottom="26px";},2200);
+}
+/* Pino manual: salva o local corrigido de uma entrega */
+function salvarPinoEntrega(id,lat,lng){
+  const ent=get("entregas",null)||SEED.entregas.slice();
+  const idx=ent.findIndex(e=>e.id===id); if(idx<0)return;
+  ent[idx]={...ent[idx],lat:+lat.toFixed(6),lng:+lng.toFixed(6)};
+  set("entregas",ent); toast("Local da entrega salvo");
+}
+/* Pino manual: salva o local corrigido de um cliente */
+function salvarPinoCliente(id,lat,lng){
+  const cls=get("clientes",null)||SEED.clientes.slice();
+  const idx=cls.findIndex(c=>c.id===id); if(idx<0)return;
+  cls[idx]={...cls[idx],lat:+lat.toFixed(6),lng:+lng.toFixed(6)};
+  set("clientes",cls); toast("Local do cliente salvo");
 }
 function desenharMapa(ent,ordemMap){
   const ativo=document.getElementById("view-logistica").classList.contains("active");
