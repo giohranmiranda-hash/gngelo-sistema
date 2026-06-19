@@ -46,6 +46,23 @@
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.66);backdrop-filter:blur(3px);z-index:3000;display:flex;align-items:flex-end;justify-content:center;padding:0}
   /* Mapa (Leaflet) sempre abaixo de modais e menus */
   .leaflet-pane,.leaflet-top,.leaflet-bottom,.leaflet-control{z-index:1 !important}
+  /* Nota térmica (impressão 58/80mm) */
+  #print-area{display:none}
+  #print-area .rcpt{font-family:'Courier New',ui-monospace,monospace;color:#000;background:#fff;width:72mm;margin:0 auto;padding:4mm 3mm;font-size:12px;line-height:1.45}
+  #print-area .rcpt h2{font-size:15px;margin:0 0 2px;text-align:center;letter-spacing:1px}
+  #print-area .rcpt .ce{text-align:center}
+  #print-area .rcpt .mut{color:#000;font-size:10.5px}
+  #print-area .rcpt hr{border:none;border-top:1px dashed #000;margin:6px 0}
+  #print-area .rcpt table{width:100%;border-collapse:collapse;font-size:11.5px}
+  #print-area .rcpt td{padding:1px 0;vertical-align:top}
+  #print-area .rcpt .rt{text-align:right}
+  #print-area .rcpt .tot{font-size:13.5px;font-weight:700}
+  @media print{
+    @page{margin:4mm}
+    .shell,.modal-bg,#gng-toast{display:none !important}
+    #print-area{display:block !important}
+    body{background:#fff !important}
+  }
   @media(min-width:760px){.modal-bg{align-items:center;padding:24px}}
   .modal{background:linear-gradient(180deg,#15130f,#100e0b);border:1px solid rgba(201,168,76,.3);
     border-radius:20px 20px 0 0;width:100%;max-width:460px;max-height:92vh;overflow:auto;box-shadow:0 -10px 50px rgba(0,0,0,.6)}
@@ -1297,7 +1314,7 @@ function renderVendas(){
   document.getElementById("vv-tab").innerHTML=rows.map(v=>`
     <tr><td>${fmtD(v.data)}</td><td>${v.cliente||"—"}</td><td>${tagSabor(v.produto)}</td>
     <td>${v.qtd} un</td><td class="money">${R0(v.bruto)}</td><td>${v.pagto||"PIX"}</td>
-    <td class="money pos" style="text-align:right">${R(v.lucro)}</td><td style="text-align:right;white-space:nowrap">${lapis("editarVenda("+v.id+")")}${lixo("delVenda("+v.id+")")}</td></tr>`).join("")
+    <td class="money pos" style="text-align:right">${R(v.lucro)}</td><td style="text-align:right;white-space:nowrap"><span class="sym" onclick="imprimirVenda(${v.id})" title="Imprimir nota" style="cursor:pointer;color:var(--gold-soft);font-size:18px;vertical-align:-3px;margin-right:2px">receipt_long</span>${lapis("editarVenda("+v.id+")")}${lixo("delVenda("+v.id+")")}</td></tr>`).join("")
     ||'<tr><td colspan="8" class="csub" style="padding-top:14px">Sem vendas no mês.</td></tr>';
 }
 
@@ -2101,6 +2118,42 @@ function delVenda(id){
   est[v.produto]=(est[v.produto]||0)+(v.qtd||0); // devolve (regra 8)
   set("vendas",vendas.filter(x=>x.id!=id)); set("estoque",est); rerenderAll();
 }
+/* ---- NOTA TÉRMICA (impressão 58/80mm) ---- */
+function imprimirVenda(id){
+  const vendas=getV(), v=vendas.find(x=>x.id==id); if(!v){alert("Venda não encontrada.");return;}
+  // agrupa itens do mesmo pedido (venda com vários sabores)
+  const itens=v.pedido?vendas.filter(x=>x.pedido===v.pedido):[v];
+  const bruto=itens.reduce((a,i)=>a+(i.bruto||0),0);
+  const qtd=itens.reduce((a,i)=>a+(i.qtd||0),0);
+  const dt=new Date(); const hora=dt.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  const num=String(v.pedido||v.id).replace(/\D/g,"").slice(-6)||String(v.id);
+  const linhas=itens.map(i=>`<tr><td>${i.qtd}x ${SB[i.produto]||i.produto}</td>
+      <td class="rt">${R(i.bruto)}</td></tr>
+      <tr><td colspan="2" class="mut">&nbsp;&nbsp;${R((i.qtd?(i.bruto||0)/i.qtd:0))} /un</td></tr>`).join("");
+  document.getElementById("print-area").innerHTML=`
+   <div class="rcpt">
+     <h2>GN GELO</h2>
+     <div class="ce mut">Gelo Saborizado Gourmet</div>
+     <div class="ce mut">${getDepotAddr()}</div>
+     <hr>
+     <div>Pedido: #${num}</div>
+     <div>Data: ${fmtD(v.data)} &nbsp; ${hora}</div>
+     <div>Cliente: ${v.cliente||"Avulso"}</div>
+     ${v.canal?`<div class="mut">Canal: ${v.canal}</div>`:""}
+     <hr>
+     <table>${linhas}</table>
+     <hr>
+     <table>
+       <tr class="tot"><td>TOTAL (${qtd} un)</td><td class="rt">${R(bruto)}</td></tr>
+       <tr><td>Pagamento</td><td class="rt">${v.pagto||"—"}</td></tr>
+       <tr><td>Situação</td><td class="rt">${v.recebido===false?"A RECEBER":"PAGO"}</td></tr>
+     </table>
+     <hr>
+     <div class="ce mut">Obrigado pela preferência!</div>
+     <div class="ce mut">@gngelo &nbsp;·&nbsp; volte sempre 🧊</div>
+   </div>`;
+  window.print();
+}
 function delProducao(id){
   if(!confirm("Apagar esta produção? Os gelos saem do estoque e os insumos voltam."))return;
   const prod=get("producoes",null)||SEED.producoes.slice();
@@ -2524,5 +2577,6 @@ const _qv=new URLSearchParams(location.search).get("v");
 show(_qv||"dashboard");
 ensureDepot(); // busca o endereço do depósito no aparelho (1ª vez)
 </script>
+<div id="print-area"></div>
 </body>
 </html>
