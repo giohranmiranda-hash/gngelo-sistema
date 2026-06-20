@@ -771,6 +771,16 @@
       </div>
     </div>
     <div id="ia-cards"></div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="sym">auto_awesome</span>Converse com a GN IA</h3>
+      <div class="csub">Pergunte sobre lucro, vendas, estoque, custos, contas a receber... Responde dos seus dados, aqui no aparelho.</div>
+      <div id="ia-chat" style="margin-top:12px;max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px"></div>
+      <div id="ia-sugest" style="display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 10px"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="f-in" id="ia-input" placeholder="Ex: qual meu lucro esse mês?" onkeydown="if(event.key==='Enter')iaEnviar()" style="flex:1;margin:0">
+        <button class="btn-gold" style="width:auto;padding:0 18px;margin:0" onclick="iaEnviar()">Enviar</button>
+      </div>
+    </div>
    </div><!-- /view-ia -->
 
    <!-- ============ TELA: CONFIGURAÇÕES / EQUIPE ============ -->
@@ -1572,6 +1582,73 @@ function renderIA(){
       <p style="margin:0;color:var(--cream);font-size:13.5px;line-height:1.5;opacity:.92">${txt}</p>
     </div>`).join("")+'</div>'+
     '<div class="foot-note" style="margin-top:18px"><span class="sym" style="color:var(--gold);font-size:15px">info</span> Sinais calculados localmente dos seus dados — sem enviar nada para fora. (Pode evoluir para a Gemini de verdade depois.)</div>';
+  // chat: saudação inicial + sugestões (só uma vez)
+  const chat=document.getElementById("ia-chat");
+  if(chat && !chat.children.length)
+    iaBolha("Oi! 👋 Sou a GN IA. Calculo tudo dos seus dados aqui no aparelho — pergunta o que quiser do negócio.","ia");
+  const sug=document.getElementById("ia-sugest");
+  if(sug && !sug.children.length){
+    const qs=["Qual meu lucro esse mês?","Sabor campeão","Estoque baixo?","Quanto custa a Econômica?","Contas a receber"];
+    sug.innerHTML=qs.map(q=>`<span class="chip" style="cursor:pointer;font-size:11.5px" onclick="iaPergunta(this.textContent)">${q}</span>`).join("");
+  }
+}
+/* ===== CHAT DA IA (local, offline — responde dos dados reais) ===== */
+function iaBolha(html,quem){
+  const wrap=document.getElementById("ia-chat"); if(!wrap)return;
+  const eu=quem==="eu";
+  const d=document.createElement("div");
+  d.style.cssText="max-width:85%;padding:9px 13px;border-radius:13px;font-size:13.5px;line-height:1.5;word-wrap:break-word;"+
+    (eu?"align-self:flex-end;background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-bottom-right-radius:4px"
+       :"align-self:flex-start;background:var(--panel2);border:1px solid var(--line);color:var(--cream);border-bottom-left-radius:4px");
+  d.innerHTML=html; wrap.appendChild(d); wrap.scrollTop=wrap.scrollHeight;
+}
+function iaPergunta(q){iaEnviar(q);}
+function iaEnviar(texto){
+  const inp=document.getElementById("ia-input");
+  const q=((texto!=null&&typeof texto==="string")?texto:(inp?inp.value:"")).trim(); if(!q)return;
+  iaBolha(q,"eu"); if(inp)inp.value="";
+  setTimeout(()=>iaBolha(iaResponder(q),"ia"),200);
+}
+function iaResponder(q){
+  const s=(q||"").toLowerCase(), has=(...ks)=>ks.some(k=>s.includes(k));
+  const {m,mesNome}=mesCtx();
+  const vMes=getV().filter(v=>(v.data||"").startsWith(m)), est=getEst();
+  const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), luc=vMes.reduce((a,v)=>a+(v.lucro||0),0);
+  const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo").reduce((a,g)=>a+(g.valor||0),0);
+  const resultado=luc-fixos;
+  if(has("oi","olá","ola","bom dia","boa tarde","boa noite","eai","e aí"))
+    return "Oi! 👋 Posso te falar de <b>lucro</b>, <b>faturamento</b>, <b>sabor campeão</b>, <b>estoque baixo</b>, <b>custo das receitas</b>, <b>contas a receber</b>, <b>clientes</b> e <b>produção</b>. Pergunta aí.";
+  if(has("ajuda","o que você","o que voce","pode fazer","consegue","help","como funciona"))
+    return "Eu leio seus dados e respondo na hora: <b>lucro/resultado</b>, <b>faturamento</b>, <b>sabor campeão</b>, <b>estoque baixo</b>, <b>custo Padrão vs Econômica</b>, <b>contas a receber</b>, <b>melhor cliente</b> e <b>produção do mês</b>.";
+  if(has("lucro","resultado","sobrou","sobra","ganhei","no azul","no vermelho"))
+    return resultado>=0
+      ?`Em ${mesNome} você está no azul: <b>${R0(resultado)}</b> de sobra (lucro das vendas ${R0(luc)} − custos fixos ${R0(fixos)}).`
+      :`Em ${mesNome} o resultado está negativo: <b>${R0(resultado)}</b>. O lucro das vendas (${R0(luc)}) não cobriu os custos fixos (${R0(fixos)}). Empurrar vendas ou rever gastos fixos ajuda.`;
+  if(has("faturamento","faturei","fatura","vendi","quanto vendi","total de venda")){
+    const n=vMes.length; return `Em ${mesNome}: <b>${R0(fat)}</b> de faturamento em ${n} venda${n!==1?'s':''}. Ticket médio ${R0(n?fat/n:0)}. Lucro ${R0(luc)}.`;}
+  if(has("sabor","campe","mais vendido","mais vende","bombando")){
+    const porQ={}; vMes.forEach(v=>porQ[v.produto]=(porQ[v.produto]||0)+(v.qtd||0));
+    const t=Object.entries(porQ).sort((a,b)=>b[1]-a[1])[0];
+    return t?`O sabor campeão de ${mesNome} é <b>${SB[t[0]]}</b> (${t[1]} un vendidas). Mantém o estoque dele cheio pra não perder venda.`:"Ainda não há vendas nesse mês pra apontar um campeão.";}
+  if(has("estoque","falta","faltando","acabando","baixo","repor","preciso produzir","tô sem","to sem")){
+    const arr=Object.entries(est).filter(([k,q])=>q>0&&q<50);
+    const tot=Object.values(est).reduce((a,q)=>a+(q||0),0);
+    return arr.length?`Estoque baixo em: ${arr.map(([k,q])=>"<b>"+SB[k]+"</b> ("+q+" un)").join(", ")}. Vale produzir antes de faltar.`:`Estoque tranquilo: ${tot.toLocaleString("pt-BR")} unidades no total, nenhum sabor crítico (abaixo de 50).`;}
+  if(has("custo","quanto custa","economica","econômica","padrão","padrao","receita","mais barat")){
+    const cp=custoReceita("padrao","maracuja"),ce=custoReceita("economica","maracuja"),cc=custoReceita("economica","coco");
+    return `Custo por gelo a preço atual: <b>Padrão ${R(cp)}</b> · <b>Econômica ${R(ce)}</b> (Coco ${R(cc)}). Produzir na Econômica economiza <b>${R(cp-ce)}</b> por unidade.`;}
+  if(has("receber","fiado","devendo","me deve","a prazo")){
+    const ar=getV().filter(v=>v.recebido===false), t=ar.reduce((a,v)=>a+(v.bruto||0),0);
+    return ar.length?`Você tem <b>${R0(t)}</b> a receber em ${ar.length} venda${ar.length!==1?'s':''} no fiado. Veja a lista no Financeiro.`:"Tudo recebido! Nenhuma conta a receber em aberto. 🎉";}
+  if(has("cliente","quem compra","quem mais compra","melhor cliente")){
+    const mp={}; getV().forEach(v=>{const c=v.cliente||"—";mp[c]=(mp[c]||0)+(v.bruto||0);});
+    const t=Object.entries(mp).sort((a,b)=>b[1]-a[1])[0];
+    return t?`Seu maior cliente é <b>${t[0]}</b> (${R0(t[1])} em compras no total).`:"Ainda sem clientes registrados.";}
+  if(has("produ","fabriqu","lote")){
+    const pMes=getPr().filter(p=>(p.data||"").startsWith(m));
+    const q2=pMes.reduce((a,p)=>a+(p.qtd||0),0), c=pMes.reduce((a,p)=>a+(p.qtd||0)*(p.custoPorUnid||0),0);
+    return `Em ${mesNome} você produziu <b>${q2.toLocaleString("pt-BR")}</b> gelos, custo total ${R0(c)} (médio ${R(q2?c/q2:0)}/un).`;}
+  return "Não peguei 100% a pergunta 😅, mas posso te falar de <b>lucro</b>, <b>faturamento</b>, <b>sabor campeão</b>, <b>estoque</b>, <b>custos</b>, <b>contas a receber</b>, <b>clientes</b> e <b>produção</b>. Tenta uma dessas.";
 }
 
 /* ===== TELA LOGÍSTICA (mapa estilizado offline) ===== */
