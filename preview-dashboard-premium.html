@@ -1414,8 +1414,9 @@ function renderEstoque(){
   const est=getEst();
   const arr=Object.entries(est).filter(([k,q])=>q>0).sort((a,b)=>b[1]-a[1]);
   const total=arr.reduce((a,[,q])=>a+q,0);
+  const valorEst=arr.reduce((a,[k,q])=>a+q*custoEstoqueSabor(k),0); // valor pelo custo real de cada sabor
   T("es-tot",total.toLocaleString("pt-BR")); T("es-k-tot",total.toLocaleString("pt-BR"));
-  T("es-k-sab",arr.length); T("es-k-val",R0(total*custoBase()));
+  T("es-k-sab",arr.length); T("es-k-val",R0(valorEst));
   T("es-k-top",arr.length?SB[arr[0][0]]:"—"); T("es-k-topq",arr.length?arr[0][1].toLocaleString("pt-BR")+" un":"—");
   const max=arr.length?arr[0][1]:1;
   document.getElementById("es-bars").innerHTML=arr.map(([k,q])=>`
