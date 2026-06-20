@@ -671,7 +671,6 @@
           <div class="f-row"><label>Base / Aroma (ml)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-base" oninput="calcReceita()"></div>
           <div class="f-row" id="rc-cocorow"><label>Base do Coco (ml)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-baseCoco" oninput="calcReceita()"></div>
           <div class="f-row"><label>Glicose (g)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-glicose" oninput="calcReceita()"></div>
-          <div class="f-row"><label>Açúcar (g)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-acucar" oninput="calcReceita()"></div>
           <div class="f-row"><label>Goma Xantana (g)</label><input type="number" step="0.01" class="f-in rc-in" id="rc-xantana" oninput="calcReceita()"></div>
           <div class="f-row"><label>Embalagem (un)</label><input type="number" step="1" class="f-in rc-in" id="rc-embalagem" oninput="calcReceita()"></div>
         </div>
@@ -1094,7 +1093,7 @@ const SEED={
   {data:"2026-04-07",desc:"Máquina teknofrio",cat:"Equipamentos",valor:12380,tipo:"Custo fixo"}
  ],
  insumoEst:{
-  "Base/Aroma":{qtd:4160,un:"ml",custoUnit:0.0864,forn:"Shoppe"},
+  "Base/Aroma":{qtd:4160,un:"g",custoUnit:0.0864,forn:"Shoppe"},
   "Glicose":{qtd:15290,un:"g",custoUnit:0.0162,forn:"Mercado Livre"},
   "Goma Xantana":{qtd:833,un:"g",custoUnit:0.0446,forn:"Shoppe"},
   "Embalagens":{qtd:5500,un:"un",custoUnit:0.1600,forn:"Shoppe"}
@@ -1164,10 +1163,11 @@ function getVendedores(){const v=get("vendedores",null);return (v&&v.length)?v:S
 function getOrdens(){const v=get("ordens",null);return (v&&v.length)?v:SEED.ordens;}
 function getLotes(){const v=get("lotesAndamento",null);return (v&&v.length)?v:SEED.lotesAndamento;}
 function fillVendedores(sel,val){const vs=getVendedores();sel.innerHTML='<option value="">Venda direta (sem comissão)</option>'+vs.map(v=>`<option value="${v.id}">${v.nome} (${v.com}%)</option>`).join("");if(val)sel.value=val;}
-const INSUMOS_DEF={"Base/Aroma":"ml","Glicose":"g","Goma Xantana":"g","Embalagens":"un","Açúcar":"g"};
+const INSUMOS_DEF={"Base/Aroma":"g","Glicose":"g","Goma Xantana":"g","Embalagens":"un"};
+const INSUMO_LABEL={"Base/Aroma":"Base em pó (c/ adoçante)"}; // nome amigável na tela
 const LIMITE_PIC=2500; // abaixo disso o insumo é "acabando"
 // ===== RECEITA + CUSTO REAL (recalcula pelo preço dos insumos) =====
-const RECEITA_PADRAO={base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1}; // por gelo saborizado
+const RECEITA_PADRAO={base:2,glicose:5,acucar:0,xantana:0.08,embalagem:1}; // por gelo saborizado (adoçante já vem na base em pó)
 function getReceitaPadrao(){return Object.assign({},RECEITA_PADRAO,get("receitaPadrao",null)||{});}
 // Mapa insumo->qtd consumida por gelo (deriva da receita) — usado pra baixar insumo
 function recIns(){const r=getReceitaPadrao();return {"Base/Aroma":r.base,"Glicose":r.glicose,"Goma Xantana":r.xantana,"Embalagens":r.embalagem};}
@@ -2125,7 +2125,7 @@ function renderInsumos(){
     const i=ie[n], rende=recIns()[n]?(i.qtd||0)/recIns()[n]:null;
     const crit=rende!=null&&rende<LIMITE_PIC;
     return `<tr>
-      <td><span class="tag"><span class="sym" style="color:var(--gold-soft);font-size:17px">science</span><b>${n}</b></span></td>
+      <td><span class="tag"><span class="sym" style="color:var(--gold-soft);font-size:17px">science</span><b>${INSUMO_LABEL[n]||n}</b></span></td>
       <td>${(i.qtd||0).toLocaleString("pt-BR")} ${i.un||''}${rende!=null?`<br><span style="font-size:10.5px;color:var(--muted)">≈ ${Math.floor(rende).toLocaleString("pt-BR")} gelos saborizados</span>`:''}</td>
       <td class="money">${R(i.custoUnit||0)}<span style="font-size:10.5px;color:var(--muted)">/${i.un||''}</span></td>
       <td>${i.forn||'—'}</td>
@@ -2143,7 +2143,7 @@ function abrirInsumo(){
 }
 function addLinhaI(){
   const d=document.createElement("div"); d.className="linha";
-  const opts=Object.keys(INSUMOS_DEF).map(n=>`<option value="${n}">${n} (${INSUMOS_DEF[n]})</option>`).join("");
+  const opts=Object.keys(INSUMOS_DEF).map(n=>`<option value="${n}">${INSUMO_LABEL[n]||n} (${INSUMOS_DEF[n]})</option>`).join("");
   d.innerHTML=`<span class="sym rm" onclick="this.parentNode.remove();calcI()">delete</span>
     <div class="f-row" style="margin:0 0 8px"><label>Insumo</label><select class="f-in i-nome">${opts}</select></div>
     <div class="f-grid2"><div class="f-row" style="margin:0"><label>Quantidade</label><input type="number" class="f-in i-qtd" min="1" value="1000" oninput="calcI()"></div>
@@ -2323,7 +2323,6 @@ function renderReceitas(){
   const r=getReceita(which);
   document.getElementById("rc-base").value=r.base;
   document.getElementById("rc-glicose").value=r.glicose;
-  document.getElementById("rc-acucar").value=r.acucar;
   document.getElementById("rc-xantana").value=r.xantana;
   document.getElementById("rc-embalagem").value=r.embalagem;
   document.getElementById("rc-baseCoco").value=(r.baseCoco!=null&&r.baseCoco!=="")?r.baseCoco:r.base;
@@ -2334,12 +2333,10 @@ function renderReceitas(){
 function calcReceita(){
   if(!document.getElementById("rc-base"))return;
   const which=(document.getElementById("rc-which")||{}).value||"padrao";
-  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar:+rcV("rc-acucar"),xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
-  const P=PARAMS();
+  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar:0,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
   const linhas=(base)=>[
-    ["Base / Aroma",base+" ml",base*custoInsumoUn("Base/Aroma")],
+    ["Base em pó (c/ adoçante)",base+" g",base*custoInsumoUn("Base/Aroma")],
     ["Glicose",r.glicose+" g",r.glicose*custoInsumoUn("Glicose")],
-    ["Açúcar",r.acucar+" g",r.acucar*(P.acucar||0)],
     ["Goma Xantana",r.xantana+" g",r.xantana*custoInsumoUn("Goma Xantana")],
     ["Embalagem",r.embalagem+" un",r.embalagem*custoInsumoUn("Embalagens")]
   ];
@@ -2360,7 +2357,7 @@ function calcReceita(){
 function rcV(id){const el=document.getElementById(id);return el?(el.value||0):0;}
 function salvarReceita(){
   const which=(document.getElementById("rc-which")||{}).value||"padrao";
-  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar:+rcV("rc-acucar"),xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
+  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar:0,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
   const sv=get("receitas",null)||{}; sv[which]=r; set("receitas",sv);
   if(which==="padrao") set("receitaPadrao",r); // mantém compatibilidade com o resto do sistema
   rerenderAll(); alert("Receita "+(RECEITAS_NOMES[which]||which)+" salva. O custo real foi atualizado em todo o sistema.");
