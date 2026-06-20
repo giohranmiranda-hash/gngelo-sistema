@@ -662,9 +662,14 @@
     <div class="row2">
       <div class="card">
         <h3><span class="sym">science</span>Ingredientes por gelo saborizado</h3>
-        <div class="csub">Vale para todos os sabores (ajuste se mudar a receita)</div>
-        <div class="f-grid2" style="margin-top:10px">
+        <div class="csub">Escolha a receita pra editar. O custo recalcula sozinho pelo preço dos insumos.</div>
+        <div class="f-row" style="margin-top:10px"><label>Receita</label><select class="f-in" id="rc-which" onchange="renderReceitas()">
+          <option value="padrao">Padrão</option>
+          <option value="economica">Econômica (mais barata)</option>
+        </select></div>
+        <div class="f-grid2" style="margin-top:6px">
           <div class="f-row"><label>Base / Aroma (ml)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-base" oninput="calcReceita()"></div>
+          <div class="f-row" id="rc-cocorow"><label>Base do Coco (ml)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-baseCoco" oninput="calcReceita()"></div>
           <div class="f-row"><label>Glicose (g)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-glicose" oninput="calcReceita()"></div>
           <div class="f-row"><label>Açúcar (g)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-acucar" oninput="calcReceita()"></div>
           <div class="f-row"><label>Goma Xantana (g)</label><input type="number" step="0.01" class="f-in rc-in" id="rc-xantana" oninput="calcReceita()"></div>
@@ -887,6 +892,10 @@
         <div class="f-row"><label>Data</label><input type="date" class="f-in" id="p-data"></div>
         <div class="f-row"><label>Responsável</label><input class="f-in" id="p-resp" placeholder="Ex: Bianca" value="Bianca"></div>
       </div>
+      <div class="f-row"><label>Receita usada</label><select class="f-in" id="p-receita" onchange="calcP()">
+        <option value="padrao">Padrão</option>
+        <option value="economica">Econômica (mais barata)</option>
+      </select></div>
       <label style="font-size:12px;color:var(--muted);font-weight:600">Sabores produzidos</label>
       <div id="p-linhas" style="margin-top:6px"></div>
       <button class="btn-ghost" id="p-add" onclick="addLinhaP()"><span class="sym" style="font-size:16px;vertical-align:-3px">add</span> Adicionar sabor</button>
@@ -1169,6 +1178,38 @@ function custoSabor(sabor){const r=getReceitaPadrao(),P=PARAMS();
          r.xantana*custoInsumoUn("Goma Xantana")+r.embalagem*custoInsumoUn("Embalagens")+
          r.acucar*(P.acucar||0);}
 function custoBase(){return custoSabor("_");} // custo padrão (receita compartilhada)
+
+// ===== RECEITAS (Padrão + Econômica) — custo recalcula sozinho pelo preço dos insumos =====
+const RECEITA_ECONOMICA={base:2,glicose:0,acucar:0,xantana:0,embalagem:1,baseCoco:2.4}; // mais barata: sem glicose/xantana
+const RECEITAS_NOMES={padrao:"Padrão",economica:"Econômica"};
+function getReceitas(){
+  const sv=get("receitas",null)||{};
+  return {
+    padrao:Object.assign({},RECEITA_PADRAO,get("receitaPadrao",null)||{},sv.padrao||{}),
+    economica:Object.assign({},RECEITA_ECONOMICA,sv.economica||{})
+  };
+}
+function getReceita(id){const a=getReceitas();return a[id]||a.padrao;}
+// base por gelo: Coco pode levar mais base (baseCoco); demais sabores usam base
+function baseDe(r,sabor){return (sabor==="coco"&&r.baseCoco!=null&&r.baseCoco!=="")?+r.baseCoco:+r.base;}
+// custo de produzir 1 gelo com a receita escolhida, a preço ATUAL dos insumos
+function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();
+  return baseDe(r,sabor)*custoInsumoUn("Base/Aroma")+(+r.glicose||0)*custoInsumoUn("Glicose")+
+    (+r.xantana||0)*custoInsumoUn("Goma Xantana")+(+r.embalagem||0)*custoInsumoUn("Embalagens")+
+    (+r.acucar||0)*(P.acucar||0);}
+// insumos consumidos por 1 gelo (pra baixar do estoque de insumo) pela receita escolhida
+function recInsDe(id,sabor){const r=getReceita(id);
+  return {"Base/Aroma":baseDe(r,sabor),"Glicose":+r.glicose||0,"Goma Xantana":+r.xantana||0,"Embalagens":+r.embalagem||0};}
+// custo real MÉDIO das unidades em estoque (FIFO) — é o que o lucro da venda usa
+function custoEstoqueSabor(sabor){
+  let rem=getEst()[sabor]||0;
+  const prods=getPr().filter(p=>p.sabor===sabor).sort((a,b)=>(b.data||"").localeCompare(a.data||""));
+  if(rem<=0||!prods.length)return custoReceita("padrao",sabor);
+  let q=0,c=0;
+  for(const p of prods){if(rem<=0)break;const r=Math.min(p.qtd||0,rem);q+=r;c+=r*(p.custoPorUnid||0);rem-=r;}
+  if(rem>0){const cb=custoReceita("padrao",sabor);q+=rem;c+=rem*cb;}
+  return q>0?c/q:custoReceita("padrao",sabor);
+}
 
 const R=v=>"R$ "+(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const R0=v=>"R$ "+Math.round(v||0).toLocaleString("pt-BR");
@@ -1477,7 +1518,7 @@ function renderProducao(){
   T("pr-mes",nome); fillMesNav("pr-mesnav"); T("pr-tot",tot.toLocaleString("pt-BR")); T("pr-cus",R0(cus));
   T("pr-med",R(tot?cus/tot:0)); T("pr-n",pMes.length);
   document.getElementById("pr-tab").innerHTML=[...pMes].sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(p=>`
-    <tr><td>${fmtD(p.data)}</td><td>${tagSabor(p.sabor)}</td><td>${p.qtd} un</td>
+    <tr><td>${fmtD(p.data)}</td><td>${tagSabor(p.sabor)}${p.receita==="economica"?' <span class="tag" style="color:var(--green);font-size:10px;padding:1px 6px">econômica</span>':''}</td><td>${p.qtd} un</td>
     <td class="money">${R(p.custoPorUnid)}</td><td class="money" style="text-align:right">${R((p.qtd||0)*(p.custoPorUnid||0))}</td><td style="text-align:right;white-space:nowrap">${lapis("editarProducao("+p.id+")")}${lixo("delProducao("+p.id+")")}</td></tr>`).join("")
     ||'<tr><td colspan="6" class="csub" style="padding-top:14px">Sem produção no mês.</td></tr>';
 }
@@ -1889,8 +1930,8 @@ function addLinhaV(){
 function calcV(){
   let bruto=0,lucro=0,n=0;
   document.querySelectorAll("#v-linhas .linha").forEach(l=>{
-    const q=+l.querySelector(".v-qtd").value||0,p=+l.querySelector(".v-preco").value||0;
-    const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*custoBase(); bruto+=b; lucro+=liq-cpv; n++;
+    const q=+l.querySelector(".v-qtd").value||0,p=+l.querySelector(".v-preco").value||0,sab=l.querySelector(".v-sab").value;
+    const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*custoEstoqueSabor(sab); bruto+=b; lucro+=liq-cpv; n++;
   });
   document.getElementById("v-total").textContent="Total "+R(bruto);
   document.getElementById("v-lucro").textContent=R(lucro);
@@ -1906,7 +1947,7 @@ function salvarVenda(){
     const idx=vendas.findIndex(x=>x.id==EDIT_V); if(idx<0){EDIT_V=null;fecharModal();return;}
     const old=vendas[idx], est=get("estoque",null)||Object.assign({},SEED.estoque);
     est[old.produto]=(est[old.produto]||0)+(old.qtd||0); // reverte o antigo
-    const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*custoSabor(sabor),lucro=liq-cpv;
+    const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*custoEstoqueSabor(sabor),lucro=liq-cpv;
     est[sabor]=(est[sabor]||0)-q; // aplica o novo
     vendas[idx]={...old,data,cliente,pagto,vendedor,canal,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro,recebido};
     set("vendas",vendas); set("estoque",est); upsertClienteEndereco(cliente,(document.getElementById("v-end").value||"").trim()); EDIT_V=null; fecharModal(); rerenderAll(); show("vendas"); return;
@@ -1918,7 +1959,7 @@ function salvarVenda(){
   linhas.forEach((l,i)=>{
     const sabor=l.querySelector(".v-sab").value,q=+l.querySelector(".v-qtd").value||0,p=+l.querySelector(".v-preco").value||0;
     if(q<=0)return;
-    const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*custoSabor(sabor),lucro=liq-cpv;
+    const b=q*p,imp=b*((PARAMS().imp||0)/100),liq=b-imp,cpv=q*custoEstoqueSabor(sabor),lucro=liq-cpv;
     vendas.push({id:Date.now()+i,pedido,data,cliente,vendedor,canal,produto:sabor,qtd:q,preco:p,bruto:b,imp,liq,cpv,lucro,pagto,recebido});
     est[sabor]=(est[sabor]||0)-q; add++;
   });
@@ -1933,6 +1974,7 @@ function abrirProducao(){
   document.getElementById("p-add").style.display="";
   document.getElementById("p-data").value=hoje();
   document.getElementById("p-resp").value="Bianca";
+  document.getElementById("p-receita").value="padrao";
   document.getElementById("p-linhas").innerHTML=""; addLinhaP();
   document.getElementById("modal-producao").style.display="flex";
 }
@@ -1943,6 +1985,7 @@ function editarProducao(id){
   document.getElementById("p-add").style.display="none";
   document.getElementById("p-data").value=p.data;
   document.getElementById("p-resp").value=p.resp||"";
+  document.getElementById("p-receita").value=p.receita||"padrao";
   document.getElementById("p-linhas").innerHTML=""; addLinhaP();
   const l=document.querySelector("#p-linhas .linha");
   l.querySelector(".p-sab").value=p.sabor; l.querySelector(".p-qtd").value=p.qtd;
@@ -1951,14 +1994,16 @@ function editarProducao(id){
 function addLinhaP(){
   const d=document.createElement("div"); d.className="linha";
   d.innerHTML=`<span class="sym rm" onclick="this.parentNode.remove();calcP()">delete</span>
-    <div class="f-grid2" style="align-items:end"><div class="f-row" style="margin:0"><label>Sabor</label><select class="f-in p-sab">${sabOpts()}</select></div>
+    <div class="f-grid2" style="align-items:end"><div class="f-row" style="margin:0"><label>Sabor</label><select class="f-in p-sab" onchange="calcP()">${sabOpts()}</select></div>
       <div class="f-row" style="margin:0"><label>Quantidade</label><input type="number" class="f-in p-qtd" min="1" value="100" oninput="calcP()"></div></div>`;
   document.getElementById("p-linhas").appendChild(d); calcP();
 }
 function calcP(){
-  let tot=0; document.querySelectorAll("#p-linhas .linha").forEach(l=>tot+=(+l.querySelector(".p-qtd").value||0));
+  const rec=(document.getElementById("p-receita")||{}).value||"padrao";
+  let tot=0,cus=0;
+  document.querySelectorAll("#p-linhas .linha").forEach(l=>{const q=+l.querySelector(".p-qtd").value||0,sab=l.querySelector(".p-sab").value;tot+=q;cus+=q*custoReceita(rec,sab);});
   document.getElementById("p-tot").textContent=tot.toLocaleString("pt-BR")+" gelos saborizados";
-  document.getElementById("p-custo").textContent=R(tot*custoBase());
+  document.getElementById("p-custo").textContent=R(cus);
 }
 function salvarProducao(){
   const data=document.getElementById("p-data").value,resp=document.getElementById("p-resp").value||"—";
@@ -1968,31 +2013,38 @@ function salvarProducao(){
     if(q<=0){alert("Quantidade inválida.");return;}
     const prod=get("producoes",null)||SEED.producoes.slice();
     const idx=prod.findIndex(x=>x.id==EDIT_P); if(idx<0){EDIT_P=null;fecharModal();return;}
+    const rec=document.getElementById("p-receita").value||"padrao";
     const old=prod[idx], est=get("estoque",null)||Object.assign({},SEED.estoque),
       ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
-    // reverte o antigo: tira do estoque e devolve insumo
+    // reverte o antigo: tira do estoque e devolve insumo (pela receita usada no antigo)
     est[old.sabor]=Math.max(0,(est[old.sabor]||0)-(old.qtd||0));
-    Object.keys(recIns()).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:(ie[n].qtd||0)+(old.qtd||0)*recIns()[n]};});
-    // aplica o novo
+    const riOld=recInsDe(old.receita||"padrao",old.sabor);
+    Object.keys(riOld).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:(ie[n].qtd||0)+(old.qtd||0)*riOld[n]};});
+    // aplica o novo (pela receita escolhida agora)
     est[sabor]=(est[sabor]||0)+q;
-    Object.keys(recIns()).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:Math.max(0,(ie[n].qtd||0)-q*recIns()[n])};});
-    prod[idx]={...old,data,sabor,qtd:q,custoPorUnid:custoSabor(sabor),custoTotal:q*custoSabor(sabor),resp,validade:addDias(data,PARAMS().validadeDias)};
+    const riNew=recInsDe(rec,sabor);
+    Object.keys(riNew).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:Math.max(0,(ie[n].qtd||0)-q*riNew[n])};});
+    const cu=custoReceita(rec,sabor);
+    prod[idx]={...old,data,sabor,qtd:q,receita:rec,custoPorUnid:cu,custoTotal:q*cu,resp,validade:addDias(data,PARAMS().validadeDias)};
     set("producoes",prod); set("estoque",est); set("insumoEst",ie); EDIT_P=null; fecharModal(); rerenderAll(); show("producao"); return;
   }
+  const rec=document.getElementById("p-receita").value||"padrao";
   const linhas=[...document.querySelectorAll("#p-linhas .linha")];
   const prod=get("producoes",null)||SEED.producoes.slice();
   const est=get("estoque",null)||Object.assign({},SEED.estoque);
   const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
-  let add=0, totalQtd=0;
+  let add=0;
   linhas.forEach((l,i)=>{
     const sabor=l.querySelector(".p-sab").value,q=+l.querySelector(".p-qtd").value||0;
     if(q<=0)return;
-    prod.push({id:Date.now()+i,data,sabor,qtd:q,custoPorUnid:custoSabor(sabor),custoTotal:q*custoSabor(sabor),resp,validade:addDias(data,PARAMS().validadeDias)});
-    est[sabor]=(est[sabor]||0)+q; totalQtd+=q; add++;
+    const cu=custoReceita(rec,sabor);
+    prod.push({id:Date.now()+i,data,sabor,qtd:q,receita:rec,custoPorUnid:cu,custoTotal:q*cu,resp,validade:addDias(data,PARAMS().validadeDias)});
+    est[sabor]=(est[sabor]||0)+q; add++;
+    // regra 7: baixa os insumos consumidos por esta linha (pela receita escolhida)
+    const ri=recInsDe(rec,sabor);
+    Object.keys(ri).forEach(n=>{ if(ie[n]) ie[n]={...ie[n],qtd:Math.max(0,(ie[n].qtd||0)-q*ri[n])}; });
   });
   if(!add){alert("Adicione ao menos um sabor com quantidade.");return;}
-  // regra 7: baixa os insumos consumidos pela receita
-  Object.keys(recIns()).forEach(nome=>{ if(ie[nome]) ie[nome]={...ie[nome],qtd:Math.max(0,(ie[nome].qtd||0)-totalQtd*recIns()[nome])}; });
   set("producoes",prod); set("estoque",est); set("insumoEst",ie); fecharModal(); rerenderAll(); show("producao");
 }
 
@@ -2171,7 +2223,8 @@ function delProducao(id){
   const est=get("estoque",null)||Object.assign({},SEED.estoque);
   est[p.sabor]=Math.max(0,(est[p.sabor]||0)-(p.qtd||0)); // tira os gelos produzidos
   const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
-  Object.keys(recIns()).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:(ie[n].qtd||0)+(p.qtd||0)*recIns()[n]};}); // devolve insumo (regra 7)
+  const riDel=recInsDe(p.receita||"padrao",p.sabor);
+  Object.keys(riDel).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:(ie[n].qtd||0)+(p.qtd||0)*riDel[n]};}); // devolve insumo (regra 7)
   set("producoes",prod.filter(x=>x.id!=id)); set("estoque",est); set("insumoEst",ie); rerenderAll();
 }
 function delGasto(id){
@@ -2264,41 +2317,52 @@ function delEntrega(id){
 
 /* ===== TELA RECEITAS ===== */
 function renderReceitas(){
-  const r=getReceitaPadrao();
-  if(document.getElementById("rc-base")){
-    document.getElementById("rc-base").value=r.base;
-    document.getElementById("rc-glicose").value=r.glicose;
-    document.getElementById("rc-acucar").value=r.acucar;
-    document.getElementById("rc-xantana").value=r.xantana;
-    document.getElementById("rc-embalagem").value=r.embalagem;
-  }
-  T("rc-custo",R(custoBase()));
+  if(!document.getElementById("rc-base")){return;}
+  const which=(document.getElementById("rc-which")||{}).value||"padrao";
+  const r=getReceita(which);
+  document.getElementById("rc-base").value=r.base;
+  document.getElementById("rc-glicose").value=r.glicose;
+  document.getElementById("rc-acucar").value=r.acucar;
+  document.getElementById("rc-xantana").value=r.xantana;
+  document.getElementById("rc-embalagem").value=r.embalagem;
+  document.getElementById("rc-baseCoco").value=(r.baseCoco!=null&&r.baseCoco!=="")?r.baseCoco:r.base;
+  // base do Coco só aparece quando faz diferença (Econômica)
+  document.getElementById("rc-cocorow").style.display=(which==="economica")?"":"none";
   calcReceita();
 }
 function calcReceita(){
   if(!document.getElementById("rc-base"))return;
-  const r={base:+rcV("rc-base"),glicose:+rcV("rc-glicose"),acucar:+rcV("rc-acucar"),xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
+  const which=(document.getElementById("rc-which")||{}).value||"padrao";
+  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar:+rcV("rc-acucar"),xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
   const P=PARAMS();
-  const itens=[
-    ["Base / Aroma",r.base+" ml",r.base*custoInsumoUn("Base/Aroma")],
+  const linhas=(base)=>[
+    ["Base / Aroma",base+" ml",base*custoInsumoUn("Base/Aroma")],
     ["Glicose",r.glicose+" g",r.glicose*custoInsumoUn("Glicose")],
     ["Açúcar",r.acucar+" g",r.acucar*(P.acucar||0)],
     ["Goma Xantana",r.xantana+" g",r.xantana*custoInsumoUn("Goma Xantana")],
     ["Embalagem",r.embalagem+" un",r.embalagem*custoInsumoUn("Embalagens")]
   ];
-  const tot=itens.reduce((a,i)=>a+i[2],0);
+  const itens=linhas(r.base);
+  const totOutros=itens.reduce((a,i)=>a+i[2],0);
+  const totCoco=linhas(r.baseCoco).reduce((a,i)=>a+i[2],0);
+  const cocoDif=(which==="economica"&&Math.abs(totCoco-totOutros)>0.001);
   document.getElementById("rc-breakdown").innerHTML=itens.map(([n,q,v])=>`
     <div style="display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line);font-size:13px">
       <span>${n} <span style="color:var(--muted);font-size:11.5px">· ${q}</span></span>
       <span class="money">${R(v)}</span></div>`).join("")+
     `<div style="display:flex;justify-content:space-between;padding:11px 0 2px;border-top:2px solid rgba(201,168,76,.4);font-weight:800;font-size:15px;color:var(--gold-soft)">
-      <span>Custo por gelo</span><span>${R(tot)}</span></div>`;
-  T("rc-custo",R(tot));
+      <span>Custo por gelo${cocoDif?' (outros sabores)':''}</span><span>${R(totOutros)}</span></div>`+
+    (cocoDif?`<div style="display:flex;justify-content:space-between;padding:4px 0 2px;font-weight:800;font-size:14px;color:var(--gold-soft)">
+      <span>Custo do Coco</span><span>${R(totCoco)}</span></div>`:'');
+  T("rc-custo",R(totOutros));
 }
-function rcV(id){return document.getElementById(id).value||0;}
+function rcV(id){const el=document.getElementById(id);return el?(el.value||0):0;}
 function salvarReceita(){
-  const r={base:+rcV("rc-base"),glicose:+rcV("rc-glicose"),acucar:+rcV("rc-acucar"),xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
-  set("receitaPadrao",r); rerenderAll(); alert("Receita salva. O custo real foi atualizado em todo o sistema.");
+  const which=(document.getElementById("rc-which")||{}).value||"padrao";
+  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar:+rcV("rc-acucar"),xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
+  const sv=get("receitas",null)||{}; sv[which]=r; set("receitas",sv);
+  if(which==="padrao") set("receitaPadrao",r); // mantém compatibilidade com o resto do sistema
+  rerenderAll(); alert("Receita "+(RECEITAS_NOMES[which]||which)+" salva. O custo real foi atualizado em todo o sistema.");
 }
 
 /* ===== TELA COMISSÕES ===== */
