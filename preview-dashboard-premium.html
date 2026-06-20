@@ -545,6 +545,28 @@
     </div>
    </div><!-- /view-financeiro -->
 
+   <!-- ============ TELA: INVESTIMENTOS ============ -->
+   <div class="view" id="view-investimentos">
+    <div class="top">
+      <div>
+        <div class="eyebrow"><span class="sym" style="font-size:15px">precision_manufacturing</span> Investimentos</div>
+        <h1>Investimento <b>inicial</b></h1>
+        <p>Maquinário e equipamentos — gasto único, separado do resultado do mês (não vira "vermelho" na operação).</p>
+      </div>
+      <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent;cursor:pointer" onclick="abrirInvestimento()"><span class="sym" style="color:#1a1408">add</span> Novo investimento</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="ic"><span class="sym">savings</span></div><div class="k-lbl">Total investido</div><div class="k-val" id="iv-tot">—</div><div class="k-foot">maquinário + equipamentos</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">precision_manufacturing</span></div><div class="k-lbl">Itens</div><div class="k-val" id="iv-n">—</div><div class="k-foot">bens adquiridos</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">trending_up</span></div><div class="k-lbl">Maior investimento</div><div class="k-val" id="iv-top">—</div><div class="k-foot" id="iv-topn">—</div></div>
+    </div>
+    <div class="card">
+      <h3><span class="sym">precision_manufacturing</span>Bens e maquinário</h3>
+      <div class="csub">Tudo que você comprou pra montar/equipar o negócio — fora do custo operacional</div>
+      <table><thead><tr><th>Data</th><th>Item</th><th>Categoria</th><th style="text-align:right">Valor</th><th></th></tr></thead><tbody id="iv-tab"></tbody></table>
+    </div>
+   </div><!-- /view-investimentos -->
+
    <!-- ============ TELA: PRODUÇÃO ============ -->
    <div class="view" id="view-producao">
     <div class="top">
@@ -1235,6 +1257,30 @@ function gastosDoMes(m){
   const rec=getRecorrentes().map(r=>({id:null,data:m+"-15",desc:r.desc,cat:r.cat||"Outros",valor:r.valor||0,tipo:r.tipo||"Custo fixo",status:"Pago",recorrente:true}));
   return reais.concat(rec);
 }
+// Investimento (maquinário/equipamento): NÃO entra no resultado operacional — fica na aba Investimentos
+function ehInvestimento(g){return !!g && (g.tipo==="Investimento" || (g.cat||"")==="Equipamentos" || (g.cat||"")==="Maquinário");}
+function renderInvestimentos(){
+  if(!document.getElementById("iv-tab"))return;
+  const inv=getG().filter(g=>ehInvestimento(g)).sort((a,b)=>(b.data||"").localeCompare(a.data||""));
+  const tot=inv.reduce((a,g)=>a+(g.valor||0),0);
+  T("iv-tot",R0(tot)); T("iv-n",inv.length);
+  const top=[...inv].sort((a,b)=>(b.valor||0)-(a.valor||0))[0];
+  T("iv-top",top?R0(top.valor):"—"); T("iv-topn",top?(top.desc||top.descricao||"—"):"—");
+  document.getElementById("iv-tab").innerHTML=inv.map(g=>`
+    <tr><td>${fmtD(g.data)}</td><td>${g.desc||g.descricao||"—"}</td>
+    <td><span class="tag" style="color:var(--gold-soft)">${g.cat||"—"}</span></td>
+    <td class="money" style="text-align:right">${R(g.valor)}</td>
+    <td style="text-align:right;white-space:nowrap">${g.id!=null?lapis("editarGasto("+g.id+")")+lixo("delGasto("+g.id+")"):''}</td></tr>`).join("")
+    ||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhum investimento ainda. Cadastre o maquinário aqui.</td></tr>';
+}
+function abrirInvestimento(){
+  abrirGasto();
+  const l=document.querySelector("#g-linhas .linha"); if(!l)return;
+  const t=l.querySelector(".g-tipo"); if(t)t.value="Investimento";
+  const c=l.querySelector(".g-cat"); if(c)c.value="Maquinário";
+  const d=l.querySelector(".g-desc"); if(d)d.placeholder="Ex: Freezer / Máquina teknofrio";
+  const h=document.querySelector("#modal-gasto h3"); if(h)h.textContent="Novo investimento";
+}
 function getEnt(){const v=get("entregas",null);return (v&&v.length)?v:SEED.entregas;}
 function getEquipe(){const v=get("equipe",null);return (v&&v.length)?v:SEED.equipe;}
 function getInsE(){const v=get("insumoEst",null);return (v&&Object.keys(v).length)?v:SEED.insumoEst;}
@@ -1460,7 +1506,7 @@ function render(){
 /* Painel "GN IA — assuntos principais" no rodapé do Dashboard (local, dos dados) */
 function renderDashIA(vMes,est,luc,m,mesNome){
   const box=document.getElementById("db-ia"); if(!box)return;
-  const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo").reduce((a,g)=>a+(g.valor||0),0);
+  const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
   const resultado=luc-fixos;
   const porQ={}; vMes.forEach(v=>porQ[v.produto]=(porQ[v.produto]||0)+(v.qtd||0));
   const topS=Object.entries(porQ).sort((a,b)=>b[1]-a[1])[0];
@@ -1577,8 +1623,8 @@ function renderFinanceiro(){
   const gMes=gastosDoMes(m);
   const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), liq=vMes.reduce((a,v)=>a+(v.liq||0),0),
         luc=vMes.reduce((a,v)=>a+(v.lucro||0),0);
-  const ded=fat-liq, cpv=liq-luc, fixos=gMes.filter(g=>g.tipo==="Custo fixo").reduce((a,g)=>a+(g.valor||0),0);
-  const mkt=gMes.filter(g=>g.tipo==="Custo fixo"&&(g.cat||"").toLowerCase()==="marketing").reduce((a,g)=>a+(g.valor||0),0);
+  const ded=fat-liq, cpv=liq-luc, fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
+  const mkt=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)&&(g.cat||"").toLowerCase()==="marketing").reduce((a,g)=>a+(g.valor||0),0);
   const outrosFixos=fixos-mkt;
   const saidas=cpv+fixos, resultado=liq-saidas, marg=fat?Math.round(luc/fat*100):0;
   T("fi-mes",nome); fillMesNav("fi-mesnav");
@@ -1597,7 +1643,7 @@ function renderFinanceiro(){
       ${t>=2?'font-weight:700;':''}${t===3?'font-size:15px;color:'+(val>=0?'var(--green)':'var(--red)')+';':''}">
       <span style="color:${t===1?'var(--muted)':'inherit'};font-size:13.5px">${lb}</span>
       <span class="money">${R(val)}</span></div>`).join("");
-  document.getElementById("fi-gastos").innerHTML=gMes.sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(g=>`
+  document.getElementById("fi-gastos").innerHTML=gMes.filter(g=>!ehInvestimento(g)).sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(g=>`
     <tr><td>${g.recorrente?'<span class="sym" style="font-size:13px;color:var(--gold-soft);vertical-align:-2px">autorenew</span> ':''}${g.desc||g.descricao||"—"}</td>
     <td><span class="tag" style="color:${g.tipo==='Custo fixo'?'var(--gold-soft)':'var(--muted)'}">${g.tipo||"—"}</span></td>
     <td class="money" style="color:var(--red);text-align:right">${R(g.valor)}</td><td style="text-align:right;white-space:nowrap">${g.id!=null?lapis("editarGasto("+g.id+")")+lixo("delGasto("+g.id+")"):'<span style="font-size:10px;color:var(--muted)">recorrente</span>'}</td></tr>`).join("")
@@ -1655,7 +1701,7 @@ function renderIA(){
   const vMes=getV().filter(v=>(v.data||"").startsWith(m)), est=getEst();
   const gMes=gastosDoMes(m);
   const luc=vMes.reduce((a,v)=>a+(v.lucro||0),0);
-  const fixos=gMes.filter(g=>g.tipo==="Custo fixo").reduce((a,g)=>a+(g.valor||0),0);
+  const fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
   const resultado=luc-fixos;
   // sabor mais vendido no mês
   const porQ={}; vMes.forEach(v=>porQ[v.produto]=(porQ[v.produto]||0)+(v.qtd||0));
@@ -1716,7 +1762,7 @@ function iaResponder(q){
   const {m,mesNome}=mesCtx();
   const vMes=getV().filter(v=>(v.data||"").startsWith(m)), est=getEst();
   const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), luc=vMes.reduce((a,v)=>a+(v.lucro||0),0);
-  const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo").reduce((a,g)=>a+(g.valor||0),0);
+  const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
   const resultado=luc-fixos;
   if(has("oi","olá","ola","bom dia","boa tarde","boa noite","eai","e aí"))
     return "Oi! 👋 Posso te falar de <b>lucro</b>, <b>faturamento</b>, <b>sabor campeão</b>, <b>estoque baixo</b>, <b>custo das receitas</b>, <b>contas a receber</b>, <b>clientes</b> e <b>produção</b>. Pergunta aí.";
@@ -2062,7 +2108,7 @@ const SABORES_VENDA=Object.keys(SB).filter(k=>!k.startsWith("combo"));
 const hoje=()=>new Date().toISOString().slice(0,10);
 const sabOpts=()=>SABORES_VENDA.map(k=>`<option value="${k}">${SB[k]}</option>`).join("");
 function fecharModal(){document.querySelectorAll(".modal-bg").forEach(m=>m.style.display="none");}
-function rerenderAll(){render();renderVendas();renderEstoque();renderLogistica();renderCalendario();renderFinanceiro();renderMetas();renderRelatorios();renderProducao();renderInsumos();renderReceitas();renderClientes();renderComissoes();renderIA();renderConfig();}
+function rerenderAll(){render();renderVendas();renderEstoque();renderLogistica();renderCalendario();renderFinanceiro();renderInvestimentos();renderMetas();renderRelatorios();renderProducao();renderInsumos();renderReceitas();renderClientes();renderComissoes();renderIA();renderConfig();}
 
 /* ---- VENDA ---- */
 var EDIT_V=null,EDIT_P=null,EDIT_G=null,EDIT_E=null;
@@ -2230,7 +2276,7 @@ function salvarProducao(){
 }
 
 /* ---- GASTO (vários itens) ---- */
-const CATS=["Ingredientes","Embalagens","Marketing","Combustível","Equipamentos","Manutenção","Outros"];
+const CATS=["Ingredientes","Embalagens","Marketing","Combustível","Maquinário","Equipamentos","Manutenção","Outros"];
 function abrirGasto(){
   EDIT_G=null;
   document.querySelector("#modal-gasto h3").textContent="Novo gasto";
@@ -2258,7 +2304,7 @@ function addLinhaG(){
     <div class="f-row" style="margin:0 0 8px"><label>Descrição</label><input class="f-in g-desc" placeholder="Ex: Conta de luz"></div>
     <div class="f-grid2"><div class="f-row" style="margin:0"><label>Categoria</label><select class="f-in g-cat">${CATS.map(c=>`<option>${c}</option>`).join("")}</select></div>
       <div class="f-row" style="margin:0"><label>Valor (R$)</label><input type="number" step="0.01" class="f-in g-val" value="0.00" oninput="calcG()"></div></div>
-    <div class="f-row" style="margin:8px 0 0"><label>Tipo</label><select class="f-in g-tipo"><option>Custo fixo</option><option>Custo variável</option></select></div>`;
+    <div class="f-row" style="margin:8px 0 0"><label>Tipo</label><select class="f-in g-tipo"><option>Custo fixo</option><option>Custo variável</option><option>Investimento</option></select></div>`;
   document.getElementById("g-linhas").appendChild(d); calcG();
 }
 function calcG(){
@@ -2643,7 +2689,7 @@ function renderRelatorios(){
   const vAno=vAll.filter(v=>(v.data||"").startsWith(ano));
   let gAno=[]; for(let mm=1;mm<=12;mm++){ gAno=gAno.concat(gastosDoMes(ano+"-"+String(mm).padStart(2,"0"))); }
   const fatA=vAno.reduce((a,v)=>a+(v.bruto||0),0),liqA=vAno.reduce((a,v)=>a+(v.liq||0),0),lucA=vAno.reduce((a,v)=>a+(v.lucro||0),0);
-  const dedA=fatA-liqA,cpvA=liqA-lucA,fixA=gAno.filter(g=>g.tipo==="Custo fixo").reduce((a,g)=>a+(g.valor||0),0),resA=lucA-fixA;
+  const dedA=fatA-liqA,cpvA=liqA-lucA,fixA=gAno.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0),resA=lucA-fixA;
   const dre=[["Faturamento do ano",fatA,0],["(–) Impostos/taxas/frete",-dedA,1],["(=) Receita líquida",liqA,2],
     ["(–) Custo de produção",-cpvA,1],["(=) Lucro das vendas",lucA,2],["(–) Custos fixos do ano",-fixA,1],["(=) Resultado do ano",resA,3]];
   document.getElementById("rl-dre-anual").innerHTML=dre.map(([lb,val,t])=>`
@@ -2655,7 +2701,7 @@ function renderRelatorios(){
   const fats=ult3.map(mm=>vAll.filter(v=>(v.data||"").startsWith(mm)).reduce((a,v)=>a+(v.bruto||0),0));
   const lucs=ult3.map(mm=>vAll.filter(v=>(v.data||"").startsWith(mm)).reduce((a,v)=>a+(v.lucro||0),0));
   const ns=ult3.map(mm=>vAll.filter(v=>(v.data||"").startsWith(mm)).length);
-  const fixMed=med(ult3.map(mm=>gastosDoMes(mm).filter(g=>g.tipo==="Custo fixo").reduce((a,g)=>a+(g.valor||0),0)));
+  const fixMed=med(ult3.map(mm=>gastosDoMes(mm).filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0)));
   const prevFat=med(fats), prevLuc=med(lucs), prevN=Math.round(med(ns)), prevCaixa=prevLuc-fixMed;
   const tend=fats.length>=2?(fats[fats.length-1]-fats[0]):0;
   T("pv-fat",R0(prevFat)); T("pv-luc",R0(prevLuc)); T("pv-n",prevN);
@@ -2809,7 +2855,7 @@ const GRUPOS=[
   {nav:"vendas",views:[["vendas","Vendas"],["clientes","Clientes"],["comissoes","Comissões"]]},
   {nav:"producao",views:[["producao","Produção"],["estoque","Estoque"],["insumos","Insumos"],["receitas","Receitas"]]},
   {nav:"logistica",views:[["logistica","Entregas & Mapa"],["calendario","Calendário"]]},
-  {nav:"financeiro",views:[["financeiro","Financeiro"],["metas","Metas"],["relatorios","Relatórios"]]},
+  {nav:"financeiro",views:[["financeiro","Financeiro"],["investimentos","Investimentos"],["metas","Metas"],["relatorios","Relatórios"]]},
   {nav:"ia",views:[["ia","Assistente IA"]]},
   {nav:"config",views:[["config","Configurações"]]}
 ];
@@ -2832,7 +2878,7 @@ function show(view){
 document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>show(a.dataset.view)));
 
 /* Render inicial de todas as telas */
-render(); renderVendas(); renderEstoque(); renderLogistica(); renderCalendario(); renderFinanceiro(); renderMetas(); renderRelatorios(); renderProducao(); renderInsumos(); renderReceitas(); renderClientes(); renderComissoes(); renderIA(); renderConfig();
+render(); renderVendas(); renderEstoque(); renderLogistica(); renderCalendario(); renderFinanceiro(); renderInvestimentos(); renderMetas(); renderRelatorios(); renderProducao(); renderInsumos(); renderReceitas(); renderClientes(); renderComissoes(); renderIA(); renderConfig();
 const _qv=new URLSearchParams(location.search).get("v");
 show(_qv||"dashboard");
 ensureDepot(); // busca o endereço do depósito no aparelho (1ª vez)
