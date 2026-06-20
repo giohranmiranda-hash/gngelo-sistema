@@ -671,6 +671,7 @@
           <div class="f-row"><label>Base / Aroma (ml)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-base" oninput="calcReceita()"></div>
           <div class="f-row" id="rc-cocorow"><label>Base do Coco (ml)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-baseCoco" oninput="calcReceita()"></div>
           <div class="f-row"><label>Glicose (g)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-glicose" oninput="calcReceita()"></div>
+          <div class="f-row" id="rc-acucarrow"><label>Açúcar (g)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-acucar" oninput="calcReceita()"></div>
           <div class="f-row"><label>Goma Xantana (g)</label><input type="number" step="0.01" class="f-in rc-in" id="rc-xantana" oninput="calcReceita()"></div>
           <div class="f-row"><label>Embalagem (un)</label><input type="number" step="1" class="f-in rc-in" id="rc-embalagem" oninput="calcReceita()"></div>
         </div>
@@ -1163,11 +1164,11 @@ function getVendedores(){const v=get("vendedores",null);return (v&&v.length)?v:S
 function getOrdens(){const v=get("ordens",null);return (v&&v.length)?v:SEED.ordens;}
 function getLotes(){const v=get("lotesAndamento",null);return (v&&v.length)?v:SEED.lotesAndamento;}
 function fillVendedores(sel,val){const vs=getVendedores();sel.innerHTML='<option value="">Venda direta (sem comissão)</option>'+vs.map(v=>`<option value="${v.id}">${v.nome} (${v.com}%)</option>`).join("");if(val)sel.value=val;}
-const INSUMOS_DEF={"Base/Aroma":"g","Glicose":"g","Goma Xantana":"g","Embalagens":"un"};
+const INSUMOS_DEF={"Base/Aroma":"g","Glicose":"g","Goma Xantana":"g","Embalagens":"un","Açúcar":"g"};
 const INSUMO_LABEL={"Base/Aroma":"Base em pó (c/ adoçante)"}; // nome amigável na tela
 const LIMITE_PIC=2500; // abaixo disso o insumo é "acabando"
 // ===== RECEITA + CUSTO REAL (recalcula pelo preço dos insumos) =====
-const RECEITA_PADRAO={base:2,glicose:5,acucar:0,xantana:0.08,embalagem:1}; // por gelo saborizado (adoçante já vem na base em pó)
+const RECEITA_PADRAO={base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1}; // receita antiga: usa açúcar separado
 function getReceitaPadrao(){return Object.assign({},RECEITA_PADRAO,get("receitaPadrao",null)||{});}
 // Mapa insumo->qtd consumida por gelo (deriva da receita) — usado pra baixar insumo
 function recIns(){const r=getReceitaPadrao();return {"Base/Aroma":r.base,"Glicose":r.glicose,"Goma Xantana":r.xantana,"Embalagens":r.embalagem};}
@@ -2323,20 +2324,27 @@ function renderReceitas(){
   const r=getReceita(which);
   document.getElementById("rc-base").value=r.base;
   document.getElementById("rc-glicose").value=r.glicose;
+  document.getElementById("rc-acucar").value=r.acucar||0;
   document.getElementById("rc-xantana").value=r.xantana;
   document.getElementById("rc-embalagem").value=r.embalagem;
   document.getElementById("rc-baseCoco").value=(r.baseCoco!=null&&r.baseCoco!=="")?r.baseCoco:r.base;
   // base do Coco só aparece quando faz diferença (Econômica)
   document.getElementById("rc-cocorow").style.display=(which==="economica")?"":"none";
+  // açúcar separado só na Padrão; na Econômica o adoçante já vem na base
+  document.getElementById("rc-acucarrow").style.display=(which==="economica")?"none":"";
   calcReceita();
 }
 function calcReceita(){
   if(!document.getElementById("rc-base"))return;
   const which=(document.getElementById("rc-which")||{}).value||"padrao";
-  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar:0,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
+  const P=PARAMS();
+  const acucar=(which==="economica")?0:(+rcV("rc-acucar")); // Econômica: adoçante já vem na base
+  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
+  const baseLbl=(which==="economica")?"Base em pó (c/ adoçante)":"Base / Aroma";
   const linhas=(base)=>[
-    ["Base em pó (c/ adoçante)",base+" g",base*custoInsumoUn("Base/Aroma")],
+    [baseLbl,base+" g",base*custoInsumoUn("Base/Aroma")],
     ["Glicose",r.glicose+" g",r.glicose*custoInsumoUn("Glicose")],
+    ...(which==="economica"?[["Adoçante","incluído na base",0]]:[["Açúcar",r.acucar+" g",r.acucar*(P.acucar||0)]]),
     ["Goma Xantana",r.xantana+" g",r.xantana*custoInsumoUn("Goma Xantana")],
     ["Embalagem",r.embalagem+" un",r.embalagem*custoInsumoUn("Embalagens")]
   ];
@@ -2357,7 +2365,8 @@ function calcReceita(){
 function rcV(id){const el=document.getElementById(id);return el?(el.value||0):0;}
 function salvarReceita(){
   const which=(document.getElementById("rc-which")||{}).value||"padrao";
-  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar:0,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
+  const acucar=(which==="economica")?0:(+rcV("rc-acucar"));
+  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
   const sv=get("receitas",null)||{}; sv[which]=r; set("receitas",sv);
   if(which==="padrao") set("receitaPadrao",r); // mantém compatibilidade com o resto do sistema
   rerenderAll(); alert("Receita "+(RECEITAS_NOMES[which]||which)+" salva. O custo real foi atualizado em todo o sistema.");
