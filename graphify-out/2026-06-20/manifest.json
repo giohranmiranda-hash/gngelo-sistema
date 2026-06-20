@@ -1,0 +1,42 @@
+{
+  "/home/user/gngelo-sistema/manifest.json": {
+    "mtime": 1781749337.8577216,
+    "ast_hash": "f33f4761d482c8c01d26a14ec6ed693c",
+    "semantic_hash": "f33f4761d482c8c01d26a14ec6ed693c"
+  },
+  "/home/user/gngelo-sistema/sw.js": {
+    "mtime": 1781749337.8577216,
+    "ast_hash": "9c49c331d42d7b446bfac316d5bec7a7",
+    "semantic_hash": "9c49c331d42d7b446bfac316d5bec7a7"
+  },
+  "/home/user/gngelo-sistema/CLAUDE.md": {
+    "mtime": 1781884187.7917962,
+    "ast_hash": "82efb97a359f5c7290bf2513d14686be",
+    "semantic_hash": "82efb97a359f5c7290bf2513d14686be"
+  },
+  "/home/user/gngelo-sistema/DESIGN.md": {
+    "mtime": 1781749337.8466136,
+    "ast_hash": "7a1039fa20e86b361a11158c816aa751",
+    "semantic_hash": "7a1039fa20e86b361a11158c816aa751"
+  },
+  "/home/user/gngelo-sistema/PRODUCT.md": {
+    "mtime": 1781749337.8466136,
+    "ast_hash": "adf6a729cea6201f3282f856d39bcb0a",
+    "semantic_hash": "adf6a729cea6201f3282f856d39bcb0a"
+  },
+  "/home/user/gngelo-sistema/REGRAS.md": {
+    "mtime": 1781800637.3908467,
+    "ast_hash": "11cf8959ba7f9644fe4ad3ac9ec668ec",
+    "semantic_hash": "11cf8959ba7f9644fe4ad3ac9ec668ec"
+  },
+  "/home/user/gngelo-sistema/index.html": {
+    "mtime": 1781749337.8577216,
+    "ast_hash": "02ad808b56213d5241cba668623e3503",
+    "semantic_hash": "02ad808b56213d5241cba668623e3503"
+  },
+  "/home/user/gngelo-sistema/preview-dashboard-premium.html": {
+    "mtime": 1781883559.2177022,
+    "ast_hash": "abb92ad0be2010e414c66b1162e4b532",
+    "semantic_hash": "abb92ad0be2010e414c66b1162e4b532"
+  }
+}
