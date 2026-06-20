@@ -55,6 +55,30 @@
   /* Mapa (Leaflet) sempre abaixo de modais e menus */
   .leaflet-pane,.leaflet-top,.leaflet-bottom,.leaflet-control{z-index:1 !important}
   @media(max-width:640px){.ia-grid{grid-template-columns:1fr !important}}
+  /* ===== Tela de login premium (desktop/tablet/mobile) ===== */
+  #login-screen{position:fixed;inset:0;z-index:6000;display:none;overflow:auto;
+    background:radial-gradient(1100px 560px at 72% 16%,rgba(201,168,76,.12),transparent 58%),radial-gradient(820px 460px at 16% 94%,rgba(201,168,76,.07),transparent 55%),linear-gradient(160deg,#0c0b08,#0a0a0a 62%);
+    align-items:center;justify-content:center;padding:22px}
+  #login-screen.on{display:flex}
+  .lg-grid{width:100%;max-width:440px;display:grid;grid-template-columns:1fr}
+  .lg-brand{display:none}
+  .lg-card{background:linear-gradient(180deg,#15130f,#100e0b);border:1px solid rgba(201,168,76,.28);border-radius:18px;padding:26px 22px}
+  .lg-logo{width:78px;height:78px;margin:0 auto 12px;background-size:contain;background-position:center;background-repeat:no-repeat}
+  .lg-eyebrow{font-size:11px;letter-spacing:.24em;color:var(--gold-soft);font-weight:800}
+  .lg-title{font-weight:800;letter-spacing:-.01em;margin:3px 0 0;font-size:27px;line-height:1.08;background:linear-gradient(135deg,#fff,#e6c364);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lg-sub{font-size:10.5px;letter-spacing:.2em;color:var(--muted);font-weight:600;margin-top:7px}
+  .lg-lbl{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin:15px 0 6px}
+  .lg-or{display:flex;align-items:center;gap:10px;margin:15px 0;color:var(--muted);font-size:11px}
+  .lg-or span{flex:1;height:1px;background:var(--line)}
+  .lg-foot{text-align:center;font-size:9.5px;letter-spacing:.18em;color:#5a544a;margin-top:16px}
+  @media(min-width:1024px){
+    .lg-grid{grid-template-columns:1.05fr .95fr;max-width:940px;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+    .lg-brand{display:flex;flex-direction:column;justify-content:space-between;padding:42px;background:radial-gradient(620px 420px at 28% 18%,rgba(201,168,76,.16),transparent 60%),linear-gradient(160deg,#16130d,#0c0b08)}
+    .lg-brand .lg-title{font-size:48px}
+    .lg-card{border:none;border-radius:0;background:linear-gradient(180deg,#141109,#0e0c08);padding:48px 46px;display:flex;flex-direction:column;justify-content:center}
+    .lg-card .lg-head-center{text-align:left !important}
+    .lg-card .lg-logo{display:none}
+  }
   /* Nota térmica (impressão 58/80mm) */
   #print-area{display:none}
   #print-area .rcpt{font-family:'Courier New',ui-monospace,monospace;color:#000;background:#fff;width:72mm;margin:0 auto;padding:4mm 3mm;font-size:12px;line-height:1.45}
@@ -893,12 +917,7 @@
       <div class="csub">Seus dados salvos na nuvem e sincronizados entre aparelhos. Entre com seu usuário e senha.</div>
       <div id="sync-status" style="font-size:12.5px;color:var(--muted);margin:10px 0"></div>
       <div id="nuvem-login">
-        <div class="f-grid2">
-          <div class="f-row" style="margin:0"><label>Usuário</label><input class="f-in" id="login-email" placeholder="seu usuário" autocomplete="username"></div>
-          <div class="f-row" style="margin:0"><label>Senha</label><input class="f-in" id="login-senha" type="password" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginNuvem()"></div>
-        </div>
-        <button class="btn-gold" style="margin-top:10px;width:auto" onclick="loginNuvem()">Entrar na nuvem</button>
-        <div id="login-msg" style="font-size:12px;color:var(--gold-soft);margin-top:8px"></div>
+        <button class="btn-gold" style="margin-top:6px;width:auto" onclick="mostrarLogin()">Entrar na nuvem</button>
       </div>
       <div id="nuvem-painel" style="display:none">
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
@@ -1226,12 +1245,13 @@ async function loginNuvem(){
     if(error)throw error; sbUser=data.user;
     await sincronizarEEntrar();
     if(msg)msg.textContent="✅ Conectado!";
+    localStorage.removeItem("gng__offline_ok"); esconderLogin();
   }catch(e){ if(msg)msg.textContent="❌ "+(e.message==="Invalid login credentials"?"Usuário ou senha incorretos":(e.message||e)); }
 }
 async function logoutNuvem(){
   if(!confirm("Sair da conta? Os dados deste aparelho serão limpos (continuam salvos na nuvem)."))return;
   try{ if(sb)await sb.auth.signOut(); }catch(e){}
-  sbUser=null; limparDadosLocais(); location.reload();
+  sbUser=null; limparDadosLocais(); localStorage.removeItem("gng__offline_ok"); location.reload();
 }
 function atualizarStatusNuvem(){
   const el=document.getElementById("sync-status");
@@ -1245,11 +1265,18 @@ function atualizarStatusNuvem(){
   const chip=document.getElementById("nuvem-chip");
   if(chip){ chip.style.display=sbUser?"":"none"; }
 }
+function mostrarLogin(){const el=document.getElementById("login-screen");if(el){el.classList.add("on");document.body.style.overflow="hidden";}}
+function esconderLogin(){const el=document.getElementById("login-screen");if(el){el.classList.remove("on");document.body.style.overflow="";}}
+function acessoOffline(){try{localStorage.setItem("gng__offline_ok","1");}catch(e){}esconderLogin();}
 async function initNuvem(){
-  if(!sb){ atualizarStatusNuvem(); return; }
-  try{ const {data}=await sb.auth.getSession(); if(data&&data.session&&data.session.user){ sbUser=data.session.user; await sincronizarEEntrar(); } }
-  catch(e){ console.warn("sessão:",e); }
+  let logado=false;
+  if(sb){
+    try{ const {data}=await sb.auth.getSession(); if(data&&data.session&&data.session.user){ sbUser=data.session.user; await sincronizarEEntrar(); logado=true; } }
+    catch(e){ console.warn("sessão:",e); }
+  }
   atualizarStatusNuvem();
+  if(logado) esconderLogin();
+  else if(!localStorage.getItem("gng__offline_ok")) mostrarLogin();
 }
 function getV(){const v=get("vendas",null);return (v&&v.length)?v:SEED.vendas;}
 function getPr(){const v=get("producoes",null);return (v&&v.length)?v:SEED.producoes;}
@@ -2914,8 +2941,42 @@ render(); renderVendas(); renderEstoque(); renderLogistica(); renderCalendario()
 const _qv=new URLSearchParams(location.search).get("v");
 show(_qv||"dashboard");
 ensureDepot(); // busca o endereço do depósito no aparelho (1ª vez)
-initNuvem();   // restaura a sessão da nuvem e sincroniza, se já logado
+// restaura a sessão da nuvem só depois do DOM completo (a tela de login vem após este script)
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initNuvem);else initNuvem();
 </script>
+<!-- ===== TELA DE LOGIN PREMIUM ===== -->
+<div id="login-screen">
+  <div class="lg-grid">
+    <div class="lg-brand">
+      <div class="lg-eyebrow">GN GELO INDUSTRIAL</div>
+      <div>
+        <div class="logo" style="width:96px;height:96px;margin-bottom:18px"></div>
+        <div class="lg-title">Gelo<br>Saborizado</div>
+        <div class="lg-sub">SISTEMA DE GESTÃO · ALTA PERFORMANCE</div>
+        <p style="color:var(--muted);font-size:13px;max-width:300px;margin-top:18px;line-height:1.65">Seu negócio na palma da mão — vendas, produção, estoque e financeiro com custo real, na nuvem e offline.</p>
+      </div>
+      <div class="lg-foot" style="text-align:left;margin:0">V3.4 · PREMIUM INDUSTRIAL</div>
+    </div>
+    <div class="lg-card">
+      <div class="lg-head-center" style="text-align:center;margin-bottom:6px">
+        <div class="logo lg-logo"></div>
+        <div class="lg-eyebrow">GN GELO</div>
+        <div class="lg-title" style="font-size:26px">Gelo Saborizado</div>
+        <div class="lg-sub">ENTRE PARA SINCRONIZAR SEUS DADOS</div>
+      </div>
+      <label class="lg-lbl">Usuário</label>
+      <input id="login-email" class="f-in" placeholder="seu usuário" autocomplete="username">
+      <label class="lg-lbl">Senha</label>
+      <input id="login-senha" class="f-in" type="password" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginNuvem()">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin:13px 0 2px;cursor:pointer"><input type="checkbox" id="login-lembrar" checked style="accent-color:var(--gold);width:16px;height:16px"> Lembrar neste aparelho</label>
+      <button class="btn-gold" style="margin-top:10px" onclick="loginNuvem()">Entrar (nuvem)</button>
+      <div id="login-msg" style="font-size:12.5px;color:var(--gold-soft);margin-top:10px;text-align:center;min-height:16px"></div>
+      <div class="lg-or"><span></span>ou<span></span></div>
+      <button class="btn-ghost" style="margin:0" onclick="acessoOffline()">Acesso offline (sem nuvem)</button>
+      <div class="lg-foot">Seus dados ficam no aparelho e sincronizam quando você entra.</div>
+    </div>
+  </div>
+</div>
 <div id="print-area"></div>
 </body>
 </html>
