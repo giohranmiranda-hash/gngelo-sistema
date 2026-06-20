@@ -46,6 +46,7 @@
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.66);backdrop-filter:blur(3px);z-index:3000;display:flex;align-items:flex-end;justify-content:center;padding:0}
   /* Mapa (Leaflet) sempre abaixo de modais e menus */
   .leaflet-pane,.leaflet-top,.leaflet-bottom,.leaflet-control{z-index:1 !important}
+  @media(max-width:640px){.ia-grid{grid-template-columns:1fr !important}}
   /* Nota térmica (impressão 58/80mm) */
   #print-area{display:none}
   #print-area .rcpt{font-family:'Courier New',ui-monospace,monospace;color:#000;background:#fff;width:72mm;margin:0 auto;padding:4mm 3mm;font-size:12px;line-height:1.45}
@@ -367,6 +368,9 @@
         </table>
       </div>
     </div>
+
+    <!-- PAINEL IA: assuntos principais -->
+    <div id="db-ia" style="margin-top:16px"></div>
 
    </div><!-- /view-dashboard -->
 
@@ -1387,6 +1391,40 @@ function render(){
       <circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(last).toFixed(1)}" r="9" fill="#e6c364" opacity=".18"/>
     </svg>
     <div style="text-align:right;color:var(--muted);font-size:11px;margin-top:6px">Lucro acumulado no mês</div>`;
+  renderDashIA(vMes,est,luc,m,MESES[parseInt(mes)-1]);
+}
+/* Painel "GN IA — assuntos principais" no rodapé do Dashboard (local, dos dados) */
+function renderDashIA(vMes,est,luc,m,mesNome){
+  const box=document.getElementById("db-ia"); if(!box)return;
+  const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo").reduce((a,g)=>a+(g.valor||0),0);
+  const resultado=luc-fixos;
+  const porQ={}; vMes.forEach(v=>porQ[v.produto]=(porQ[v.produto]||0)+(v.qtd||0));
+  const topS=Object.entries(porQ).sort((a,b)=>b[1]-a[1])[0];
+  const baixo=Object.entries(est).filter(([k,q])=>q>0&&q<50);
+  const totEst=Object.values(est).reduce((a,q)=>a+(q||0),0);
+  const econ=custoReceita("padrao","maracuja")-custoReceita("economica","maracuja");
+  const ar=getV().filter(v=>v.recebido===false), tAR=ar.reduce((a,v)=>a+(v.bruto||0),0);
+  const item=(ic,cor,tit,sub)=>`<div style="display:flex;gap:11px;align-items:flex-start;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 12px">
+    <span style="width:32px;height:32px;flex:none;border-radius:9px;display:grid;place-items:center;background:${cor}1a;border:1px solid ${cor}44;color:${cor}"><span class="sym" style="font-size:18px">${ic}</span></span>
+    <div style="min-width:0"><div style="font-size:13px;font-weight:700;line-height:1.3">${tit}</div><div style="font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:2px">${sub}</div></div></div>`;
+  const items=[
+    item(resultado>=0?"trending_up":"warning",resultado>=0?"var(--green)":"var(--red)",
+      (resultado>=0?"No azul: ":"No vermelho: ")+R0(resultado),"Resultado de "+mesNome+" depois dos custos fixos"),
+    topS?item("trophy","var(--gold-soft)","Campeão: "+(SB[topS[0]]||topS[0]),topS[1]+" un vendidas no mês — mantenha o estoque cheio"):"",
+    baixo.length?item("inventory","#e0a73a","Estoque baixo: "+baixo.map(([k])=>SB[k]||k).join(", "),"Produza antes de faltar")
+                :item("inventory","var(--green)","Estoque saudável",totEst.toLocaleString("pt-BR")+" un no total, nada crítico"),
+    econ>0?item("savings","var(--gold-soft)","Dica: receita Econômica","Economiza "+R(econ)+"/un vs Padrão — bom pra margem"):"",
+    ar.length?item("request_quote","var(--red)",R0(tAR)+" a receber",ar.length+" venda(s) no fiado — cobrar"):""
+  ].filter(Boolean);
+  box.innerHTML=`<div style="background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.03));border:1px solid rgba(201,168,76,.45);border-radius:16px;padding:15px 17px">
+    <div style="display:flex;align-items:center;gap:11px;margin-bottom:13px">
+      <span style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408"><span class="sym">auto_awesome</span></span>
+      <div><b style="font-size:15px">GN IA — assuntos principais</b><div style="font-size:11.5px;color:var(--muted)">Resumo do seu negócio agora, direto dos seus dados</div></div>
+      <span class="chip" style="margin-left:auto;font-size:10.5px;background:rgba(70,177,123,.12);border-color:rgba(70,177,123,.3);color:var(--green)">● ao vivo</span>
+    </div>
+    <div class="ia-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${items.join("")}</div>
+    <div style="text-align:right;margin-top:11px"><span class="chip" style="cursor:pointer;font-size:11.5px" onclick="show('ia')"><span class="sym" style="font-size:14px;color:var(--gold-soft)">auto_awesome</span> Conversar com a GN IA</span></div>
+  </div>`;
 }
 
 /* ===== Helpers compartilhados ===== */
