@@ -2,7 +2,7 @@
   "name": "GN Gelo — Sistema de Gestão",
   "short_name": "GN Gelo",
   "description": "Gestão de produção, vendas, estoque e financeiro da GN Gelo.",
-  "start_url": "./index.html",
+  "start_url": "/",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
