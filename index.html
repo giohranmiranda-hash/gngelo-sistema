@@ -1225,7 +1225,8 @@ function agendarSync(){if(!sb||!sbUser)return;clearTimeout(_syncTimer);_syncTime
 function _msgNuvem(t){const el=document.getElementById("sync-msg");if(el)el.textContent=t;const l=document.getElementById("login-msg");if(l)l.textContent=t;}
 function limparDadosLocais(){const rem=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("gng_")===0)rem.push(k);}rem.forEach(k=>localStorage.removeItem(k));}
 async function nuvemEnviar(silencioso,forcar){
-  if(!sb||!sbUser)return false;
+  if(!sb){ if(!silencioso)_msgNuvem("⚠️ Sem conexão com o Supabase (precisa de internet)."); return false; }
+  if(!sbUser){ if(!silencioso)_msgNuvem("🔒 Você precisa ENTRAR na nuvem primeiro (login com usuário e senha)."); return false; }
   try{
     if(!forcar){
       const {data:atual}=await sb.from(APP_TABLE).select("updated_at").eq("user_id",sbUser.id).maybeSingle();
@@ -1249,7 +1250,8 @@ async function nuvemEnviar(silencioso,forcar){
 }
 function _aplicarCloud(row){ limparDadosLocais(); Object.entries(row.data).forEach(([k,v])=>localStorage.setItem(k,typeof v==="string"?v:JSON.stringify(v))); localStorage.setItem("gng__cloud_updated",row.updated_at||""); localStorage.setItem("gng__local_updated",row.updated_at||""); }
 async function nuvemBaixar(silencioso){
-  if(!sb||!sbUser)return false;
+  if(!sb){ if(!silencioso)_msgNuvem("⚠️ Sem conexão com o Supabase (precisa de internet)."); return false; }
+  if(!sbUser){ if(!silencioso)_msgNuvem("🔒 Entre na nuvem primeiro (login)."); return false; }
   try{
     const {data,error}=await sb.from(APP_TABLE).select("data,updated_at").eq("user_id",sbUser.id).maybeSingle();
     if(error)throw error;
