@@ -1,6 +1,6 @@
 // Service Worker — GN Gelo
 // Versione o cache (v3 -> v4 ...) ao publicar atualizações importantes.
-const CACHE = "gngelo-v3";
+const CACHE = "gngelo-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
