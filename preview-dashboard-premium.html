@@ -428,6 +428,11 @@
       <div class="kpi"><div class="ic"><span class="sym">confirmation_number</span></div><div class="k-lbl">Ticket médio</div><div class="k-val" id="vv-tk">—</div><div class="k-foot">por pedido</div></div>
     </div>
     <div class="card">
+      <h3><span class="sym">hub</span>Vendas por canal <span style="font-size:11px;color:var(--muted);font-weight:500">— de onde veio cada venda</span></h3>
+      <div class="csub">Quanto cada canal trouxe no mês. Ótimo pra medir o tráfego (WhatsApp, iFood).</div>
+      <div id="vv-canal" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
       <h3><span class="sym">receipt_long</span>Todos os pedidos</h3>
       <div class="csub">Do mais recente ao mais antigo</div>
       <table>
@@ -1437,7 +1442,7 @@ function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();const bi=r.bas
     (+r.acucar||0)*(P.acucar||0);}
 // insumos consumidos por 1 gelo (pra baixar do estoque de insumo) pela receita escolhida
 function recInsDe(id,sabor){const r=getReceita(id);const bi=r.baseInsumo||"Base/Aroma";
-  const out={"Glicose":+r.glicose||0,"Goma Xantana":+r.xantana||0,"Embalagens":+r.embalagem||0};
+  const out={"Glicose":+r.glicose||0,"Goma Xantana":+r.xantana||0,"Embalagens":+r.embalagem||0,"Açúcar":+r.acucar||0};
   out[bi]=baseDe(r,sabor); return out;}
 // custo real MÉDIO das unidades em estoque (FIFO) — é o que o lucro da venda usa
 function custoEstoqueSabor(sabor){
@@ -1676,6 +1681,14 @@ function renderVendas(){
   T("vv-mes",nome); fillMesNav("vv-mesnav"); T("vv-fat",R0(fat)); T("vv-liq","Receita líquida "+R0(liq));
   T("vv-luc",R0(luc)); T("vv-marg",(fat?Math.round(luc/fat*100):0)+"%");
   T("vv-n",n); T("vv-tk",R0(n?fat/n:0));
+  // por canal (marketing) — de onde veio cada venda
+  const pc={}; vMes.forEach(v=>{const c=v.canal||"Venda direta";(pc[c]=pc[c]||{n:0,fat:0,luc:0});pc[c].n++;pc[c].fat+=v.bruto||0;pc[c].luc+=v.lucro||0;});
+  const arrC=Object.entries(pc).sort((a,b)=>b[1].fat-a[1].fat); const maxC=arrC.length?arrC[0][1].fat:1;
+  document.getElementById("vv-canal").innerHTML=arrC.map(([c,d])=>`
+    <div class="bar"><span class="nm" style="min-width:130px">${c}</span>
+    <span class="track"><span class="fill" style="width:${Math.max(6,(d.fat/maxC)*100)}%"></span></span>
+    <span class="vl" style="white-space:nowrap">${R0(d.fat)} · ${d.n} ped${fat?` · ${Math.round(d.fat/fat*100)}%`:""}</span></div>`).join("")
+    ||'<div class="csub" style="padding:6px 0">Sem vendas no mês ainda.</div>';
   const rows=[...vMes].sort((a,b)=>(b.data||"").localeCompare(a.data||""));
   document.getElementById("vv-tab").innerHTML=rows.map(v=>`
     <tr><td>${fmtD(v.data)}</td><td>${v.cliente||"—"}</td><td>${tagSabor(v.produto)}</td>
@@ -2234,7 +2247,19 @@ const SABORES_VENDA=Object.keys(SB).filter(k=>!k.startsWith("combo"));
 const hoje=()=>new Date().toISOString().slice(0,10);
 const sabOpts=()=>SABORES_VENDA.map(k=>`<option value="${k}">${SB[k]}</option>`).join("");
 function fecharModal(){document.querySelectorAll(".modal-bg").forEach(m=>m.style.display="none");}
-function rerenderAll(){render();renderVendas();renderEstoque();renderLogistica();renderCalendario();renderFinanceiro();renderInvestimentos();renderMetas();renderRelatorios();renderProducao();renderInsumos();renderReceitas();renderClientes();renderComissoes();renderIA();renderConfig();}
+// Correção única: produções antigas não baixavam o açúcar (bug). Desconta o açúcar
+// já consumido pelos gelos produzidos. A marca "ajustado" fica dentro do insumoEst,
+// então viaja junto na nuvem e nunca desconta duas vezes.
+function ajustarAcucarUmaVez(){
+  try{
+    const ie=get("insumoEst",null); if(!ie||!ie["Açúcar"]||ie["Açúcar"].ajustado)return;
+    const prods=get("producoes",[]); let usado=0;
+    prods.forEach(p=>{ const ri=recInsDe(p.receita||"padrao",p.sabor); usado+=(p.qtd||0)*(ri["Açúcar"]||0); });
+    ie["Açúcar"]={...ie["Açúcar"], qtd:Math.max(0,(ie["Açúcar"].qtd||0)-usado), ajustado:true};
+    set("insumoEst",ie);
+  }catch(e){console.warn("ajuste açúcar:",e);}
+}
+function rerenderAll(){ajustarAcucarUmaVez();render();renderVendas();renderEstoque();renderLogistica();renderCalendario();renderFinanceiro();renderInvestimentos();renderMetas();renderRelatorios();renderProducao();renderInsumos();renderReceitas();renderClientes();renderComissoes();renderIA();renderConfig();}
 
 /* ---- VENDA ---- */
 var EDIT_V=null,EDIT_P=null,EDIT_G=null,EDIT_E=null;
