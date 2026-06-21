@@ -837,7 +837,7 @@
     <div class="card">
       <h3><span class="sym">leaderboard</span>Ranking por faturamento</h3>
       <div class="csub">Somando todas as compras de cada cliente</div>
-      <table><thead><tr><th>Cliente</th><th>Pedidos</th><th>Comprado</th><th>Lucro gerado</th></tr></thead><tbody id="cl-tab"></tbody></table>
+      <table><thead><tr><th>Cliente</th><th>Pedidos</th><th>Comprado</th><th>Lucro gerado</th><th>Mapa</th><th></th></tr></thead><tbody id="cl-tab"></tbody></table>
     </div>
    </div><!-- /view-clientes -->
 
@@ -1820,10 +1820,22 @@ function renderClientes(){
   getCli().forEach(c=>{if(c.nome)map[c.nome]=map[c.nome]||{n:0,bruto:0,lucro:0};}); // cadastrados (mesmo sem venda)
   getV().forEach(v=>{const c=v.cliente||"—";(map[c]=map[c]||{n:0,bruto:0,lucro:0});map[c].n++;map[c].bruto+=v.bruto||0;map[c].lucro+=v.lucro||0;});
   const arr=Object.entries(map).sort((a,b)=>b[1].bruto-a[1].bruto);
-  document.getElementById("cl-tab").innerHTML=arr.map(([nome,d],i)=>`
-    <tr><td><span class="tag"><span class="dot" style="background:${i===0?'var(--gold)':'#444'}"></span>${nome}</span></td>
-    <td>${d.n}</td><td class="money">${R0(d.bruto)}</td><td class="money pos">${R(d.lucro)}</td></tr>`).join("")
-    ||'<tr><td colspan="4" class="csub" style="padding-top:14px">Sem clientes ainda.</td></tr>';
+  document.getElementById("cl-tab").innerHTML=arr.map(([nome,d],i)=>{
+    const cs=getCli().find(c=>(c.nome||"").trim().toLowerCase()===nome.trim().toLowerCase());
+    let mapcol,act;
+    if(cs){
+      mapcol = cs.lat!=null
+        ? `<span class="tag" style="color:var(--green)"><span class="dot" style="background:var(--green)"></span>no mapa</span>`
+        : (cs.endereco
+            ? `<span class="tag" style="color:#e0a73a"><span class="dot" style="background:#e0a73a"></span>sem coord.</span>`
+            : `<span class="csub">sem endereço</span>`);
+      act=lapis("editarCliente("+cs.id+")");
+    } else { mapcol=`<span class="csub">só em vendas</span>`; act=""; }
+    return `<tr><td><span class="tag"><span class="dot" style="background:${i===0?'var(--gold)':'#444'}"></span>${nome}</span></td>
+    <td>${d.n}</td><td class="money">${R0(d.bruto)}</td><td class="money pos">${R(d.lucro)}</td>
+    <td>${mapcol}</td><td style="text-align:right">${act}</td></tr>`;
+  }).join("")
+    ||'<tr><td colspan="6" class="csub" style="padding-top:14px">Sem clientes ainda.</td></tr>';
 }
 
 /* ===== TELA ASSISTENTE IA (sinais a partir dos dados reais) ===== */
@@ -2697,6 +2709,13 @@ function editarEntrega(id){
 }
 async function geocode(q){
   q=(q||"").trim(); if(!q)return null;
+  // CEP brasileiro (8 dígitos): expande pra endereço completo via ViaCEP — bem mais certeiro
+  const cep=q.replace(/\D/g,"");
+  if(/^\d{8}$/.test(cep)){
+    try{ const rc=await fetch("https://viacep.com.br/ws/"+cep+"/json/"); const dc=await rc.json();
+      if(dc&&!dc.erro){ const exp=[dc.logradouro,dc.bairro,dc.localidade,dc.uf].filter(Boolean).join(", "); if(exp)q=exp; }
+    }catch(e){}
+  }
   if(!/brasil|brazil/i.test(q)) q+=", Brasil";   // mais certeiro (limita ao Brasil)
   try{
     const r=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=br&limit=1&q="+encodeURIComponent(q));
@@ -3033,8 +3052,8 @@ async function upsertClienteEndereco(nome,endereco){
   const cls=get("clientes",null)||SEED.clientes.slice();
   let c=cls.find(x=>(x.nome||"").trim().toLowerCase()===nome.toLowerCase());
   const g=await geocode(endereco);
-  if(c){ c.endereco=endereco; if(g){c.lat=g[0];c.lng=g[1];} }
-  else { c={id:Date.now(),nome,endereco}; if(g){c.lat=g[0];c.lng=g[1];} cls.push(c); }
+  if(c){ c.endereco=endereco; if(g){c.lat=g[0];c.lng=g[1];set("mostrarClientes",true);} }
+  else { c={id:Date.now(),nome,endereco}; if(g){c.lat=g[0];c.lng=g[1];set("mostrarClientes",true);} cls.push(c); }
   set("clientes",cls); if(document.querySelector("#view-logistica.active"))renderLogistica();
 }
 function preencherDatalistCli(){const dl=document.getElementById("cli-list");if(dl)dl.innerHTML=getCli().map(c=>`<option value="${c.nome}">`).join("");}
@@ -3042,17 +3061,43 @@ function puxarCliente(){const c=cliSalvo(document.getElementById("e-cliente").va
   if(c){ const end=document.getElementById("e-end"); if(end&&!end.value&&c.endereco)end.value=c.endereco; const r=document.getElementById("e-rota"); if(r&&!r.value&&c.bairro)r.value=c.bairro; }}
 function mostrarCli(){return !!get("mostrarClientes",false);}
 function toggleClientesMapa(){set("mostrarClientes",!mostrarCli());renderLogistica();}
+let EDIT_CL=null;
 function abrirCliente(){
+  EDIT_CL=null;
+  const h=document.querySelector("#modal-cliente h3"); if(h)h.textContent="Novo cliente";
   ["cl-nome","cl-tel","cl-bairro","cl-end"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("modal-cliente").style.display="flex";
+}
+function editarCliente(id){
+  const c=getCli().find(x=>x.id===id); if(!c)return;
+  EDIT_CL=id;
+  const h=document.querySelector("#modal-cliente h3"); if(h)h.textContent="Editar cliente";
+  document.getElementById("cl-nome").value=c.nome||"";
+  document.getElementById("cl-tel").value=c.tel||"";
+  document.getElementById("cl-bairro").value=c.bairro||"";
+  document.getElementById("cl-end").value=c.endereco||"";
   document.getElementById("modal-cliente").style.display="flex";
 }
 async function salvarCliente(){
   const nome=document.getElementById("cl-nome").value.trim(); if(!nome){alert("Informe o nome.");return;}
   const endereco=document.getElementById("cl-end").value.trim();
-  const novo={id:Date.now(),nome,tel:document.getElementById("cl-tel").value||"",bairro:document.getElementById("cl-bairro").value||"",endereco};
-  if(endereco){ const g=await geocode(endereco); if(g){novo.lat=g[0];novo.lng=g[1];} }
-  const cls=getCli(); cls.push(novo);
-  set("clientes",cls); fecharModal(); rerenderAll(); show("clientes");
+  const tel=document.getElementById("cl-tel").value||"", bairro=document.getElementById("cl-bairro").value||"";
+  const cls=getCli();
+  let c = EDIT_CL!=null ? cls.find(x=>x.id===EDIT_CL) : null;
+  if(!c){ c={id:Date.now(),nome}; cls.push(c); }
+  c.nome=nome; c.tel=tel; c.bairro=bairro;
+  let geoMsg="";
+  if(endereco){
+    const mudou = endereco!==(c.endereco||"");
+    c.endereco=endereco;
+    if(mudou || c.lat==null){
+      const g=await geocode(endereco);
+      if(g){ c.lat=g[0]; c.lng=g[1]; set("mostrarClientes",true); geoMsg=" e já fixei o pino no mapa 📍"; }
+      else { geoMsg=" — mas não encontrei esse endereço no mapa. Confira o endereço/CEP, ou abra a Logística e arraste o pino."; }
+    } else { set("mostrarClientes",true); geoMsg=" (já está no mapa 📍)"; }
+  }
+  set("clientes",cls); EDIT_CL=null; fecharModal(); rerenderAll(); show("clientes");
+  alert("✅ Cliente salvo"+geoMsg);
 }
 
 /* ===== Navegação: grupos + sub-abas ===== */
