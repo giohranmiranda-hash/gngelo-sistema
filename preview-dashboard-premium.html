@@ -1215,7 +1215,7 @@ const set=(k,v)=>{try{localStorage.setItem("gng_"+k,JSON.stringify(v));localStor
 const SUPABASE_URL="https://wuqymzfzkxnxnddnrefa.supabase.co";
 const SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cXltemZ6a3hueG5kZG5yZWZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDQ4MzMsImV4cCI6MjA5NzAyMDgzM30.m-CTQhw9N1bsaeFQ3R-VxuqMl4aPPID_2Rt0KZQN838";
 const LOGIN_DOMAIN="gngelo.app";
-const APP_TABLE="app_state_v2"; // tabela própria do app novo (gngelo2) — não mistura com o antigo
+const APP_TABLE="app_state"; // tabela que já existe no Supabase (sincroniza sem criar nada)
 var sb=null, sbUser=null, _syncTimer=null;
 function userParaEmail(u){u=(u||"").trim().toLowerCase();if(!u)return"";return u.indexOf("@")>=0?u:u.replace(/\s+/g,"")+"@"+LOGIN_DOMAIN;}
 function emailParaUser(e){e=(e||"");return e.indexOf("@"+LOGIN_DOMAIN)>=0?e.split("@")[0]:e;}
@@ -1224,12 +1224,17 @@ function _chavesDados(){const out={};for(let i=0;i<localStorage.length;i++){cons
 function agendarSync(){if(!sb||!sbUser)return;clearTimeout(_syncTimer);_syncTimer=setTimeout(()=>{nuvemEnviar(true);},3000);}
 function _msgNuvem(t){const el=document.getElementById("sync-msg");if(el)el.textContent=t;const l=document.getElementById("login-msg");if(l)l.textContent=t;}
 function limparDadosLocais(){const rem=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("gng_")===0)rem.push(k);}rem.forEach(k=>localStorage.removeItem(k));}
-async function nuvemEnviar(silencioso){
+async function nuvemEnviar(silencioso,forcar){
   if(!sb||!sbUser)return false;
   try{
-    const {data:atual}=await sb.from(APP_TABLE).select("updated_at").eq("user_id",sbUser.id).maybeSingle();
-    const baseTs=localStorage.getItem("gng__cloud_updated")||"";
-    if(atual&&atual.updated_at&&baseTs&&atual.updated_at>baseTs){ if(!silencioso)_msgNuvem("⚠️ A nuvem tem dados mais recentes. Baixe antes de enviar."); atualizarStatusNuvem(); return false; }
+    if(!forcar){
+      const {data:atual}=await sb.from(APP_TABLE).select("updated_at").eq("user_id",sbUser.id).maybeSingle();
+      const baseTs=localStorage.getItem("gng__cloud_updated")||"";
+      if(atual&&atual.updated_at&&baseTs&&atual.updated_at>baseTs){
+        if(silencioso){ atualizarStatusNuvem(); return false; } // auto: não sobrescreve sozinho
+        if(!confirm("A nuvem tem dados mais recentes (de outro aparelho).\n\nEnviar daqui vai SOBRESCREVER a nuvem com os dados DESTE aparelho. Continuar?")){ _msgNuvem("Envio cancelado."); return false; }
+      }
+    }
     const ts=new Date().toISOString();
     const {error}=await sb.from(APP_TABLE).upsert({user_id:sbUser.id,data:_chavesDados(),updated_at:ts});
     if(error)throw error;
@@ -2194,7 +2199,13 @@ function restaurarBackup(input){
     const j=JSON.parse(fr.result); const d=j.dados||j;
     if(!confirm("Restaurar este backup? Os dados atuais serão substituídos."))return;
     Object.keys(d).forEach(k=>{ if(k.indexOf("gng_")===0) localStorage.setItem(k,d[k]); });
-    MES_SEL=null; rotaOtim=null; rerenderAll(); alert("✅ Backup restaurado!");
+    // marca o restaurado como o mais novo pra NÃO ser sobrescrito pela nuvem
+    const ts=new Date().toISOString();
+    localStorage.setItem("gng__local_updated",ts);
+    localStorage.setItem("gng__cloud_updated",ts);
+    MES_SEL=null; rotaOtim=null; rerenderAll();
+    if(typeof sbUser!=="undefined" && sbUser){ nuvemEnviar(true,true).then(ok=>alert(ok?"✅ Backup restaurado e enviado pra nuvem!":"✅ Backup restaurado! (não consegui enviar pra nuvem agora — use 'Enviar agora')")); }
+    else alert("✅ Backup restaurado!");
   }catch(e){ alert("Arquivo de backup inválido."); } input.value=""; };
   fr.readAsText(file);
 }
