@@ -1020,6 +1020,21 @@
 </div>
 
 <!-- ===== MODAL: COMPRAR INSUMO (vários itens) ===== -->
+<div class="modal-bg" id="modal-iedit" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3>Editar insumo</h3><span class="sym x" onclick="fecharModal()">close</span></div>
+    <div class="modal-body">
+      <div class="f-row"><label>Insumo</label><input class="f-in" id="ie-nome" readonly></div>
+      <div class="f-grid2">
+        <div class="f-row" style="margin:0"><label>Quantidade em estoque</label><input type="number" step="0.01" class="f-in" id="ie-qtd"></div>
+        <div class="f-row" style="margin:0"><label>Custo por unidade (R$)</label><input type="number" step="0.0001" class="f-in" id="ie-custo"></div>
+      </div>
+      <div class="f-row"><label>Fornecedor</label><input class="f-in" id="ie-forn" placeholder="Ex: Shoppe"></div>
+      <div class="csub">Corrige direto o que está em estoque e o preço unitário — pra ajustar registros errados.</div>
+    </div>
+    <div class="modal-foot"><button class="btn-gold" onclick="salvarInsumoEdit()">Salvar</button></div>
+  </div>
+</div>
 <div class="modal-bg" id="modal-insumo" style="display:none">
   <div class="modal">
     <div class="modal-head"><h3>Comprar insumo</h3><span class="sym x" onclick="fecharModal()">close</span></div>
@@ -1153,7 +1168,8 @@ const SEED={
  estoque:{coco:0,morango:0,maracuja:0,maca:0,manga:0,melancia:0,limao:0,iceblue:0,energetico:0,frutas:0,amora:0,abacaxi:0,salLimao:0,uva:0,chiclete:0,cereja:0,morPessego:0,brasil:0,bobMarley:0,laranja:0,balaHouse:0,combo10:0,combo20:0,combo50:0,combo100:0},
  gastos:[],
  insumoEst:{
-  "Base/Aroma":{qtd:0,un:"g",custoUnit:0.0864,forn:""},
+  "Base Líquida":{qtd:0,un:"ml",custoUnit:0.1427,forn:""},
+  "Base/Aroma":{qtd:0,un:"g",custoUnit:0.1150,forn:""},
   "Glicose":{qtd:0,un:"g",custoUnit:0.0162,forn:""},
   "Goma Xantana":{qtd:0,un:"g",custoUnit:0.0446,forn:""},
   "Embalagens":{qtd:0,un:"un",custoUnit:0.1600,forn:""}
@@ -1355,11 +1371,11 @@ function getVendedores(){const v=get("vendedores",null);return (v&&v.length)?v:S
 function getOrdens(){const v=get("ordens",null);return (v&&v.length)?v:SEED.ordens;}
 function getLotes(){const v=get("lotesAndamento",null);return (v&&v.length)?v:SEED.lotesAndamento;}
 function fillVendedores(sel,val){const vs=getVendedores();sel.innerHTML='<option value="">Venda direta (sem comissão)</option>'+vs.map(v=>`<option value="${v.id}">${v.nome} (${v.com}%)</option>`).join("");if(val)sel.value=val;}
-const INSUMOS_DEF={"Base/Aroma":"g","Glicose":"g","Goma Xantana":"g","Embalagens":"un","Açúcar":"g"};
-const INSUMO_LABEL={"Base/Aroma":"Base em pó (c/ adoçante)"}; // nome amigável na tela
+const INSUMOS_DEF={"Base Líquida":"ml","Base/Aroma":"g","Glicose":"g","Goma Xantana":"g","Embalagens":"un","Açúcar":"g"};
+const INSUMO_LABEL={"Base/Aroma":"Base em pó (c/ adoçante)","Base Líquida":"Base líquida"}; // nomes amigáveis na tela
 const LIMITE_PIC=2500; // abaixo disso o insumo é "acabando"
 // ===== RECEITA + CUSTO REAL (recalcula pelo preço dos insumos) =====
-const RECEITA_PADRAO={base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1}; // receita antiga: usa açúcar separado
+const RECEITA_PADRAO={base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1,baseInsumo:"Base Líquida"}; // antiga: base líquida + açúcar
 function getReceitaPadrao(){return Object.assign({},RECEITA_PADRAO,get("receitaPadrao",null)||{});}
 // Mapa insumo->qtd consumida por gelo (deriva da receita) — usado pra baixar insumo
 function recIns(){const r=getReceitaPadrao();return {"Base/Aroma":r.base,"Glicose":r.glicose,"Goma Xantana":r.xantana,"Embalagens":r.embalagem};}
@@ -1372,7 +1388,7 @@ function custoSabor(sabor){const r=getReceitaPadrao(),P=PARAMS();
 function custoBase(){return custoSabor("_");} // custo padrão (receita compartilhada)
 
 // ===== RECEITAS (Padrão + Econômica) — custo recalcula sozinho pelo preço dos insumos =====
-const RECEITA_ECONOMICA={base:2,glicose:0,acucar:0,xantana:0,embalagem:1,baseCoco:2.4}; // mais barata: sem glicose/xantana
+const RECEITA_ECONOMICA={base:2,glicose:0,acucar:0,xantana:0,embalagem:1,baseCoco:2.35,baseInsumo:"Base/Aroma"}; // base em pó c/ adoçante
 const RECEITAS_NOMES={padrao:"Padrão",economica:"Econômica"};
 function getReceitas(){
   const sv=get("receitas",null)||{};
@@ -1385,13 +1401,14 @@ function getReceita(id){const a=getReceitas();return a[id]||a.padrao;}
 // base por gelo: Coco pode levar mais base (baseCoco); demais sabores usam base
 function baseDe(r,sabor){return (sabor==="coco"&&r.baseCoco!=null&&r.baseCoco!=="")?+r.baseCoco:+r.base;}
 // custo de produzir 1 gelo com a receita escolhida, a preço ATUAL dos insumos
-function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();
-  return baseDe(r,sabor)*custoInsumoUn("Base/Aroma")+(+r.glicose||0)*custoInsumoUn("Glicose")+
+function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();const bi=r.baseInsumo||"Base/Aroma";
+  return baseDe(r,sabor)*custoInsumoUn(bi)+(+r.glicose||0)*custoInsumoUn("Glicose")+
     (+r.xantana||0)*custoInsumoUn("Goma Xantana")+(+r.embalagem||0)*custoInsumoUn("Embalagens")+
     (+r.acucar||0)*(P.acucar||0);}
 // insumos consumidos por 1 gelo (pra baixar do estoque de insumo) pela receita escolhida
-function recInsDe(id,sabor){const r=getReceita(id);
-  return {"Base/Aroma":baseDe(r,sabor),"Glicose":+r.glicose||0,"Goma Xantana":+r.xantana||0,"Embalagens":+r.embalagem||0};}
+function recInsDe(id,sabor){const r=getReceita(id);const bi=r.baseInsumo||"Base/Aroma";
+  const out={"Glicose":+r.glicose||0,"Goma Xantana":+r.xantana||0,"Embalagens":+r.embalagem||0};
+  out[bi]=baseDe(r,sabor); return out;}
 // custo real MÉDIO das unidades em estoque (FIFO) — é o que o lucro da venda usa
 function custoEstoqueSabor(sabor){
   let rem=getEst()[sabor]||0;
@@ -2422,7 +2439,7 @@ function renderInsumos(){
       <td>${(i.qtd||0).toLocaleString("pt-BR")} ${i.un||''}${rende!=null?`<br><span style="font-size:10.5px;color:var(--muted)">≈ ${Math.floor(rende).toLocaleString("pt-BR")} gelos saborizados</span>`:''}</td>
       <td class="money">${R(i.custoUnit||0)}<span style="font-size:10.5px;color:var(--muted)">/${i.un||''}</span></td>
       <td>${i.forn||'—'}</td>
-      <td>${crit?'<span class="tag" style="color:var(--red)"><span class="dot" style="background:var(--red)"></span>Acabando</span>':'<span class="tag" style="color:var(--green)"><span class="dot" style="background:var(--green)"></span>OK</span>'}</td>
+      <td style="white-space:nowrap">${crit?'<span class="tag" style="color:var(--red)"><span class="dot" style="background:var(--red)"></span>Acabando</span>':'<span class="tag" style="color:var(--green)"><span class="dot" style="background:var(--green)"></span>OK</span>'} ${lapis("editarInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}${lixo("delInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}</td>
     </tr>`;
   }).join("")||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhum insumo cadastrado.</td></tr>';
 }
@@ -2463,6 +2480,30 @@ function salvarInsumo(){
   });
   if(!add){alert("Adicione ao menos um insumo com quantidade e custo.");return;}
   set("insumoEst",ie); set("gastos",gastos); fecharModal(); rerenderAll(); show("insumos");
+}
+/* ---- EDITAR / ZERAR um insumo no estoque (corrigir registros) ---- */
+var IEDIT_NOME=null;
+function editarInsumoEstoque(nome){
+  const i=getInsE()[nome]; if(!i){alert("Insumo não encontrado.");return;}
+  IEDIT_NOME=nome;
+  document.getElementById("ie-nome").value=INSUMO_LABEL[nome]||nome;
+  document.getElementById("ie-qtd").value=i.qtd||0;
+  document.getElementById("ie-custo").value=i.custoUnit||0;
+  document.getElementById("ie-forn").value=i.forn||"";
+  document.getElementById("modal-iedit").style.display="flex";
+}
+function salvarInsumoEdit(){
+  if(!IEDIT_NOME)return;
+  const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
+  const prev=ie[IEDIT_NOME]||{un:INSUMOS_DEF[IEDIT_NOME]};
+  ie[IEDIT_NOME]={...prev,qtd:+document.getElementById("ie-qtd").value||0,custoUnit:+document.getElementById("ie-custo").value||0,forn:document.getElementById("ie-forn").value||prev.forn||"",un:prev.un||INSUMOS_DEF[IEDIT_NOME]};
+  set("insumoEst",ie); IEDIT_NOME=null; fecharModal(); rerenderAll(); show("insumos");
+}
+function delInsumoEstoque(nome){
+  if(!confirm("Zerar o estoque de "+(INSUMO_LABEL[nome]||nome)+"?\n\n(Zera a quantidade atual. As compras lançadas no financeiro continuam — apague-as no Financeiro se precisar.)"))return;
+  const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
+  if(ie[nome]) ie[nome]={...ie[nome],qtd:0};
+  set("insumoEst",ie); rerenderAll(); show("insumos");
 }
 
 /* ===== APAGAR (com devolução de estoque/insumo) ===== */
@@ -2632,9 +2673,11 @@ function calcReceita(){
   const P=PARAMS();
   const acucar=(which==="economica")?0:(+rcV("rc-acucar")); // Econômica: adoçante já vem na base
   const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
-  const baseLbl=(which==="economica")?"Base em pó (c/ adoçante)":"Base / Aroma";
+  const baseInsumo=(which==="economica")?"Base/Aroma":"Base Líquida";
+  const baseLbl=(which==="economica")?"Base em pó (c/ adoçante)":"Base líquida";
+  const baseUn=(which==="economica")?" g":" ml";
   const linhas=(base)=>[
-    [baseLbl,base+" g",base*custoInsumoUn("Base/Aroma")],
+    [baseLbl,base+baseUn,base*custoInsumoUn(baseInsumo)],
     ["Glicose",r.glicose+" g",r.glicose*custoInsumoUn("Glicose")],
     ...(which==="economica"?[["Adoçante","incluído na base",0]]:[["Açúcar",r.acucar+" g",r.acucar*(P.acucar||0)]]),
     ["Goma Xantana",r.xantana+" g",r.xantana*custoInsumoUn("Goma Xantana")],
@@ -2658,7 +2701,8 @@ function rcV(id){const el=document.getElementById(id);return el?(el.value||0):0;
 function salvarReceita(){
   const which=(document.getElementById("rc-which")||{}).value||"padrao";
   const acucar=(which==="economica")?0:(+rcV("rc-acucar"));
-  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")};
+  const baseInsumo=(which==="economica")?"Base/Aroma":"Base Líquida";
+  const r={base:+rcV("rc-base"),baseCoco:+rcV("rc-baseCoco"),glicose:+rcV("rc-glicose"),acucar,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem"),baseInsumo};
   const sv=get("receitas",null)||{}; sv[which]=r; set("receitas",sv);
   if(which==="padrao") set("receitaPadrao",r); // mantém compatibilidade com o resto do sistema
   rerenderAll(); alert("Receita "+(RECEITAS_NOMES[which]||which)+" salva. O custo real foi atualizado em todo o sistema.");
