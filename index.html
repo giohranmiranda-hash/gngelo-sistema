@@ -1259,14 +1259,24 @@ async function nuvemBaixar(silencioso){
     if(!silencioso)_msgNuvem("ℹ️ A nuvem ainda está vazia para esta conta."); return false;
   }catch(e){ console.warn("baixar:",e); if(!silencioso)_msgNuvem("⚠️ Falha ao baixar: "+(e.message||e)); return false; }
 }
+// tem dados de verdade neste aparelho? (vendas/produção/gastos/insumos) — evita apagar a nuvem com vazio
+function _temDadosLocais(){
+  const v=get("vendas",[]),p=get("producoes",[]),g=get("gastos",[]),c=get("clientes",[]);
+  if((v&&v.length)||(p&&p.length)||(g&&g.length)||(c&&c.length))return true;
+  const ie=get("insumoEst",null); if(ie&&Object.keys(ie).length)return true;
+  const est=get("estoque",null); if(est&&Object.values(est).some(q=>q>0))return true;
+  return false;
+}
 async function sincronizarEEntrar(){
   const owner=localStorage.getItem("gng__owner"), trocou=owner&&owner!==sbUser.id;
+  if(trocou) limparDadosLocais(); // trocou de conta: começa limpo e puxa da nuvem
   const {data:row}=await sb.from(APP_TABLE).select("data,updated_at").eq("user_id",sbUser.id).maybeSingle();
   const temNuvem=row&&row.data&&Object.keys(row.data).length>0;
+  const temLocal=trocou?false:_temDadosLocais();
   const cloudTs=(row&&row.updated_at)?row.updated_at:"", localTs=localStorage.getItem("gng__local_updated")||"";
-  if(trocou){ if(temNuvem)_aplicarCloud(row); else limparDadosLocais(); }
-  else if(temNuvem&&(!localTs||cloudTs>localTs)){ _aplicarCloud(row); }
-  else { await nuvemEnviar(true); }
+  if(temNuvem && !temLocal){ _aplicarCloud(row); }                 // aparelho vazio: SEMPRE baixa (não apaga a nuvem)
+  else if(temLocal && !temNuvem){ await nuvemEnviar(true,true); }  // nuvem vazia: sobe o que tem aqui
+  else if(temNuvem && temLocal){ if(cloudTs>localTs)_aplicarCloud(row); else await nuvemEnviar(true); } // os dois têm: mais novo vence
   localStorage.setItem("gng__owner",sbUser.id);
   if(typeof MES_SEL!=="undefined")MES_SEL=null; rerenderAll(); atualizarStatusNuvem();
 }
