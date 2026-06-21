@@ -1245,13 +1245,13 @@ async function loginNuvem(){
     if(error)throw error; sbUser=data.user;
     await sincronizarEEntrar();
     if(msg)msg.textContent="✅ Conectado!";
-    localStorage.removeItem("gng__offline_ok"); esconderLogin();
+    sessionStorage.removeItem("gng__offline_ok"); localStorage.removeItem("gng__offline_ok"); esconderLogin();
   }catch(e){ if(msg)msg.textContent="❌ "+(e.message==="Invalid login credentials"?"Usuário ou senha incorretos":(e.message||e)); }
 }
 async function logoutNuvem(){
   if(!confirm("Sair da conta? Os dados deste aparelho serão limpos (continuam salvos na nuvem)."))return;
   try{ if(sb)await sb.auth.signOut(); }catch(e){}
-  sbUser=null; limparDadosLocais(); localStorage.removeItem("gng__offline_ok"); location.reload();
+  sbUser=null; limparDadosLocais(); sessionStorage.removeItem("gng__offline_ok"); localStorage.removeItem("gng__offline_ok"); location.reload();
 }
 function atualizarStatusNuvem(){
   const el=document.getElementById("sync-status");
@@ -1267,7 +1267,13 @@ function atualizarStatusNuvem(){
 }
 function mostrarLogin(){const el=document.getElementById("login-screen");if(el){el.classList.add("on");document.body.style.overflow="hidden";}}
 function esconderLogin(){const el=document.getElementById("login-screen");if(el){el.classList.remove("on");document.body.style.overflow="";}}
-function acessoOffline(){try{localStorage.setItem("gng__offline_ok","1");}catch(e){}esconderLogin();}
+function acessoOffline(){try{sessionStorage.setItem("gng__offline_ok","1");}catch(e){}esconderLogin();}
+function limparAparelho(){
+  if(!confirm("Limpar TODOS os dados deste aparelho?\n\nSe você já fez backup/login na nuvem, eles continuam salvos lá. Sem backup, isso apaga os dados deste navegador."))return;
+  try{limparDadosLocais();}catch(e){}
+  sessionStorage.removeItem("gng__offline_ok"); localStorage.removeItem("gng__offline_ok");
+  location.reload();
+}
 async function initNuvem(){
   let logado=false;
   if(sb){
@@ -1275,8 +1281,9 @@ async function initNuvem(){
     catch(e){ console.warn("sessão:",e); }
   }
   atualizarStatusNuvem();
+  localStorage.removeItem("gng__offline_ok"); // limpa flag antiga (agora a escolha offline é só da sessão)
   if(logado) esconderLogin();
-  else if(!localStorage.getItem("gng__offline_ok")) mostrarLogin();
+  else if(!sessionStorage.getItem("gng__offline_ok")) mostrarLogin();
 }
 function getV(){const v=get("vendas",null);return (v&&v.length)?v:SEED.vendas;}
 function getPr(){const v=get("producoes",null);return (v&&v.length)?v:SEED.producoes;}
@@ -2973,7 +2980,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
       <div id="login-msg" style="font-size:12.5px;color:var(--gold-soft);margin-top:10px;text-align:center;min-height:16px"></div>
       <div class="lg-or"><span></span>ou<span></span></div>
       <button class="btn-ghost" style="margin:0" onclick="acessoOffline()">Acesso offline (sem nuvem)</button>
-      <div class="lg-foot">Seus dados ficam no aparelho e sincronizam quando você entra.</div>
+      <div class="lg-foot">Seus dados ficam no aparelho e sincronizam quando você entra. · <a href="javascript:void(0)" onclick="limparAparelho()" style="color:#7a7263;text-decoration:underline">Limpar este aparelho</a></div>
     </div>
   </div>
 </div>
