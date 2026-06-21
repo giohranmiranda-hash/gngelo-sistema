@@ -1,7 +1,0 @@
-# gngelo2 — serve o app novo (premium) como página inicial
-# (o app antigo continua em index.html, usado pelo gngelo1 noutro branch)
-[[redirects]]
-  from = "/"
-  to = "/preview-dashboard-premium.html"
-  status = 200
-  force = true
