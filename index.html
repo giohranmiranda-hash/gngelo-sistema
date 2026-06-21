@@ -644,6 +644,14 @@
         <tbody id="in-tab"></tbody>
       </table>
     </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="sym">receipt_long</span>Últimas compras de insumo</h3>
+      <div class="csub">As entradas que você registrou — dá pra editar ou apagar</div>
+      <table>
+        <thead><tr><th>Data</th><th>Insumo / descrição</th><th style="text-align:right">Valor</th><th></th></tr></thead>
+        <tbody id="in-hist"></tbody>
+      </table>
+    </div>
    </div><!-- /view-insumos -->
 
    <!-- ============ TELA: METAS ============ -->
@@ -1591,7 +1599,9 @@ function render(){
 function renderDashIA(vMes,est,luc,m,mesNome){
   const box=document.getElementById("db-ia"); if(!box)return;
   const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
-  const resultado=luc-fixos;
+  const variaveis=gMes.filter(g=>g.tipo==="Custo variável"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
+  const liq=vMes.reduce((a,v)=>a+(v.liq||0),0);
+  const resultado=liq-variaveis-fixos;
   const porQ={}; vMes.forEach(v=>porQ[v.produto]=(porQ[v.produto]||0)+(v.qtd||0));
   const topS=Object.entries(porQ).sort((a,b)=>b[1]-a[1])[0];
   const baixo=Object.entries(est).filter(([k,q])=>q>0&&q<50);
@@ -1707,10 +1717,12 @@ function renderFinanceiro(){
   const gMes=gastosDoMes(m);
   const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), liq=vMes.reduce((a,v)=>a+(v.liq||0),0),
         luc=vMes.reduce((a,v)=>a+(v.lucro||0),0);
-  const ded=fat-liq, cpv=liq-luc, fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
+  const ded=fat-liq;
+  const variaveis=gMes.filter(g=>g.tipo==="Custo variável"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
+  const fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
   const mkt=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)&&(g.cat||"").toLowerCase()==="marketing").reduce((a,g)=>a+(g.valor||0),0);
   const outrosFixos=fixos-mkt;
-  const saidas=cpv+fixos, resultado=liq-saidas, marg=fat?Math.round(luc/fat*100):0;
+  const saidas=variaveis+fixos, resultado=liq-saidas, marg=fat?Math.round(luc/fat*100):0;
   T("fi-mes",nome); fillMesNav("fi-mesnav");
   T("fi-in",R0(liq)); T("fi-out",R0(saidas));
   const resEl=document.getElementById("fi-res"); resEl.textContent=R0(resultado);
@@ -1719,9 +1731,9 @@ function renderFinanceiro(){
   const dre=[["Faturamento",fat,0],
     ["(–) Imposto / taxas ("+(PARAMS().imp||0)+"%)",-ded,1],
     ["(=) Receita líquida",liq,2],
-    ["(–) Custo de produção",-cpv,1],["(=) Lucro das vendas",luc,2],
+    ["(–) Insumos / materiais comprados",-variaveis,1],
     ["(–) Marketing",-mkt,1],["(–) Outros custos fixos",-outrosFixos,1],
-    ["(=) Resultado operacional",resultado,3]];
+    ["(=) Resultado do mês",resultado,3]];
   document.getElementById("fi-dre").innerHTML=dre.map(([lb,val,t])=>`
     <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:${t===0?'none':'1px solid var(--line)'};
       ${t>=2?'font-weight:700;':''}${t===3?'font-size:15px;color:'+(val>=0?'var(--green)':'var(--red)')+';':''}">
@@ -1784,9 +1796,10 @@ function renderIA(){
   const {m,mesNome}=mesCtx();
   const vMes=getV().filter(v=>(v.data||"").startsWith(m)), est=getEst();
   const gMes=gastosDoMes(m);
-  const luc=vMes.reduce((a,v)=>a+(v.lucro||0),0);
+  const luc=vMes.reduce((a,v)=>a+(v.lucro||0),0), liq=vMes.reduce((a,v)=>a+(v.liq||0),0);
   const fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
-  const resultado=luc-fixos;
+  const variaveis=gMes.filter(g=>g.tipo==="Custo variável"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
+  const resultado=liq-variaveis-fixos;
   // sabor mais vendido no mês
   const porQ={}; vMes.forEach(v=>porQ[v.produto]=(porQ[v.produto]||0)+(v.qtd||0));
   const topSabor=Object.entries(porQ).sort((a,b)=>b[1]-a[1])[0];
@@ -1845,9 +1858,10 @@ function iaResponder(q){
   const s=(q||"").toLowerCase(), has=(...ks)=>ks.some(k=>s.includes(k));
   const {m,mesNome}=mesCtx();
   const vMes=getV().filter(v=>(v.data||"").startsWith(m)), est=getEst();
-  const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), luc=vMes.reduce((a,v)=>a+(v.lucro||0),0);
+  const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), luc=vMes.reduce((a,v)=>a+(v.lucro||0),0), liq=vMes.reduce((a,v)=>a+(v.liq||0),0);
   const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
-  const resultado=luc-fixos;
+  const variaveis=gMes.filter(g=>g.tipo==="Custo variável"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
+  const resultado=liq-variaveis-fixos;
   if(has("oi","olá","ola","bom dia","boa tarde","boa noite","eai","e aí"))
     return "Oi! 👋 Posso te falar de <b>lucro</b>, <b>faturamento</b>, <b>sabor campeão</b>, <b>estoque baixo</b>, <b>custo das receitas</b>, <b>contas a receber</b>, <b>clientes</b> e <b>produção</b>. Pergunta aí.";
   if(has("ajuda","o que você","o que voce","pode fazer","consegue","help","como funciona"))
@@ -2419,20 +2433,40 @@ function salvarGasto(){
 }
 
 /* ===== TELA INSUMOS ===== */
-function rendeGelos(ie){ // quantos gelos saborizados dá pra fazer com o insumo limitante
-  let min=Infinity;
-  Object.keys(recIns()).forEach(nome=>{const q=(ie[nome]&&ie[nome].qtd)||0; min=Math.min(min,q/recIns()[nome]);});
-  return isFinite(min)?Math.floor(min):0;
+// quanto de cada insumo 1 gelo consome (considerando as duas receitas/bases)
+function consumoPorGelo(nome){
+  const pad=getReceita("padrao"), eco=getReceita("economica");
+  switch(nome){
+    case "Base Líquida": return +pad.base||0;        // base líquida -> receita Padrão
+    case "Base/Aroma":   return +eco.base||0;         // base em pó   -> receita Econômica
+    case "Glicose":      return +pad.glicose||0;
+    case "Goma Xantana": return +pad.xantana||0;
+    case "Embalagens":   return +pad.embalagem||+eco.embalagem||1;
+    case "Açúcar":       return +pad.acucar||0;
+    default: return 0;
+  }
+}
+function rendeGelos(ie){ // quantos gelos dá pra fazer (soma do que cada base permite, limitado pelas embalagens)
+  const q=n=>(ie[n]&&ie[n].qtd)||0, pad=getReceita("padrao"), eco=getReceita("economica");
+  let padMax=Infinity;
+  if(+pad.base)    padMax=Math.min(padMax,q("Base Líquida")/+pad.base);
+  if(+pad.glicose) padMax=Math.min(padMax,q("Glicose")/+pad.glicose);
+  if(+pad.xantana) padMax=Math.min(padMax,q("Goma Xantana")/+pad.xantana);
+  if(!isFinite(padMax))padMax=0;
+  const ecoMax=(+eco.base)?q("Base/Aroma")/+eco.base:0;
+  const emb=q("Embalagens")/(+pad.embalagem||1);
+  const total=Math.min(padMax+ecoMax,emb);
+  return isFinite(total)?Math.floor(total):0;
 }
 function renderInsumos(){
   const ie=getInsE();
   const nomes=Object.keys(ie);
   const valor=nomes.reduce((a,n)=>a+(ie[n].qtd||0)*(ie[n].custoUnit||0),0);
-  const baixo=nomes.filter(n=>recIns()[n] && (ie[n].qtd||0)/recIns()[n] < LIMITE_PIC);
+  const baixo=nomes.filter(n=>{const c=consumoPorGelo(n);return c && (ie[n].qtd||0)/c < LIMITE_PIC;});
   T("in-n",nomes.length); T("in-val",R0(valor)); T("in-baixo",baixo.length);
   T("in-rende",rendeGelos(ie).toLocaleString("pt-BR"));
   document.getElementById("in-tab").innerHTML=nomes.map(n=>{
-    const i=ie[n], rende=recIns()[n]?(i.qtd||0)/recIns()[n]:null;
+    const i=ie[n], cons=consumoPorGelo(n), rende=cons?(i.qtd||0)/cons:null;
     const crit=rende!=null&&rende<LIMITE_PIC;
     return `<tr>
       <td><span class="tag"><span class="sym" style="color:var(--gold-soft);font-size:17px">science</span><b>${INSUMO_LABEL[n]||n}</b></span></td>
@@ -2442,6 +2476,14 @@ function renderInsumos(){
       <td style="white-space:nowrap">${crit?'<span class="tag" style="color:var(--red)"><span class="dot" style="background:var(--red)"></span>Acabando</span>':'<span class="tag" style="color:var(--green)"><span class="dot" style="background:var(--green)"></span>OK</span>'} ${lapis("editarInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}${lixo("delInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}</td>
     </tr>`;
   }).join("")||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhum insumo cadastrado.</td></tr>';
+  // Histórico das últimas compras de insumo (gastos de compra)
+  const compras=getG().filter(g=>/^Compra de insumo/i.test(g.desc||g.descricao||"")).sort((a,b)=>(b.data||"").localeCompare(a.data||"")).slice(0,30);
+  const ihEl=document.getElementById("in-hist");
+  if(ihEl) ihEl.innerHTML=compras.map(g=>`
+    <tr><td>${fmtD(g.data)}</td><td>${(g.desc||g.descricao||"—").replace(/^Compra de insumo:\s*/i,"")}</td>
+    <td class="money" style="color:var(--red);text-align:right">${R(g.valor)}</td>
+    <td style="text-align:right;white-space:nowrap">${g.id!=null?lapis("editarGasto("+g.id+")")+lixo("delGasto("+g.id+")"):''}</td></tr>`).join("")
+    ||'<tr><td colspan="4" class="csub" style="padding-top:14px">Nenhuma compra registrada ainda. Use "Comprar insumo".</td></tr>';
 }
 
 /* ---- COMPRAR INSUMO (vários itens) -> entra no insumoEst + vira gasto ---- */
