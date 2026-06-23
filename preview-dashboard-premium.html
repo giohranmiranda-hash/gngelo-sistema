@@ -1168,7 +1168,7 @@
     <div class="modal-body">
       <div class="f-row"><label>Nome</label><input class="f-in" id="cl-nome" placeholder="Ex: Bar do Zé"></div>
       <div class="f-grid2">
-        <div class="f-row"><label>Telefone</label><input class="f-in" id="cl-tel" placeholder="(21) 9...."></div>
+        <div class="f-row"><label>Telefone / WhatsApp</label><input class="f-in" id="cl-tel" placeholder="(21) 9...."></div>
         <div class="f-row"><label>Bairro</label><input class="f-in" id="cl-bairro" placeholder="Ex: Centro"></div>
       </div>
       <div class="f-row"><label>Endereço (rua, nº, cidade) — fica salvo no mapa</label><input class="f-in" id="cl-end" placeholder="Rua, nº, bairro ou CEP (ex: 25571-220)"></div>
@@ -1840,7 +1840,7 @@ function renderClientes(){
         : (cs.endereco
             ? `<span class="tag" style="color:#e0a73a"><span class="dot" style="background:#e0a73a"></span>sem coord.</span>`
             : `<span class="csub">sem endereço</span>`);
-      act=lapis("editarCliente("+cs.id+")");
+      act=btnWhats(cs.tel,cs.nome)+lapis("editarCliente("+cs.id+")");
     } else { mapcol=`<span class="csub">só em vendas</span>`; const ne=nome.replace(/\\/g,"\\\\").replace(/'/g,"\\'"); act=lapis("cadastrarClienteNome('"+ne+"')"); }
     return `<tr><td><span class="tag"><span class="dot" style="background:${i===0?'var(--gold)':'#444'}"></span>${nome}</span></td>
     <td>${d.n}</td><td class="money">${R0(d.bruto)}</td><td class="money pos">${R(d.lucro)}</td>
@@ -2119,7 +2119,7 @@ function renderLogistica(){
         <div>🛵 ${freteTxt}${e.km?` · ${e.km} km`:''}${e.min?` · ${e.min} min`:''}</div>
         ${preco?`<div>💰 <span style="color:var(--gold-soft);font-weight:700">${R(preco)}/un · Total ${R(total)}</span></div>`:''}
         ${e.endereco||e.rota?`<div>📍 ${e.endereco||e.rota}</div>`:''}
-        ${tel?`<div>📞 <a href="tel:${tel}" style="color:var(--muted);text-decoration:none">${tel}</a></div>`:''}
+        ${tel?`<div>📞 <a href="tel:${tel}" style="color:var(--muted);text-decoration:none">${tel}</a> <span onclick="abrirWhats('${(tel||'').replace(/'/g,"\\'")}','${(e.cliente||'').replace(/'/g,"\\'")}')" style="cursor:pointer;color:#25D366;font-weight:800;margin-left:6px">✆ WhatsApp</span></div>`:''}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
         ${prox?`<button class="btn-gold" style="flex:1;min-width:140px;padding:10px" onclick="marcarEntregue('${e.id}')">✓ Marcar entregue</button>`:''}
@@ -3139,6 +3139,10 @@ function abrirCliente(){
   ["cl-nome","cl-tel","cl-bairro","cl-end"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("modal-cliente").style.display="flex";
 }
+// WhatsApp: monta o número (DDI 55 do Brasil) e abre a conversa direto
+function waNumero(t){let d=(t||"").replace(/\D/g,"");if(!d)return "";if(d.length<=11)d="55"+d;return d;}
+function abrirWhats(tel,nome){const d=waNumero(tel);if(!d){alert("Esse cliente não tem telefone/WhatsApp cadastrado. Edite o cliente e adicione o número.");return;}const msg=encodeURIComponent("Olá"+(nome?" "+nome:"")+"! Aqui é da GN Gelo 🧊");window.open("https://wa.me/"+d+"?text="+msg,"_blank");}
+const btnWhats=(tel,nome)=>{if(!tel)return "";const t=(tel||"").replace(/'/g,"\\'"),n=(nome||"").replace(/'/g,"\\'");return `<span onclick="abrirWhats('${t}','${n}')" title="Abrir WhatsApp" style="cursor:pointer;color:#25D366;font-weight:800;font-size:16px;margin-right:6px;vertical-align:-2px">✆</span>`;};
 function cadastrarClienteNome(nome){
   abrirCliente();
   const h=document.querySelector("#modal-cliente h3"); if(h)h.textContent="Cadastrar cliente";
