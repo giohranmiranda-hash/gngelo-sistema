@@ -1079,14 +1079,20 @@
       </div>
       <div class="f-row"><label>Bairro / Rota</label><input class="f-in" id="e-rota" placeholder="Ex: Centro"></div>
       <div class="f-row"><label>Endereço (rua, nº, cidade) — pro mapa</label><input class="f-in" id="e-end" placeholder="Rua, nº, bairro ou CEP (ex: 25571-220)"></div>
-      <div class="f-grid2">
-        <div class="f-row"><label>Horário (ETA)</label><input class="f-in" id="e-eta" placeholder="Ex: 14:30" value="14:00"></div>
-        <div class="f-row"><label>Itens (un)</label><input type="number" class="f-in" id="e-itens" min="1" value="50"></div>
+      <div class="f-row"><label>Horário (ETA)</label><input class="f-in" id="e-eta" placeholder="Ex: 14:30" value="14:00"></div>
+      <div class="f-row"><label>Itens da entrega — quais sabores vão sair</label>
+        <div id="e-linhas" style="margin-top:6px"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span class="chip" style="cursor:pointer" onclick="addLinhaE()"><span class="sym">add</span> Adicionar sabor</span>
+          <span class="csub">Total: <b id="e-itens-tot" style="color:var(--gold-soft)">0</b> un</span>
+        </div>
       </div>
       <div class="f-grid2">
         <div class="f-row"><label>Distância (km)</label><input type="number" step="0.1" class="f-in" id="e-km" value="0" oninput="calcFrete()"></div>
         <div class="f-row"><label>Frete</label><input class="f-in" id="e-frete" value="R$ 0,00" readonly style="color:var(--gold-soft);font-weight:700"></div>
       </div>
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;margin:2px 0 6px;color:var(--text)">
+        <input type="checkbox" id="e-fretegratis" onchange="calcFrete()" style="width:auto;accent-color:var(--gold)"> Frete grátis (cortesia — não cobra do cliente)</label>
       <div class="f-row"><label>Status</label>
         <select class="f-in" id="e-status"><option>Aguardando carga</option><option>Pendente</option><option>Em rota</option><option>Concluída</option></select></div>
     </div>
@@ -2094,7 +2100,8 @@ function renderLogistica(){
       <span style="width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:${cor}1a;border:1px solid ${cor}44;color:${cor};font-weight:800;font-size:14px">${num?num:`<span class="sym" style="font-size:18px">${ST_IC[e.status]||'place'}</span>`}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:13.5px;font-weight:700">${e.cliente}</div>
-        <div style="font-size:11.5px;color:var(--muted)">${e.rota} · ${e.itens} un${e.frete?` · frete ${R(e.frete)}`:''}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${e.rota} · ${e.itens} un${e.freteGratis?' · <span style="color:var(--green)">frete grátis</span>':(e.frete?` · frete ${R(e.frete)}`:'')}</div>
+        ${e.produtos&&e.produtos.length?`<div style="font-size:11px;color:var(--gold-soft);margin-top:2px">${e.produtos.map(p=>`${SB[p.sabor]||p.sabor} (${p.qtd})`).join(" · ")}</div>`:''}
       </div>
       <div style="text-align:right">
         <div onclick="avancarEntrega('${e.id}')" title="${prox?'Avançar status':'Entregue'}" style="font-size:12px;font-weight:700;color:${cor};cursor:${prox?'pointer':'default'}">${e.status}${prox?' ▸':''}</div>
@@ -2686,12 +2693,24 @@ function abrirEntrega(){
   document.getElementById("e-rota").value="";
   document.getElementById("e-end").value="";
   document.getElementById("e-eta").value="14:00";
-  document.getElementById("e-itens").value=50;
+  document.getElementById("e-linhas").innerHTML=""; addLinhaE();
   document.getElementById("e-km").value=0;
+  document.getElementById("e-fretegratis").checked=false;
   document.getElementById("e-status").value="Aguardando carga";
   calcFrete(); document.getElementById("modal-entrega").style.display="flex";
 }
-function calcFrete(){const km=+document.getElementById("e-km").value||0; const fr=km*(PARAMS().fkm||0); const el=document.getElementById("e-frete"); if(el)el.value=R(fr); return fr;}
+function addLinhaE(sabor,qtd){
+  const d=document.createElement("div"); d.className="linha";
+  d.innerHTML=`<span class="sym rm" onclick="this.parentNode.remove();calcE()">delete</span>
+    <div class="f-grid2" style="margin:0"><div class="f-row" style="margin:0"><label>Sabor</label><select class="f-in e-sab">${sabOpts()}</select></div>
+      <div class="f-row" style="margin:0"><label>Qtd (un)</label><input type="number" class="f-in e-qtd" min="1" value="${qtd||50}" oninput="calcE()"></div></div>`;
+  document.getElementById("e-linhas").appendChild(d);
+  if(sabor){const s=d.querySelector(".e-sab");s.value=sabor;}
+  calcE();
+}
+function calcE(){let t=0;document.querySelectorAll("#e-linhas .linha").forEach(l=>{t+=+l.querySelector(".e-qtd").value||0;});const el=document.getElementById("e-itens-tot");if(el)el.textContent=t.toLocaleString("pt-BR");return t;}
+function _coletarItensE(){const produtos=[];let itens=0;document.querySelectorAll("#e-linhas .linha").forEach(l=>{const sab=l.querySelector(".e-sab").value,q=+l.querySelector(".e-qtd").value||0;if(q>0){produtos.push({sabor:sab,qtd:q});itens+=q;}});return {produtos,itens};}
+function calcFrete(){const cg=document.getElementById("e-fretegratis"); const gratis=cg&&cg.checked; const km=+document.getElementById("e-km").value||0; const fr=gratis?0:km*(PARAMS().fkm||0); const el=document.getElementById("e-frete"); if(el)el.value=gratis?"Grátis":R(fr); return fr;}
 function editarEntrega(id){
   const e=getEnt().find(x=>x.id===id); if(!e)return;
   preencherDatalistCli();
@@ -2702,8 +2721,11 @@ function editarEntrega(id){
   document.getElementById("e-rota").value=e.rota||"";
   document.getElementById("e-end").value=e.endereco||"";
   document.getElementById("e-eta").value=e.eta||"";
-  document.getElementById("e-itens").value=e.itens||0;
+  document.getElementById("e-linhas").innerHTML="";
+  if(e.produtos&&e.produtos.length)e.produtos.forEach(p=>addLinhaE(p.sabor,p.qtd));
+  else addLinhaE(null,e.itens||0);
   document.getElementById("e-km").value=e.km||0;
+  document.getElementById("e-fretegratis").checked=!!e.freteGratis;
   document.getElementById("e-status").value=e.status||"Aguardando carga";
   calcFrete(); document.getElementById("modal-entrega").style.display="flex";
 }
@@ -2732,9 +2754,11 @@ async function salvarEntrega(){
     const idx=ent.findIndex(x=>x.id===EDIT_E); if(idx<0){EDIT_E=null;fecharModal();return;}
     const old=ent[idx];
     const km=+document.getElementById("e-km").value||0;
+    const gratis=document.getElementById("e-fretegratis").checked;
+    const {produtos,itens}=_coletarItensE();
     ent[idx]={...old,data:document.getElementById("e-data").value||old.data,cliente,rota:document.getElementById("e-rota").value||old.rota,endereco,
       eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
-      itens:+document.getElementById("e-itens").value||0,km,frete:km*(PARAMS().fkm||0)};
+      produtos,itens,km,freteGratis:gratis,frete:gratis?0:km*(PARAMS().fkm||0)};
     const cs=cliSalvo(cliente);
     if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ ent[idx].lat=cs.lat; ent[idx].lng=cs.lng; }
     else if(endereco && endereco!==old.endereco){ const g=await geocode(endereco); if(g){ent[idx].lat=g[0];ent[idx].lng=g[1];} }
@@ -2743,9 +2767,11 @@ async function salvarEntrega(){
   const ent=get("entregas",null)||SEED.entregas.slice();
   const n=ent.filter(e=>/^#ORD-\d+$/.test(e.id||"")).length;
   const km=+document.getElementById("e-km").value||0;
+  const gratis=document.getElementById("e-fretegratis").checked;
+  const {produtos,itens}=_coletarItensE();
   const nova={id:"#ORD-"+(8947+n),data:document.getElementById("e-data").value||hoje(),cliente,rota:document.getElementById("e-rota").value||"Rota a definir",
     endereco,eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
-    itens:+document.getElementById("e-itens").value||0,km,frete:km*(PARAMS().fkm||0),
+    produtos,itens,km,freteGratis:gratis,frete:gratis?0:km*(PARAMS().fkm||0),
     x:15+Math.round(Math.random()*70),y:15+Math.round(Math.random()*70)};
   const cs=cliSalvo(cliente);
   if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ nova.lat=cs.lat; nova.lng=cs.lng; if(!nova.endereco&&cs.endereco)nova.endereco=cs.endereco; }
