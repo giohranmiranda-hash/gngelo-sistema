@@ -2788,6 +2788,8 @@ async function geocode(q){
   }catch(e){}
   return null;
 }
+// quando não acha o endereço no mapa: pino perto da fábrica pra você arrastar
+function _depotFallback(){const dep=(typeof DEPOT!=="undefined"&&DEPOT&&DEPOT.length)?DEPOT:[-22.79,-43.37];return [dep[0]+(Math.random()-.5)*0.012, dep[1]+(Math.random()-.5)*0.012];}
 async function salvarEntrega(){
   const cliente=document.getElementById("e-cliente").value.trim();
   if(!cliente){alert("Informe o cliente.");return;}
@@ -2803,10 +2805,14 @@ async function salvarEntrega(){
     ent[idx]={...old,data:document.getElementById("e-data").value||old.data,cliente,rota:document.getElementById("e-rota").value||old.rota,endereco,
       eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
       produtos,itens,min,preco,km,freteGratis:gratis,frete:gratis?0:km*(PARAMS().fkm||0)};
-    const cs=cliSalvo(cliente);
-    if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ ent[idx].lat=cs.lat; ent[idx].lng=cs.lng; }
-    else if(endereco && endereco!==old.endereco){ const g=await geocode(endereco); if(g){ent[idx].lat=g[0];ent[idx].lng=g[1];} }
-    set("entregas",ent); EDIT_E=null; fecharModal(); rerenderAll(); show("logistica"); return;
+    const cs=cliSalvo(cliente); let achou=false;
+    if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ ent[idx].lat=cs.lat; ent[idx].lng=cs.lng; achou=true; }
+    else if(endereco && (endereco!==old.endereco || old.lat==null)){ const g=await geocode(endereco); if(g){ent[idx].lat=g[0];ent[idx].lng=g[1];achou=true;} }
+    else if(old.lat!=null){ achou=true; } // mantém o pino que já existia
+    if(!achou){ const f=_depotFallback(); ent[idx].lat=f[0]; ent[idx].lng=f[1]; }
+    set("entregas",ent); EDIT_E=null; fecharModal(); rerenderAll(); show("logistica");
+    if(!achou && endereco) alert("📍 Não encontrei esse endereço exato no mapa.\nPus o pino perto da fábrica — abra o mapa e ARRASTE o pino pro local certo (ele salva sozinho).\n\nDica: inclua a cidade (ex: \"Rua Carlos Matoso Correia, 22, Benfica, Rio de Janeiro\").");
+    return;
   }
   const ent=get("entregas",null)||SEED.entregas.slice();
   const n=ent.filter(e=>/^#ORD-\d+$/.test(e.id||"")).length;
@@ -2818,10 +2824,12 @@ async function salvarEntrega(){
     endereco,eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
     produtos,itens,min,preco,km,freteGratis:gratis,frete:gratis?0:km*(PARAMS().fkm||0),
     x:15+Math.round(Math.random()*70),y:15+Math.round(Math.random()*70)};
-  const cs=cliSalvo(cliente);
-  if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ nova.lat=cs.lat; nova.lng=cs.lng; if(!nova.endereco&&cs.endereco)nova.endereco=cs.endereco; }
-  else if(endereco){ const g=await geocode(endereco); if(g){nova.lat=g[0];nova.lng=g[1];} }
+  const cs=cliSalvo(cliente); let achou=false;
+  if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ nova.lat=cs.lat; nova.lng=cs.lng; achou=true; if(!nova.endereco&&cs.endereco)nova.endereco=cs.endereco; }
+  else if(endereco){ const g=await geocode(endereco); if(g){nova.lat=g[0];nova.lng=g[1];achou=true;} }
+  if(!achou){ const f=_depotFallback(); nova.lat=f[0]; nova.lng=f[1]; }
   ent.push(nova); set("entregas",ent); fecharModal(); rerenderAll(); show("logistica");
+  if(!achou && endereco) alert("✅ Entrega agendada!\n\n📍 Mas não encontrei esse endereço exato no mapa. Pus o pino perto da fábrica — abra o mapa e ARRASTE o pino pro local certo (ele salva sozinho).\n\nDica: inclua a cidade (ex: \"Rua Carlos Matoso Correia, 22, Benfica, Rio de Janeiro\").");
 }
 function avancarEntrega(id){
   const ent=get("entregas",null)||SEED.entregas.slice();
