@@ -1039,7 +1039,7 @@
     <div class="modal-body">
       <div class="f-row"><label>Insumo</label><input class="f-in" id="ie-nome" readonly></div>
       <div class="f-grid2">
-        <div class="f-row" style="margin:0"><label>Quantidade em estoque</label><input type="number" step="0.01" class="f-in" id="ie-qtd"></div>
+        <div class="f-row" style="margin:0"><label>Disponível agora (em estoque)</label><input type="number" step="0.01" class="f-in" id="ie-qtd"></div>
         <div class="f-row" style="margin:0"><label>Custo por unidade (R$)</label><input type="number" step="0.0001" class="f-in" id="ie-custo"></div>
       </div>
       <div class="f-row"><label>Fornecedor</label><input class="f-in" id="ie-forn" placeholder="Ex: Shoppe"></div>
@@ -2304,19 +2304,18 @@ const SABORES_VENDA=Object.keys(SB).filter(k=>!k.startsWith("combo"));
 const hoje=()=>new Date().toISOString().slice(0,10);
 const sabOpts=()=>SABORES_VENDA.map(k=>`<option value="${k}">${SB[k]}</option>`).join("");
 function fecharModal(){document.querySelectorAll(".modal-bg").forEach(m=>m.style.display="none");}
-// Correção única: produções antigas não baixavam o açúcar (bug). Desconta o açúcar
-// já consumido pelos gelos produzidos. A marca "ajustado" fica dentro do insumoEst,
-// então viaja junto na nuvem e nunca desconta duas vezes.
-function ajustarAcucarUmaVez(){
-  try{
-    const ie=get("insumoEst",null); if(!ie||!ie["Açúcar"]||ie["Açúcar"].ajustado)return;
-    const prods=get("producoes",[]); let usado=0;
-    prods.forEach(p=>{ const ri=recInsDe(p.receita||"padrao",p.sabor); usado+=(p.qtd||0)*(ri["Açúcar"]||0); });
-    ie["Açúcar"]={...ie["Açúcar"], qtd:Math.max(0,(ie["Açúcar"].qtd||0)-usado), ajustado:true};
-    set("insumoEst",ie);
-  }catch(e){console.warn("ajuste açúcar:",e);}
+// ===== ESTOQUE DE INSUMOS = REGISTRADO − PRODUZIDO (sincroniza sozinho, em qualquer ordem) =====
+// ie[n].qtd guarda o REGISTRADO (comprado/colocado); o consumido vem sempre da produção real.
+function consumidoInsumo(nome){ let t=0; (getPr()||[]).forEach(p=>{ const ri=recInsDe(p.receita||"padrao",p.sabor); t+=(p.qtd||0)*(ri[nome]||0); }); return t; }
+function dispInsumo(nome,ie){ ie=ie||getInsE(); return ((ie[nome]&&ie[nome].qtd)||0) - consumidoInsumo(nome); }
+// Migração única: desfaz o antigo ajuste de açúcar (que baixava direto no estoque),
+// pra ele voltar a ser "registrado" e entrar no mesmo modelo dos outros insumos.
+function migrarInsumosDisponivel(){
+  try{ const ie=get("insumoEst",null); if(!ie)return;
+    if(ie["Açúcar"]&&ie["Açúcar"].ajustado){ ie["Açúcar"]={...ie["Açúcar"], qtd:(ie["Açúcar"].qtd||0)+consumidoInsumo("Açúcar")}; delete ie["Açúcar"].ajustado; set("insumoEst",ie); }
+  }catch(e){console.warn("migra insumos:",e);}
 }
-function rerenderAll(){ajustarAcucarUmaVez();render();renderVendas();renderEstoque();renderLogistica();renderCalendario();renderFinanceiro();renderInvestimentos();renderMetas();renderRelatorios();renderProducao();renderInsumos();renderReceitas();renderClientes();renderComissoes();renderIA();renderConfig();}
+function rerenderAll(){migrarInsumosDisponivel();render();renderVendas();renderEstoque();renderLogistica();renderCalendario();renderFinanceiro();renderInvestimentos();renderMetas();renderRelatorios();renderProducao();renderInsumos();renderReceitas();renderClientes();renderComissoes();renderIA();renderConfig();}
 
 /* ---- VENDA ---- */
 var EDIT_V=null,EDIT_P=null,EDIT_G=null,EDIT_E=null;
@@ -2451,14 +2450,9 @@ function salvarProducao(){
     const rec=document.getElementById("p-receita").value||"padrao";
     const old=prod[idx], est=get("estoque",null)||Object.assign({},SEED.estoque),
       ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
-    // reverte o antigo: tira do estoque e devolve insumo (pela receita usada no antigo)
+    // estoque de gelos: reverte o antigo e aplica o novo (insumos são calculados pela produção)
     est[old.sabor]=Math.max(0,(est[old.sabor]||0)-(old.qtd||0));
-    const riOld=recInsDe(old.receita||"padrao",old.sabor);
-    Object.keys(riOld).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:(ie[n].qtd||0)+(old.qtd||0)*riOld[n]};});
-    // aplica o novo (pela receita escolhida agora)
     est[sabor]=(est[sabor]||0)+q;
-    const riNew=recInsDe(rec,sabor);
-    Object.keys(riNew).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:Math.max(0,(ie[n].qtd||0)-q*riNew[n])};});
     const cu=custoReceita(rec,sabor);
     prod[idx]={...old,data,sabor,qtd:q,receita:rec,custoPorUnid:cu,custoTotal:q*cu,resp,validade:addDias(data,PARAMS().validadeDias)};
     set("producoes",prod); set("estoque",est); set("insumoEst",ie); EDIT_P=null; fecharModal(); rerenderAll(); show("producao"); return;
@@ -2475,9 +2469,6 @@ function salvarProducao(){
     const cu=custoReceita(rec,sabor);
     prod.push({id:Date.now()+i,data,sabor,qtd:q,receita:rec,custoPorUnid:cu,custoTotal:q*cu,resp,validade:addDias(data,PARAMS().validadeDias)});
     est[sabor]=(est[sabor]||0)+q; add++;
-    // regra 7: baixa os insumos consumidos por esta linha (pela receita escolhida)
-    const ri=recInsDe(rec,sabor);
-    Object.keys(ri).forEach(n=>{ if(ie[n]) ie[n]={...ie[n],qtd:Math.max(0,(ie[n].qtd||0)-q*ri[n])}; });
   });
   if(!add){alert("Adicione ao menos um sabor com quantidade.");return;}
   set("producoes",prod); set("estoque",est); set("insumoEst",ie); fecharModal(); rerenderAll(); show("producao");
@@ -2556,8 +2547,8 @@ function consumoPorGelo(nome){
     default: return 0;
   }
 }
-function rendeGelos(ie){ // quantos gelos dá pra fazer (soma do que cada base permite, limitado pelas embalagens)
-  const q=n=>(ie[n]&&ie[n].qtd)||0, pad=getReceita("padrao"), eco=getReceita("economica");
+function rendeGelos(ie){ // quantos gelos ainda dá pra fazer com o DISPONÍVEL (registrado − produzido)
+  const q=n=>Math.max(0,dispInsumo(n,ie)), pad=getReceita("padrao"), eco=getReceita("economica");
   let padMax=Infinity;
   if(+pad.base)    padMax=Math.min(padMax,q("Base Líquida")/+pad.base);
   if(+pad.glicose) padMax=Math.min(padMax,q("Glicose")/+pad.glicose);
@@ -2571,16 +2562,17 @@ function rendeGelos(ie){ // quantos gelos dá pra fazer (soma do que cada base p
 function renderInsumos(){
   const ie=getInsE();
   const nomes=Object.keys(ie);
-  const valor=nomes.reduce((a,n)=>a+(ie[n].qtd||0)*(ie[n].custoUnit||0),0);
-  const baixo=nomes.filter(n=>{const c=consumoPorGelo(n);return c && (ie[n].qtd||0)/c < LIMITE_PIC;});
+  const valor=nomes.reduce((a,n)=>a+Math.max(0,dispInsumo(n,ie))*(ie[n].custoUnit||0),0);
+  const baixo=nomes.filter(n=>{const c=consumoPorGelo(n);return c && dispInsumo(n,ie)/c < LIMITE_PIC;});
   T("in-n",nomes.length); T("in-val",R0(valor)); T("in-baixo",baixo.length);
   T("in-rende",rendeGelos(ie).toLocaleString("pt-BR"));
   document.getElementById("in-tab").innerHTML=nomes.map(n=>{
-    const i=ie[n], cons=consumoPorGelo(n), rende=cons?(i.qtd||0)/cons:null;
-    const crit=rende!=null&&rende<LIMITE_PIC;
+    const i=ie[n], cons=consumoPorGelo(n), disp=dispInsumo(n,ie), usado=consumidoInsumo(n), reg=i.qtd||0;
+    const rende=cons?disp/cons:null;
+    const crit=rende!=null&&rende<LIMITE_PIC, neg=disp<0;
     return `<tr>
       <td><span class="tag"><span class="sym" style="color:var(--gold-soft);font-size:17px">science</span><b>${INSUMO_LABEL[n]||n}</b></span></td>
-      <td>${(i.qtd||0).toLocaleString("pt-BR")} ${i.un||''}${rende!=null?`<br><span style="font-size:10.5px;color:var(--muted)">≈ ${Math.floor(rende).toLocaleString("pt-BR")} gelos saborizados</span>`:''}</td>
+      <td><b style="color:${neg?'var(--red)':'inherit'}">${disp.toLocaleString("pt-BR")} ${i.un||''}</b>${rende!=null&&!neg?`<br><span style="font-size:10.5px;color:var(--muted)">≈ ${Math.floor(rende).toLocaleString("pt-BR")} gelos saborizados</span>`:(neg?`<br><span style="font-size:10.5px;color:var(--red)">faltam ${Math.abs(disp).toLocaleString("pt-BR")} ${i.un||''} (produziu mais do que registrou)</span>`:'')}<br><span style="font-size:10px;color:var(--muted)">registrado ${reg.toLocaleString("pt-BR")} · produzido ${usado.toLocaleString("pt-BR")}</span></td>
       <td class="money">${R(i.custoUnit||0)}<span style="font-size:10.5px;color:var(--muted)">/${i.un||''}</span></td>
       <td>${i.forn||'—'}</td>
       <td style="white-space:nowrap">${crit?'<span class="tag" style="color:var(--red)"><span class="dot" style="background:var(--red)"></span>Acabando</span>':'<span class="tag" style="color:var(--green)"><span class="dot" style="background:var(--green)"></span>OK</span>'} ${lapis("editarInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}${lixo("delInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}</td>
@@ -2639,7 +2631,7 @@ function editarInsumoEstoque(nome){
   const i=getInsE()[nome]; if(!i){alert("Insumo não encontrado.");return;}
   IEDIT_NOME=nome;
   document.getElementById("ie-nome").value=INSUMO_LABEL[nome]||nome;
-  document.getElementById("ie-qtd").value=i.qtd||0;
+  document.getElementById("ie-qtd").value=dispInsumo(nome);
   document.getElementById("ie-custo").value=i.custoUnit||0;
   document.getElementById("ie-forn").value=i.forn||"";
   document.getElementById("modal-iedit").style.display="flex";
@@ -2648,13 +2640,15 @@ function salvarInsumoEdit(){
   if(!IEDIT_NOME)return;
   const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
   const prev=ie[IEDIT_NOME]||{un:INSUMOS_DEF[IEDIT_NOME]};
-  ie[IEDIT_NOME]={...prev,qtd:+document.getElementById("ie-qtd").value||0,custoUnit:+document.getElementById("ie-custo").value||0,forn:document.getElementById("ie-forn").value||prev.forn||"",un:prev.un||INSUMOS_DEF[IEDIT_NOME]};
+  // o usuário digita o DISPONÍVEL agora; o registrado = disponível + o que já foi produzido
+  const reg=(+document.getElementById("ie-qtd").value||0)+consumidoInsumo(IEDIT_NOME);
+  ie[IEDIT_NOME]={...prev,qtd:reg,custoUnit:+document.getElementById("ie-custo").value||0,forn:document.getElementById("ie-forn").value||prev.forn||"",un:prev.un||INSUMOS_DEF[IEDIT_NOME]};
   set("insumoEst",ie); IEDIT_NOME=null; fecharModal(); rerenderAll(); show("insumos");
 }
 function delInsumoEstoque(nome){
-  if(!confirm("Zerar o estoque de "+(INSUMO_LABEL[nome]||nome)+"?\n\n(Zera a quantidade atual. As compras lançadas no financeiro continuam — apague-as no Financeiro se precisar.)"))return;
+  if(!confirm("Zerar o estoque de "+(INSUMO_LABEL[nome]||nome)+"?\n\n(Deixa o disponível em 0. As compras lançadas no financeiro continuam — apague-as no Financeiro se precisar.)"))return;
   const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
-  if(ie[nome]) ie[nome]={...ie[nome],qtd:0};
+  if(ie[nome]) ie[nome]={...ie[nome],qtd:consumidoInsumo(nome)}; // registrado = produzido => disponível 0
   set("insumoEst",ie); rerenderAll(); show("insumos");
 }
 
@@ -2704,15 +2698,12 @@ function imprimirVenda(id){
   window.print();
 }
 function delProducao(id){
-  if(!confirm("Apagar esta produção? Os gelos saem do estoque e os insumos voltam."))return;
+  if(!confirm("Apagar esta produção? Os gelos saem do estoque e o consumo de insumos é recalculado."))return;
   const prod=get("producoes",null)||SEED.producoes.slice();
   const p=prod.find(x=>x.id==id); if(!p)return;
   const est=get("estoque",null)||Object.assign({},SEED.estoque);
   est[p.sabor]=Math.max(0,(est[p.sabor]||0)-(p.qtd||0)); // tira os gelos produzidos
-  const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
-  const riDel=recInsDe(p.receita||"padrao",p.sabor);
-  Object.keys(riDel).forEach(n=>{if(ie[n])ie[n]={...ie[n],qtd:(ie[n].qtd||0)+(p.qtd||0)*riDel[n]};}); // devolve insumo (regra 7)
-  set("producoes",prod.filter(x=>x.id!=id)); set("estoque",est); set("insumoEst",ie); rerenderAll();
+  set("producoes",prod.filter(x=>x.id!=id)); set("estoque",est); rerenderAll();
 }
 function delGasto(id){
   if(!confirm("Apagar este gasto?"))return;
