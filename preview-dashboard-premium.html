@@ -1089,10 +1089,15 @@
       </div>
       <div class="f-grid2">
         <div class="f-row"><label>Distância (km)</label><input type="number" step="0.1" class="f-in" id="e-km" value="0" oninput="calcFrete()"></div>
+        <div class="f-row"><label>Tempo estimado (min)</label><input type="number" class="f-in" id="e-min" value="0"></div>
+      </div>
+      <div class="f-grid2">
+        <div class="f-row"><label>Preço por unidade (R$)</label><input type="number" step="0.01" class="f-in" id="e-preco" value="0" oninput="calcTotalE()"></div>
         <div class="f-row"><label>Frete</label><input class="f-in" id="e-frete" value="R$ 0,00" readonly style="color:var(--gold-soft);font-weight:700"></div>
       </div>
       <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;margin:2px 0 6px;color:var(--text)">
         <input type="checkbox" id="e-fretegratis" onchange="calcFrete()" style="width:auto;accent-color:var(--gold)"> Frete grátis (cortesia — não cobra do cliente)</label>
+      <div class="csub" id="e-totalinfo" style="text-align:right;color:var(--gold-soft);font-weight:700"></div>
       <div class="f-row"><label>Status</label>
         <select class="f-in" id="e-status"><option>Aguardando carga</option><option>Pendente</option><option>Em rota</option><option>Concluída</option></select></div>
     </div>
@@ -2094,21 +2099,54 @@ function renderLogistica(){
   // lista: na ordem da rota se otimizada, senão por status
   let lista=ent.slice();
   if(rotaOtim){ lista.sort((a,b)=>((ordemMap[a.id]||99)-(ordemMap[b.id]||99))); }
+  const gh="background:transparent;border:1px solid var(--line);color:var(--text);border-radius:11px;padding:10px 12px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px";
   document.getElementById("lg-list").innerHTML=lista.map(e=>{
     const cor=ST_COR[e.status]||"#888"; const prox=e.status!=="Concluída"; const num=ordemMap[e.id];
-    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)">
-      <span style="width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:${cor}1a;border:1px solid ${cor}44;color:${cor};font-weight:800;font-size:14px">${num?num:`<span class="sym" style="font-size:18px">${ST_IC[e.status]||'place'}</span>`}</span>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13.5px;font-weight:700">${e.cliente}</div>
-        <div style="font-size:11.5px;color:var(--muted)">${e.rota} · ${e.itens} un${e.freteGratis?' · <span style="color:var(--green)">frete grátis</span>':(e.frete?` · frete ${R(e.frete)}`:'')}</div>
-        ${e.produtos&&e.produtos.length?`<div style="font-size:11px;color:var(--gold-soft);margin-top:2px">${e.produtos.map(p=>`${SB[p.sabor]||p.sabor} (${p.qtd})`).join(" · ")}</div>`:''}
+    const cs=cliSalvo(e.cliente); const tel=(cs&&cs.tel)||e.tel||"";
+    const nSab=(e.produtos&&e.produtos.length)||0;
+    const sabores=nSab?e.produtos.map(p=>`${p.qtd}× ${SB[p.sabor]||p.sabor}`).join(", "):"";
+    const preco=e.preco||0, total=preco*(e.itens||0);
+    const freteTxt=e.freteGratis?'<span style="color:var(--green)">Frete grátis</span>':(e.frete?`Frete ${R(e.frete)}`:'Sem frete');
+    const badge=`<span style="display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:7px;background:${cor}1a;border:1px solid ${cor}44;color:${cor};font-weight:800;font-size:12px;margin-right:8px;vertical-align:-4px">${num?num:'🚚'}</span>`;
+    return `<div style="border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:14px 15px;margin-bottom:11px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="font-size:16px;font-weight:800">${badge}${e.cliente}</div>
+        <span onclick="avancarEntrega('${e.id}')" title="${prox?'Avançar status':'Entregue'}" style="background:${cor}22;border:1px solid ${cor}55;color:${cor};font-size:11.5px;font-weight:800;padding:4px 12px;border-radius:999px;cursor:${prox?'pointer':'default'};white-space:nowrap">${e.status}${prox?' ▸':''}</span>
       </div>
-      <div style="text-align:right">
-        <div onclick="avancarEntrega('${e.id}')" title="${prox?'Avançar status':'Entregue'}" style="font-size:12px;font-weight:700;color:${cor};cursor:${prox?'pointer':'default'}">${e.status}${prox?' ▸':''}</div>
-        <div style="font-size:11px;color:var(--muted)"><span class="sym" style="font-size:12px;vertical-align:-2px">schedule</span> ${e.eta}</div>
+      <div style="margin-top:9px;font-size:12.5px;color:var(--muted);line-height:1.75">
+        <div>📅 ${fmtD(e.data)} · ${e.eta||'—'}${e.itens?` · ${e.itens} un`:''}${nSab?` · ${nSab} sabores`:''}</div>
+        ${sabores?`<div>🧊 ${sabores}</div>`:''}
+        <div>🛵 ${freteTxt}${e.km?` · ${e.km} km`:''}${e.min?` · ${e.min} min`:''}</div>
+        ${preco?`<div>💰 <span style="color:var(--gold-soft);font-weight:700">${R(preco)}/un · Total ${R(total)}</span></div>`:''}
+        ${e.endereco||e.rota?`<div>📍 ${e.endereco||e.rota}</div>`:''}
+        ${tel?`<div>📞 <a href="tel:${tel}" style="color:var(--muted);text-decoration:none">${tel}</a></div>`:''}
       </div>
-      <span style="white-space:nowrap">${lapis("editarEntrega('"+e.id+"')")}${lixo("delEntrega('"+e.id+"')")}</span></div>`;
-  }).join("");
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+        ${prox?`<button class="btn-gold" style="flex:1;min-width:140px;padding:10px" onclick="marcarEntregue('${e.id}')">✓ Marcar entregue</button>`:''}
+        <button style="${gh};flex:1;min-width:140px" onclick="registrarVendaEntrega('${e.id}')">🧾 Registrar venda</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button style="${gh};flex:1" onclick="editarEntrega('${e.id}')">✏️ Editar</button>
+        <button style="${gh};flex:1;color:var(--red);border-color:rgba(212,96,79,.4)" onclick="delEntrega('${e.id}')">🗑 Excluir</button>
+      </div>
+    </div>`;
+  }).join("")||'<div class="csub" style="padding:14px 0">Nenhuma entrega agendada. Toque em "Agendar entrega".</div>';
+}
+function marcarEntregue(id){
+  const ent=getEnt(); const e=ent.find(x=>x.id===id); if(!e)return;
+  e.status="Concluída"; set("entregas",ent); rerenderAll();
+}
+function registrarVendaEntrega(id){
+  const e=getEnt().find(x=>x.id===id); if(!e){return;}
+  abrirVenda();
+  document.getElementById("v-cliente").value=e.cliente||"Avulso";
+  const end=document.getElementById("v-end"); if(end)end.value=e.endereco||"";
+  if(e.produtos&&e.produtos.length){
+    document.getElementById("v-linhas").innerHTML="";
+    e.produtos.forEach(p=>{ addLinhaV(); const ls=document.querySelectorAll("#v-linhas .linha"); const l=ls[ls.length-1];
+      l.querySelector(".v-sab").value=p.sabor; l.querySelector(".v-qtd").value=p.qtd; if(e.preco)l.querySelector(".v-preco").value=e.preco; });
+    calcV();
+  } else if(e.preco){ const l=document.querySelector("#v-linhas .linha"); if(l){l.querySelector(".v-qtd").value=e.itens||1;l.querySelector(".v-preco").value=e.preco;calcV();} }
 }
 
 /* ===== TELA CALENDÁRIO OPERACIONAL ===== */
@@ -2695,10 +2733,13 @@ function abrirEntrega(){
   document.getElementById("e-eta").value="14:00";
   document.getElementById("e-linhas").innerHTML=""; addLinhaE();
   document.getElementById("e-km").value=0;
+  document.getElementById("e-min").value=0;
+  document.getElementById("e-preco").value=0;
   document.getElementById("e-fretegratis").checked=false;
   document.getElementById("e-status").value="Aguardando carga";
-  calcFrete(); document.getElementById("modal-entrega").style.display="flex";
+  calcFrete(); calcTotalE(); document.getElementById("modal-entrega").style.display="flex";
 }
+function calcTotalE(){const itens=calcE(),preco=+document.getElementById("e-preco").value||0,el=document.getElementById("e-totalinfo");if(el)el.textContent=preco>0?`Total da entrega: ${R(preco*itens)} (${itens} un × ${R(preco)})`:"";}
 function addLinhaE(sabor,qtd){
   const d=document.createElement("div"); d.className="linha";
   d.innerHTML=`<span class="sym rm" onclick="this.parentNode.remove();calcE()">delete</span>
@@ -2708,7 +2749,7 @@ function addLinhaE(sabor,qtd){
   if(sabor){const s=d.querySelector(".e-sab");s.value=sabor;}
   calcE();
 }
-function calcE(){let t=0;document.querySelectorAll("#e-linhas .linha").forEach(l=>{t+=+l.querySelector(".e-qtd").value||0;});const el=document.getElementById("e-itens-tot");if(el)el.textContent=t.toLocaleString("pt-BR");return t;}
+function calcE(){let t=0;document.querySelectorAll("#e-linhas .linha").forEach(l=>{t+=+l.querySelector(".e-qtd").value||0;});const el=document.getElementById("e-itens-tot");if(el)el.textContent=t.toLocaleString("pt-BR");const ti=document.getElementById("e-totalinfo");if(ti){const preco=+document.getElementById("e-preco").value||0;ti.textContent=preco>0?`Total da entrega: ${R(preco*t)} (${t} un × ${R(preco)})`:"";}return t;}
 function _coletarItensE(){const produtos=[];let itens=0;document.querySelectorAll("#e-linhas .linha").forEach(l=>{const sab=l.querySelector(".e-sab").value,q=+l.querySelector(".e-qtd").value||0;if(q>0){produtos.push({sabor:sab,qtd:q});itens+=q;}});return {produtos,itens};}
 function calcFrete(){const cg=document.getElementById("e-fretegratis"); const gratis=cg&&cg.checked; const km=+document.getElementById("e-km").value||0; const fr=gratis?0:km*(PARAMS().fkm||0); const el=document.getElementById("e-frete"); if(el)el.value=gratis?"Grátis":R(fr); return fr;}
 function editarEntrega(id){
@@ -2725,9 +2766,11 @@ function editarEntrega(id){
   if(e.produtos&&e.produtos.length)e.produtos.forEach(p=>addLinhaE(p.sabor,p.qtd));
   else addLinhaE(null,e.itens||0);
   document.getElementById("e-km").value=e.km||0;
+  document.getElementById("e-min").value=e.min||0;
+  document.getElementById("e-preco").value=e.preco||0;
   document.getElementById("e-fretegratis").checked=!!e.freteGratis;
   document.getElementById("e-status").value=e.status||"Aguardando carga";
-  calcFrete(); document.getElementById("modal-entrega").style.display="flex";
+  calcFrete(); calcTotalE(); document.getElementById("modal-entrega").style.display="flex";
 }
 async function geocode(q){
   q=(q||"").trim(); if(!q)return null;
@@ -2755,10 +2798,11 @@ async function salvarEntrega(){
     const old=ent[idx];
     const km=+document.getElementById("e-km").value||0;
     const gratis=document.getElementById("e-fretegratis").checked;
+    const min=+document.getElementById("e-min").value||0, preco=+document.getElementById("e-preco").value||0;
     const {produtos,itens}=_coletarItensE();
     ent[idx]={...old,data:document.getElementById("e-data").value||old.data,cliente,rota:document.getElementById("e-rota").value||old.rota,endereco,
       eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
-      produtos,itens,km,freteGratis:gratis,frete:gratis?0:km*(PARAMS().fkm||0)};
+      produtos,itens,min,preco,km,freteGratis:gratis,frete:gratis?0:km*(PARAMS().fkm||0)};
     const cs=cliSalvo(cliente);
     if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ ent[idx].lat=cs.lat; ent[idx].lng=cs.lng; }
     else if(endereco && endereco!==old.endereco){ const g=await geocode(endereco); if(g){ent[idx].lat=g[0];ent[idx].lng=g[1];} }
@@ -2768,10 +2812,11 @@ async function salvarEntrega(){
   const n=ent.filter(e=>/^#ORD-\d+$/.test(e.id||"")).length;
   const km=+document.getElementById("e-km").value||0;
   const gratis=document.getElementById("e-fretegratis").checked;
+  const min=+document.getElementById("e-min").value||0, preco=+document.getElementById("e-preco").value||0;
   const {produtos,itens}=_coletarItensE();
   const nova={id:"#ORD-"+(8947+n),data:document.getElementById("e-data").value||hoje(),cliente,rota:document.getElementById("e-rota").value||"Rota a definir",
     endereco,eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
-    produtos,itens,km,freteGratis:gratis,frete:gratis?0:km*(PARAMS().fkm||0),
+    produtos,itens,min,preco,km,freteGratis:gratis,frete:gratis?0:km*(PARAMS().fkm||0),
     x:15+Math.round(Math.random()*70),y:15+Math.round(Math.random()*70)};
   const cs=cliSalvo(cliente);
   if(cs&&cs.lat!=null&&(!endereco||endereco===(cs.endereco||""))){ nova.lat=cs.lat; nova.lng=cs.lng; if(!nova.endereco&&cs.endereco)nova.endereco=cs.endereco; }
