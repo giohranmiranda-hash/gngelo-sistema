@@ -475,8 +475,8 @@
     <div class="top">
       <div>
         <div class="eyebrow"><span class="sym" style="font-size:15px">local_shipping</span> Logística & Entregas</div>
-        <h1>Entregas de <b>hoje</b></h1>
-        <p>Acompanhe as rotas e o status de cada entrega no mapa.</p>
+        <h1>Entregas <b>& rotas</b></h1>
+        <p>Cada entrega na sua data real. Acompanhe rotas e status no mapa.</p>
       </div>
       <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent;cursor:pointer" onclick="abrirEntrega()"><span class="sym" style="color:#1a1408">add_location_alt</span> Agendar rota</div>
     </div>
@@ -501,8 +501,8 @@
         <div id="lg-map" style="position:relative;margin-top:8px"></div>
       </div>
       <div class="card">
-        <h3><span class="sym">list_alt</span>Roteiro do dia</h3>
-        <div class="csub">Na ordem da rota otimizada</div>
+        <h3><span class="sym">list_alt</span>Entregas agendadas</h3>
+        <div class="csub">Por data (mais próxima primeiro) · ou na ordem da rota otimizada</div>
         <div id="lg-list" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
     </div>
@@ -1671,6 +1671,14 @@ function renderDashIA(vMes,est,luc,m,mesNome){
 
 /* ===== Helpers compartilhados ===== */
 const fmtD=s=>{const p=(s||"").split("-");return p.length===3?p[2]+"/"+p[1]:s;};
+// rótulo de data relativa: Hoje / Amanhã / Depois de amanhã / Ontem / N dias atrás / em N dias
+function rotuloData(d){
+  if(!d)return "—";
+  const h=new Date().toISOString().slice(0,10);
+  const dias=Math.round((new Date(d+"T00:00:00")-new Date(h+"T00:00:00"))/86400000);
+  const nome=dias===0?"Hoje":dias===1?"Amanhã":dias===2?"Depois de amanhã":dias===-1?"Ontem":(dias<0?(Math.abs(dias)+" dias atrás"):("em "+dias+" dias"));
+  return nome+" · "+fmtD(d);
+}
 var MES_SEL=null; // mês escolhido no seletor (null = automático)
 function mesCtx(){const m=MES_SEL||mesAtivo(getV());const[ano,mes]=m.split("-");
   return{m,ano,mes,nome:MESES[parseInt(mes)-1]+" "+ano,mesNome:MESES[parseInt(mes)-1]};}
@@ -2082,7 +2090,7 @@ function desenharMapa(ent,ordemMap){
 }
 function renderLogistica(){
   const ent=getEnt();
-  T("lg-tot",ent.length);
+  T("lg-tot",ent.filter(e=>e.data===hoje()).length);
   T("lg-rota",ent.filter(e=>e.status==="Em rota").length);
   T("lg-pend",ent.filter(e=>e.status==="Pendente").length);
   T("lg-ok",ent.filter(e=>e.status==="Concluída").length);
@@ -2099,6 +2107,10 @@ function renderLogistica(){
   // lista: na ordem da rota se otimizada, senão por status
   let lista=ent.slice();
   if(rotaOtim){ lista.sort((a,b)=>((ordemMap[a.id]||99)-(ordemMap[b.id]||99))); }
+  else { const hj=hoje(); lista.sort((a,b)=>{ const fa=(a.data||"")>=hj, fb=(b.data||"")>=hj;
+    if(fa!==fb)return fa?-1:1; // hoje/futuras antes das passadas
+    return fa ? ((a.data||"").localeCompare(b.data||"")||(a.eta||"").localeCompare(b.eta||""))
+              : (b.data||"").localeCompare(a.data||""); }); }
   const gh="background:transparent;border:1px solid var(--line);color:var(--text);border-radius:11px;padding:10px 12px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px";
   document.getElementById("lg-list").innerHTML=lista.map(e=>{
     const cor=ST_COR[e.status]||"#888"; const prox=e.status!=="Concluída"; const num=ordemMap[e.id];
@@ -2114,7 +2126,7 @@ function renderLogistica(){
         <span onclick="avancarEntrega('${e.id}')" title="${prox?'Avançar status':'Entregue'}" style="background:${cor}22;border:1px solid ${cor}55;color:${cor};font-size:11.5px;font-weight:800;padding:4px 12px;border-radius:999px;cursor:${prox?'pointer':'default'};white-space:nowrap">${e.status}${prox?' ▸':''}</span>
       </div>
       <div style="margin-top:9px;font-size:12.5px;color:var(--muted);line-height:1.75">
-        <div>📅 ${fmtD(e.data)} · ${e.eta||'—'}${e.itens?` · ${e.itens} un`:''}${nSab?` · ${nSab} sabores`:''}</div>
+        <div>📅 <b style="color:var(--gold-soft)">${rotuloData(e.data)}</b> · ${e.eta||'—'}${e.itens?` · ${e.itens} un`:''}${nSab?` · ${nSab} sabores`:''}</div>
         ${sabores?`<div>🧊 ${sabores}</div>`:''}
         <div>🛵 ${freteTxt}${e.km?` · ${e.km} km`:''}${e.min?` · ${e.min} min`:''}</div>
         ${preco?`<div>💰 <span style="color:var(--gold-soft);font-weight:700">${R(preco)}/un · Total ${R(total)}</span></div>`:''}
