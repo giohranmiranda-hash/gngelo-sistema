@@ -1649,15 +1649,7 @@ function renderDashIA(vMes,est,luc,m,mesNome){
   const item=(ic,cor,tit,sub)=>`<div style="display:flex;gap:11px;align-items:flex-start;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 12px">
     <span style="width:32px;height:32px;flex:none;border-radius:9px;display:grid;place-items:center;background:${cor}1a;border:1px solid ${cor}44;color:${cor}"><span class="sym" style="font-size:18px">${ic}</span></span>
     <div style="min-width:0"><div style="font-size:13px;font-weight:700;line-height:1.3">${tit}</div><div style="font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:2px">${sub}</div></div></div>`;
-  const items=[
-    item(resultado>=0?"trending_up":"warning",resultado>=0?"var(--green)":"var(--red)",
-      (resultado>=0?"No azul: ":"No vermelho: ")+R0(resultado),"Resultado de "+mesNome+" depois dos custos fixos"),
-    topS?item("trophy","var(--gold-soft)","Campeão: "+(SB[topS[0]]||topS[0]),topS[1]+" un vendidas no mês — mantenha o estoque cheio"):"",
-    baixo.length?item("inventory","#e0a73a","Estoque baixo: "+baixo.map(([k])=>SB[k]||k).join(", "),"Produza antes de faltar")
-                :item("inventory","var(--green)","Estoque saudável",totEst.toLocaleString("pt-BR")+" un no total, nada crítico"),
-    econ>0?item("savings","var(--gold-soft)","Dica: receita Econômica","Economiza "+R(econ)+"/un vs Padrão — bom pra margem"):"",
-    ar.length?item("request_quote","var(--red)",R0(tAR)+" a receber",ar.length+" venda(s) no fiado — cobrar"):""
-  ].filter(Boolean);
+  const items=sugestoesIA().slice(0,5).map(s=>item(s.ic,s.cor,s.tit,s.txt.replace(/<[^>]+>/g,"")));
   box.innerHTML=`<div style="background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.03));border:1px solid rgba(201,168,76,.45);border-radius:16px;padding:15px 17px">
     <div style="display:flex;align-items:center;gap:11px;margin-bottom:13px">
       <span style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408"><span class="sym">auto_awesome</span></span>
@@ -1859,49 +1851,84 @@ function renderClientes(){
     ||'<tr><td colspan="6" class="csub" style="padding-top:14px">Sem clientes ainda.</td></tr>';
 }
 
+/* ===== MOTOR DE SUGESTÕES DA IA (proativo, dos dados reais) ===== */
+function sugestoesIA(){
+  const {m,mesNome}=mesCtx(), hj=hoje();
+  const V=getV(), vMes=V.filter(v=>(v.data||"").startsWith(m)), est=getEst(), ie=getInsE(), ent=getEnt();
+  const sug=[]; const chip=(txt,on,cor)=>`<span class="chip" style="cursor:pointer;font-size:11px;margin-top:9px;${cor?`color:${cor};border-color:${cor}55`:''}" onclick="${on}">${txt}</span>`;
+  const diasDesde=d=>d?Math.round((new Date(hj+"T00:00:00")-new Date(d+"T00:00:00"))/86400000):9999;
+  // entregas de hoje
+  const entHoje=ent.filter(e=>e.data===hj && e.status!=="Concluída");
+  if(entHoje.length) sug.push({p:1,ic:"local_shipping",cor:"var(--gold-soft)",tit:`${entHoje.length} entrega${entHoje.length>1?'s':''} pra fazer hoje`,
+    txt:`${entHoje.map(e=>e.cliente).slice(0,3).join(", ")}${entHoje.length>3?'…':''}. Confira a rota e saia já.`,acao:chip("Abrir Logística","show('logistica')")});
+  // insumos acabando (modelo disponível)
+  const acab=Object.keys(ie).map(n=>{const c=consumoPorGelo(n),d=dispInsumo(n,ie);return {n,c,d,rende:c?d/c:Infinity};}).filter(x=>x.c&&x.rende<LIMITE_PIC).sort((a,b)=>a.rende-b.rende);
+  if(acab.length){const x=acab[0];
+    sug.push({p:1,ic:"science",cor:"var(--red)",tit:`Repor ${INSUMO_LABEL[x.n]||x.n}`,
+      txt:x.d<0?`Produziu mais do que registrou (faltam ${Math.abs(x.d).toLocaleString("pt-BR")}). Lance a compra pra acertar.`:`Só dá pra ~${Math.max(0,Math.floor(x.rende)).toLocaleString("pt-BR")} gelos. Compre antes de travar a produção.`,acao:chip("Ir pros Insumos","show('insumos')")});}
+  // validade
+  let venc=0,vcd=0; Object.keys(est).forEach(k=>{ if((est[k]||0)>0)(lotesDoSabor(k)||[]).forEach(l=>{const st=statusValidade(l.validade); if(st.key==="vencido")vcd+=l.restante; else if(st.key==="vencendo")venc+=l.restante;});});
+  if(vcd||venc) sug.push({p:1,ic:"schedule",cor:vcd?"var(--red)":"#e0a73a",tit:vcd?`${vcd} un vencidas no estoque`:`${venc} un vencendo`,
+    txt:vcd?`Retire o que venceu pra não vender errado.`:`Priorize vender/entregar esses lotes antes de perder.`,acao:chip("Ver estoque","show('estoque')")});
+  // a receber
+  const ar=V.filter(v=>v.recebido===false), tAR=ar.reduce((a,v)=>a+(v.bruto||0),0);
+  if(ar.length) sug.push({p:2,ic:"request_quote",cor:"var(--red)",tit:`${R0(tAR)} a receber`,txt:`${ar.length} pedido(s) no fiado. Bom dia pra cobrar.`,acao:chip("Ver no Financeiro","show('financeiro')")});
+  // cliente sumido
+  const ult={}; V.forEach(v=>{const c=v.cliente; if(!c||c==="Avulso")return; if(!ult[c]||v.data>ult[c])ult[c]=v.data;});
+  const sumidos=Object.entries(ult).map(([c,d])=>({c,d,dias:diasDesde(d)})).filter(x=>x.dias>=21).sort((a,b)=>b.dias-a.dias);
+  if(sumidos.length){const x=sumidos[0], cli=cliSalvo(x.c), tel=(cli&&cli.tel)||"";
+    sug.push({p:2,ic:"waving_hand",cor:"#e0a73a",tit:`${x.c} sumiu há ${x.dias} dias`,txt:`Já comprou antes. Um "oi" no WhatsApp costuma trazer de volta.`,
+      acao:tel?chip("✆ Chamar no WhatsApp",`abrirWhats('${tel.replace(/'/g,"\\'")}','${x.c.replace(/'/g,"\\'")}')`,"#25D366"):chip("Ver cliente","show('clientes')")});}
+  // produzir sabor
+  const porQ={}; vMes.forEach(v=>porQ[v.produto]=(porQ[v.produto]||0)+(v.qtd||0));
+  const prod=Object.entries(porQ).filter(([k,q])=>q>0&&(est[k]||0)<50).sort((a,b)=>b[1]-a[1])[0];
+  if(prod) sug.push({p:2,ic:"ac_unit",cor:"var(--gold-soft)",tit:`Produza ${SB[prod[0]]||prod[0]}`,txt:`Vende bem (${prod[1]} un no mês) e o estoque tá baixo (${est[prod[0]]||0} un).`,acao:chip("Ir pra Produção","show('producao')")});
+  // sabor parado
+  const parado=Object.entries(est).filter(([k,q])=>q>=100&&!(porQ[k]>0)).sort((a,b)=>b[1]-a[1])[0];
+  if(parado) sug.push({p:3,ic:"inventory_2",cor:"#e0a73a",tit:`${SB[parado[0]]||parado[0]} parado`,txt:`${parado[1]} un paradas e sem saída no mês. Vale promoção ou combo.`,acao:""});
+  // canal/tráfego
+  const pc={}; vMes.forEach(v=>{const c=v.canal||"Venda direta"; pc[c]=(pc[c]||0)+(v.bruto||0);});
+  const fatMes=vMes.reduce((a,v)=>a+(v.bruto||0),0), topCanal=Object.entries(pc).sort((a,b)=>b[1]-a[1])[0];
+  if(topCanal&&fatMes>0&&/whatsapp|ifood/i.test(topCanal[0])) sug.push({p:3,ic:"campaign",cor:"var(--gold-soft)",tit:`${topCanal[0]} é seu canal forte`,
+    txt:`Trouxe ${R0(topCanal[1])} (${Math.round(topCanal[1]/fatMes*100)}% do mês). Investir em divulgação/tráfego nele tende a render mais.`,acao:chip("Ver por canal","show('vendas')")});
+  // resultado
+  const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0),
+        variaveis=gMes.filter(g=>g.tipo==="Custo variável"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0),
+        liq=vMes.reduce((a,v)=>a+(v.liq||0),0), resultado=liq-variaveis-fixos;
+  sug.push({p:4,ic:resultado>=0?"trending_up":"warning",cor:resultado>=0?"var(--green)":"var(--red)",
+    tit:resultado>=0?`No azul: ${R0(resultado)}`:`No vermelho: ${R0(resultado)}`,
+    txt:resultado>=0?`Resultado de ${mesNome} depois dos custos fixos. Tá indo bem! 🎉`:`Em ${mesNome} os custos passaram do lucro. Empurrar vendas ou rever gastos fixos ajuda.`,acao:chip("Ver Financeiro","show('financeiro')")});
+  // sem vendas hoje
+  if(!V.some(v=>v.data===hj)) sug.push({p:3,ic:"bolt",cor:"var(--gold-soft)",tit:`Nenhuma venda hoje ainda`,txt:`Manda o cardápio no WhatsApp ou posta nos stories — um empurrãozinho destrava o dia.`,acao:""});
+  return sug.sort((a,b)=>a.p-b.p);
+}
 /* ===== TELA ASSISTENTE IA (sinais a partir dos dados reais) ===== */
 function renderIA(){
-  const {m,mesNome}=mesCtx();
-  const vMes=getV().filter(v=>(v.data||"").startsWith(m)), est=getEst();
-  const gMes=gastosDoMes(m);
-  const luc=vMes.reduce((a,v)=>a+(v.lucro||0),0), liq=vMes.reduce((a,v)=>a+(v.liq||0),0);
-  const fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
-  const variaveis=gMes.filter(g=>g.tipo==="Custo variável"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0);
-  const resultado=liq-variaveis-fixos;
-  // sabor mais vendido no mês
-  const porQ={}; vMes.forEach(v=>porQ[v.produto]=(porQ[v.produto]||0)+(v.qtd||0));
-  const topSabor=Object.entries(porQ).sort((a,b)=>b[1]-a[1])[0];
-  const cards=[];
-  if(topSabor) cards.push(["trending_up","Sabor campeão do mês",
-    `<b>${SB[topSabor[0]]}</b> é o mais vendido (${topSabor[1]} un). Vale manter o estoque dele sempre cheio para não perder venda.`,"var(--gold-soft)"]);
-  // estoque baixo (vendido no mês e com saldo < 50)
-  const baixo=Object.keys(porQ).filter(k=>(est[k]||0)<50);
-  if(baixo.length) cards.push(["warning","Estoque ficando baixo",
-    `${baixo.map(k=>SB[k]).join(", ")} está com pouco estoque e teve saída no mês. Considere produzir antes de faltar.`,"#e0a73a"]);
-  // resultado
-  cards.push([resultado>=0?"check_circle":"error","Resultado de "+mesNome,
-    resultado>=0?`Você está no azul: <b>${R0(resultado)}</b> de sobra depois dos custos fixos.`
-    :`Atenção: os custos fixos (${R0(fixos)}) passaram do lucro das vendas (${R0(luc)}). Resultado <b>${R0(resultado)}</b>. Empurrar mais vendas ou rever gastos fixos ajuda.`,
-    resultado>=0?"var(--green)":"var(--red)"]);
+  const lista=sugestoesIA();
   document.getElementById("ia-cards").innerHTML=
+   '<div style="display:flex;align-items:center;gap:11px;margin-bottom:14px"><span style="width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408"><span class="sym">auto_awesome</span></span><div><b style="font-size:16px">Sugestões pra agora</b><div style="font-size:11.5px;color:var(--muted)">O que fazer pra vender mais e não perder dinheiro — dos seus dados reais</div></div></div>'+
    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
-   cards.map(([ic,tit,txt,cor])=>`
-    <div class="card" style="border-color:${cor}33">
+   lista.map(s=>`
+    <div class="card" style="border-color:${s.cor}33">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
         <span style="width:40px;height:40px;border-radius:11px;display:grid;place-items:center;
-          background:${cor}1a;border:1px solid ${cor}44;color:${cor}"><span class="sym">${ic}</span></span>
-        <h3 style="margin:0;font-size:15px">${tit}</h3>
+          background:${s.cor}1a;border:1px solid ${s.cor}44;color:${s.cor}"><span class="sym">${s.ic}</span></span>
+        <h3 style="margin:0;font-size:15px">${s.tit}</h3>
       </div>
-      <p style="margin:0;color:var(--cream);font-size:13.5px;line-height:1.5;opacity:.92">${txt}</p>
+      <p style="margin:0;color:var(--cream);font-size:13.5px;line-height:1.5;opacity:.92">${s.txt}</p>
+      ${s.acao||''}
     </div>`).join("")+'</div>'+
-    '<div class="foot-note" style="margin-top:18px"><span class="sym" style="color:var(--gold);font-size:15px">info</span> Sinais calculados localmente dos seus dados — sem enviar nada para fora. (Pode evoluir para a Gemini de verdade depois.)</div>';
-  // chat: saudação inicial + sugestões (só uma vez)
+    '<div class="foot-note" style="margin-top:18px"><span class="sym" style="color:var(--gold);font-size:15px">info</span> Sugestões calculadas no seu aparelho, dos seus próprios dados — nada sai pra fora.</div>';
+  // chat: saudação PROATIVA com as principais sugestões (só uma vez)
   const chat=document.getElementById("ia-chat");
-  if(chat && !chat.children.length)
-    iaBolha("Oi! 👋 Sou a GN IA. Calculo tudo dos seus dados aqui no aparelho — pergunta o que quiser do negócio.","ia");
+  if(chat && !chat.children.length){
+    iaBolha("Oi! 👋 Sou a GN IA. Dei uma olhada nos seus dados agora e separei o que merece sua atenção:","ia");
+    lista.slice(0,3).forEach(s=>iaBolha(`<b>${s.tit}</b><br>${s.txt}`,"ia"));
+    iaBolha("Quer ver tudo? Pergunta <b>“o que fazer hoje?”</b> — ou qualquer coisa do negócio. 👇","ia");
+  }
   const sug=document.getElementById("ia-sugest");
   if(sug && !sug.children.length){
-    const qs=["Qual meu lucro esse mês?","Sabor campeão","Estoque baixo?","Quanto custa a Econômica?","Contas a receber"];
+    const qs=["O que fazer hoje?","Qual meu lucro?","Sabor campeão","Estoque baixo?","Clientes sumidos","Contas a receber"];
     sug.innerHTML=qs.map(q=>`<span class="chip" style="cursor:pointer;font-size:11.5px" onclick="iaPergunta(this.textContent)">${q}</span>`).join("");
   }
 }
@@ -1933,7 +1960,17 @@ function iaResponder(q){
   if(has("oi","olá","ola","bom dia","boa tarde","boa noite","eai","e aí"))
     return "Oi! 👋 Posso te falar de <b>lucro</b>, <b>faturamento</b>, <b>sabor campeão</b>, <b>estoque baixo</b>, <b>custo das receitas</b>, <b>contas a receber</b>, <b>clientes</b> e <b>produção</b>. Pergunta aí.";
   if(has("ajuda","o que você","o que voce","pode fazer","consegue","help","como funciona"))
-    return "Eu leio seus dados e respondo na hora: <b>lucro/resultado</b>, <b>faturamento</b>, <b>sabor campeão</b>, <b>estoque baixo</b>, <b>custo Padrão vs Econômica</b>, <b>contas a receber</b>, <b>melhor cliente</b> e <b>produção do mês</b>.";
+    return "Eu leio seus dados e respondo na hora: <b>o que fazer hoje</b>, <b>lucro/resultado</b>, <b>faturamento</b>, <b>sabor campeão</b>, <b>estoque baixo</b>, <b>clientes sumidos</b>, <b>custo Padrão vs Econômica</b>, <b>contas a receber</b> e <b>produção do mês</b>.";
+  if(has("o que fazer","oque fazer","sugest","dica","conselho","o que devo","prioridade","foco de hoje","o que faço","o que faco","me orienta")){
+    const L=sugestoesIA().slice(0,4);
+    return L.length?("Olha o que eu faria agora, em ordem:<br>"+L.map((s,i)=>`<b>${i+1}. ${s.tit}</b> — ${s.txt}`).join("<br>")):"Tá tudo tranquilo! Continue registrando vendas e produções que eu aviso quando algo precisar de atenção.";
+  }
+  if(has("sumido","sumiram","sumida","cliente parou","não compra","nao compra","parou de comprar","recupera cliente","cliente antigo")){
+    const hj2=hoje(), V2=getV(), ult={}; V2.forEach(v=>{const c=v.cliente; if(!c||c==="Avulso")return; if(!ult[c]||v.data>ult[c])ult[c]=v.data;});
+    const dd=d=>Math.round((new Date(hj2+"T00:00:00")-new Date(d+"T00:00:00"))/86400000);
+    const arr=Object.entries(ult).map(([c,d])=>({c,dias:dd(d)})).filter(x=>x.dias>=21).sort((a,b)=>b.dias-a.dias).slice(0,5);
+    return arr.length?`Clientes que sumiram (21+ dias sem comprar):<br>${arr.map(x=>`<b>${x.c}</b> — ${x.dias} dias`).join("<br>")}<br>Um WhatsApp pode trazer de volta. 💬`:"Nenhum cliente sumido — todo mundo comprou nos últimos 21 dias. 👏";
+  }
   if(has("lucro","resultado","sobrou","sobra","ganhei","no azul","no vermelho"))
     return resultado>=0
       ?`Em ${mesNome} você está no azul: <b>${R0(resultado)}</b> de sobra (lucro das vendas ${R0(luc)} − custos fixos ${R0(fixos)}).`
