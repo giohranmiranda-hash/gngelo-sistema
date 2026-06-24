@@ -1369,7 +1369,7 @@ function renderInvestimentos(){
   const top=[...inv].sort((a,b)=>(b.valor||0)-(a.valor||0))[0];
   T("iv-top",top?R0(top.valor):"—"); T("iv-topn",top?(top.desc||top.descricao||"—"):"—");
   document.getElementById("iv-tab").innerHTML=inv.map(g=>`
-    <tr><td>${fmtD(g.data)}</td><td>${g.desc||g.descricao||"—"}</td>
+    <tr><td>${rotuloData(g.data,"curto")}</td><td>${g.desc||g.descricao||"—"}</td>
     <td><span class="tag" style="color:var(--gold-soft)">${g.cat||"—"}</span></td>
     <td class="money" style="text-align:right">${R(g.valor)}</td>
     <td style="text-align:right;white-space:nowrap">${g.id!=null?lapis("editarGasto("+g.id+")")+lixo("delGasto("+g.id+")"):''}</td></tr>`).join("")
@@ -1671,13 +1671,15 @@ function renderDashIA(vMes,est,luc,m,mesNome){
 
 /* ===== Helpers compartilhados ===== */
 const fmtD=s=>{const p=(s||"").split("-");return p.length===3?p[2]+"/"+p[1]:s;};
-// rótulo de data relativa: Hoje / Amanhã / Depois de amanhã / Ontem / N dias atrás / em N dias
-function rotuloData(d){
+// rótulo de data relativa p/ datas próximas; datas distantes mostram só DD/MM.
+// modo="card" inclui sempre a data ("Hoje · 24/06"); modo="curto" só o nome quando próximo.
+function rotuloData(d,modo){
   if(!d)return "—";
   const h=new Date().toISOString().slice(0,10);
   const dias=Math.round((new Date(d+"T00:00:00")-new Date(h+"T00:00:00"))/86400000);
-  const nome=dias===0?"Hoje":dias===1?"Amanhã":dias===2?"Depois de amanhã":dias===-1?"Ontem":(dias<0?(Math.abs(dias)+" dias atrás"):("em "+dias+" dias"));
-  return nome+" · "+fmtD(d);
+  const nome=dias===0?"Hoje":dias===1?"Amanhã":dias===2?"Depois de amanhã":dias===-1?"Ontem":dias===-2?"Anteontem":null;
+  if(!nome)return fmtD(d);
+  return modo==="curto" ? nome : (nome+" · "+fmtD(d));
 }
 var MES_SEL=null; // mês escolhido no seletor (null = automático)
 function mesCtx(){const m=MES_SEL||mesAtivo(getV());const[ano,mes]=m.split("-");
@@ -1710,7 +1712,7 @@ function renderVendas(){
     ||'<div class="csub" style="padding:6px 0">Sem vendas no mês ainda.</div>';
   const rows=[...vMes].sort((a,b)=>(b.data||"").localeCompare(a.data||""));
   document.getElementById("vv-tab").innerHTML=rows.map(v=>`
-    <tr><td>${fmtD(v.data)}</td><td>${v.cliente||"—"}</td><td>${tagSabor(v.produto)}</td>
+    <tr><td>${rotuloData(v.data,"curto")}</td><td>${v.cliente||"—"}</td><td>${tagSabor(v.produto)}</td>
     <td>${v.qtd} un</td><td class="money">${R0(v.bruto)}</td><td>${v.pagto||"PIX"}</td>
     <td class="money pos" style="text-align:right">${R(v.lucro)}</td><td style="text-align:right;white-space:nowrap"><span class="sym" onclick="imprimirVenda(${v.id})" title="Imprimir nota" style="cursor:pointer;color:var(--gold-soft);font-size:18px;vertical-align:-3px;margin-right:2px">receipt_long</span>${lapis("editarVenda("+v.id+")")}${lixo("delVenda("+v.id+")")}</td></tr>`).join("")
     ||'<tr><td colspan="8" class="csub" style="padding-top:14px">Sem vendas no mês.</td></tr>';
@@ -1742,7 +1744,7 @@ function renderEstoque(){
     ? `<span style="font-size:11px;font-weight:700;color:var(--red);background:rgba(212,96,79,.15);border:1px solid rgba(212,96,79,.3);border-radius:999px;padding:2px 9px;margin-left:6px">${vencido?vencido+" vencidos · ":""}${vencendo} vencendo</span>` : "";
   document.getElementById("es-lotes").innerHTML=linhas.map(l=>`
     <tr><td>${tagSabor(l.sabor)}</td><td>${l.restante.toLocaleString("pt-BR")} un</td>
-    <td>${l.data?fmtD(l.data):"—"}</td><td>${l.validade?fmtD(l.validade):"<span style='color:var(--muted)'>sem lote</span>"}</td>
+    <td>${l.data?rotuloData(l.data,"curto"):"—"}</td><td>${l.validade?rotuloData(l.validade,"curto"):"<span style='color:var(--muted)'>sem lote</span>"}</td>
     <td style="text-align:right"><span class="tag" style="color:${l.st.cor}"><span class="dot" style="background:${l.st.cor}"></span>${l.st.txt}</span></td></tr>`).join("")
     ||'<tr><td colspan="5" class="csub" style="padding-top:14px">Estoque zerado.</td></tr>';
 }
@@ -1805,7 +1807,7 @@ function renderFinanceiro(){
   totEl.textContent=aRec.length?(R0(totRec)+" em "+aRec.length): "tudo em dia";
   totEl.style.display="inline-block";
   document.getElementById("fi-areceber").innerHTML=aRec.map(v=>`
-    <tr><td>${v.cliente||v.canal||"—"}</td><td>${tagSabor(v.produto)}</td><td>${fmtD(v.data)}</td>
+    <tr><td>${v.cliente||v.canal||"—"}</td><td>${tagSabor(v.produto)}</td><td>${rotuloData(v.data,"curto")}</td>
     <td class="money" style="color:var(--gold-soft);text-align:right">${R(v.bruto)}</td>
     <td style="text-align:right;white-space:nowrap"><span class="chip" style="cursor:pointer;font-size:11px;padding:4px 9px;background:rgba(70,177,123,.12);border-color:rgba(70,177,123,.3);color:var(--green)" onclick="markReceived(${v.id})"><span class="sym" style="font-size:14px;color:var(--green)">check_circle</span> Recebi</span></td></tr>`).join("")
     ||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhuma conta a receber — tudo recebido. 🎉</td></tr>';
@@ -1828,7 +1830,7 @@ function renderProducao(){
   T("pr-mes",nome); fillMesNav("pr-mesnav"); T("pr-tot",tot.toLocaleString("pt-BR")); T("pr-cus",R0(cus));
   T("pr-med",R(tot?cus/tot:0)); T("pr-n",pMes.length);
   document.getElementById("pr-tab").innerHTML=[...pMes].sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(p=>`
-    <tr><td>${fmtD(p.data)}</td><td>${tagSabor(p.sabor)}${p.receita==="economica"?' <span class="tag" style="color:var(--green);font-size:10px;padding:1px 6px">econômica</span>':''}</td><td>${p.qtd} un</td>
+    <tr><td>${rotuloData(p.data,"curto")}</td><td>${tagSabor(p.sabor)}${p.receita==="economica"?' <span class="tag" style="color:var(--green);font-size:10px;padding:1px 6px">econômica</span>':''}</td><td>${p.qtd} un</td>
     <td class="money">${R(p.custoPorUnid)}</td><td class="money" style="text-align:right">${R((p.qtd||0)*(p.custoPorUnid||0))}</td><td style="text-align:right;white-space:nowrap">${lapis("editarProducao("+p.id+")")}${lixo("delProducao("+p.id+")")}</td></tr>`).join("")
     ||'<tr><td colspan="6" class="csub" style="padding-top:14px">Sem produção no mês.</td></tr>';
 }
@@ -2039,7 +2041,7 @@ function mapaReal(ent,ordemMap){
   const pts=[DEPOT];
   const mkDep=L.marker(DEPOT,{draggable:true,autoPan:true,icon:L.divIcon({className:"",html:'<div style="background:#1a1408;border:2px solid #C9A84C;color:#e6c364;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-family:\'Material Symbols Outlined\';font-size:17px">factory</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(map).bindPopup('<b>Depósito GN Gelo</b><br><span style="color:#8a7f5a;font-size:11px">📍 arraste p/ ajustar o local da fábrica</span>');
   mkDep.on("dragend",ev=>{const ll=ev.target.getLatLng();DEPOT=[ll.lat,ll.lng];set("depotLL",DEPOT);toast&&toast("Local da fábrica ajustado");});
-  ent.forEach(e=>{ if(e.lat==null)return; const cor=ST_COR[e.status]||"#888"; const num=ordemMap[e.id];
+  ent.forEach(e=>{ if(e.lat==null||e.status==="Concluída")return; const cor=ST_COR[e.status]||"#888"; const num=ordemMap[e.id];
     const html=`<div style="background:${cor};color:#1a1408;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;border:2px solid #0a0a0a;box-shadow:0 0 0 2px ${cor}66">${num||"•"}</div>`;
     const mk=L.marker([e.lat,e.lng],{draggable:true,autoPan:true,icon:L.divIcon({className:"",html,iconSize:[26,26],iconAnchor:[13,13]})}).addTo(map).bindPopup("<b>"+e.cliente+"</b><br>"+e.status+" · "+e.eta+'<br><span style="color:#8a7f5a;font-size:11px">📍 arraste o pino p/ corrigir o local</span>');
     mk.on("dragend",ev=>{const ll=ev.target.getLatLng();salvarPinoEntrega(e.id,ll.lat,ll.lng);});
@@ -2594,7 +2596,7 @@ function renderInsumos(){
   const compras=getG().filter(g=>/^Compra de insumo/i.test(g.desc||g.descricao||"")).sort((a,b)=>(b.data||"").localeCompare(a.data||"")).slice(0,30);
   const ihEl=document.getElementById("in-hist");
   if(ihEl) ihEl.innerHTML=compras.map(g=>`
-    <tr><td>${fmtD(g.data)}</td><td>${(g.desc||g.descricao||"—").replace(/^Compra de insumo:\s*/i,"")}</td>
+    <tr><td>${rotuloData(g.data,"curto")}</td><td>${(g.desc||g.descricao||"—").replace(/^Compra de insumo:\s*/i,"")}</td>
     <td class="money" style="color:var(--red);text-align:right">${R(g.valor)}</td>
     <td style="text-align:right;white-space:nowrap">${g.id!=null?lapis("editarGasto("+g.id+")")+lixo("delGasto("+g.id+")"):''}</td></tr>`).join("")
     ||'<tr><td colspan="4" class="csub" style="padding-top:14px">Nenhuma compra registrada ainda. Use "Comprar insumo".</td></tr>';
