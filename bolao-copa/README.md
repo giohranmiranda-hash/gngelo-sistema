@@ -10,7 +10,7 @@ Sistema completo de **bolão da Copa focado nos jogos do Brasil**, **gratuito** 
 
 ## ✨ Funcionalidades
 
-- 🔐 **Login e cadastro** por e-mail/senha. Cada usuário só vê/edita os próprios palpites; admin vê tudo.
+- 🔐 **Login e cadastro por nome de usuário** (sem e-mail). Cada usuário só vê/edita os próprios palpites; admin vê tudo.
 - ⚽ **Jogos reais do Brasil** (Copa 2026, Grupo C): adversário, data/horário, fase, status e placar oficial.
 - 🎯 **Palpites** com trava automática: só é possível palpitar **antes do início do jogo**. Histórico por usuário.
 - 🧮 **Pontuação automática** ao registrar o placar oficial: calcula vencedor, pontos e rankings.
@@ -53,7 +53,10 @@ bolao-copa/
 │   └── app.js          # Telas, navegação, auto-atualização
 ├── supabase/
 │   ├── schema.sql      # Tabelas, RLS, gatilhos, view, realtime
-│   └── seed.sql        # Jogos reais do Brasil
+│   ├── seed.sql        # Jogos reais do Brasil
+│   ├── cron.sql        # Agendamento da sincronização automática
+│   └── functions/
+│       └── sync-brazil/index.ts   # Edge Function: busca placares na API
 └── README.md
 ```
 
@@ -67,9 +70,9 @@ python3 -m http.server 8080
 # abra http://localhost:8080
 ```
 
-**Contas de teste:**
-- Admin: `admin@bolao.com` / `admin123`
-- Participante: `mariana@demo.com` / `123456`
+**Contas de teste (usuário / senha):**
+- Admin: `admin` / `admin123`
+- Participante: `mariana` / `123456`
 
 > Para zerar os dados de demonstração: console do navegador → `localStorage.clear()`.
 > Dica: abra duas abas (uma como admin, outra como participante). Ao salvar um placar no admin, a outra aba **atualiza sozinha**. 🔄
@@ -89,16 +92,37 @@ python3 -m http.server 8080
      // ...
    };
    ```
-5. **Defina o admin**: cadastre-se pelo app e rode no SQL Editor:
+5. **Login por usuário**: o app já entra só com nome de usuário e senha. Por baixo, o Supabase Auth usa `usuario@bolao.local` (configurável em `config.js`). Em *Authentication → Providers → Email*, **desative "Confirm email"** (senão o cadastro fica pendente de confirmação, e esses e-mails internos não existem de verdade).
+6. **Defina o admin**: cadastre-se pelo app e rode no SQL Editor:
    ```sql
-   update public.profiles set is_admin = true where email = 'voce@email.com';
+   update public.profiles set is_admin = true where username = 'seuusuario';
    ```
-6. (Opcional) Para testes, desative a confirmação de e-mail em *Authentication → Providers → Email*.
 
 O `schema.sql` já habilita o **Supabase Realtime** em `matches` e `predictions` — é o que faz o placar e o ranking atualizarem ao vivo para todos quando um jogo acaba.
 
-### 🤖 (Opcional) Resultados 100% automáticos
-Por padrão, o **admin** registra o placar oficial (1 toque) e tudo recalcula sozinho. Para puxar o resultado de uma API de futebol sem ninguém digitar, crie uma *Edge Function* agendada (cron) no Supabase que consulte a API e faça `update` em `matches.brazil_score/opponent_score` — o gatilho recalcula a pontuação e o Realtime avisa os apps.
+---
+
+## 🤖 Placar automático (o jogo acaba e o sistema atualiza sozinho)
+
+O sistema busca o **resultado oficial do Brasil** numa API de futebol e atualiza o placar; o gatilho do banco recalcula os pontos e o Realtime avisa todo mundo. Funciona no modo **Supabase**. Passos:
+
+1. **Pegue um token grátis** em [football-data.org](https://www.football-data.org/) → crie conta → *My Account* (copie o API Token).
+2. **Instale a CLI do Supabase** e faça login (uma vez):
+   ```bash
+   npm i -g supabase
+   supabase login
+   supabase link --project-ref SEU-PROJETO
+   ```
+3. **Configure o token e publique a função** (`supabase/functions/sync-brazil`):
+   ```bash
+   supabase secrets set FOOTBALL_API_TOKEN=seu_token_aqui
+   supabase functions deploy sync-brazil --no-verify-jwt
+   ```
+4. **Agende o cron** (roda sozinho a cada 5 min): abra `supabase/cron.sql`, troque `<SEU-PROJETO>` e `<ANON-KEY>`, e rode no SQL Editor.
+5. Pronto! Quando um jogo do Brasil termina, o placar entra automaticamente. No painel admin há também o botão **"Sincronizar resultados"** para forçar a atualização na hora.
+
+> Sem essa configuração, o bolão continua 100% funcional: o admin lança o placar com 1 toque e o ranking de todos atualiza ao vivo.
+> O app, quando em produção, também tenta sincronizar sozinho ao detectar um jogo que já passou do horário (rede de segurança além do cron).
 
 ---
 

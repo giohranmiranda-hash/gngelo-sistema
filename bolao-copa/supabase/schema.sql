@@ -24,7 +24,7 @@ create extension if not exists "pgcrypto";
 create table if not exists public.profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   name       text not null,
-  email      text,
+  username   text unique,                  -- login é por nome de usuário
   is_admin   boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -34,6 +34,7 @@ create table if not exists public.profiles (
 -- ---------------------------------------------------------------------
 create table if not exists public.matches (
   id             uuid primary key default gen_random_uuid(),
+  ext_id         bigint unique,                         -- id do jogo na API (sync automático)
   opponent       text not null,                         -- adversário
   opponent_flag  text,                                  -- emoji da bandeira
   phase          text not null default 'Fase de Grupos',-- fase da Copa
@@ -143,8 +144,10 @@ create trigger trg_score_prediction
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer as $$
 begin
-  insert into public.profiles (id, name, email)
-  values (new.id, coalesce(new.raw_user_meta_data->>'name', new.email), new.email)
+  insert into public.profiles (id, name, username)
+  values (new.id,
+          coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'username', split_part(new.email,'@',1)),
+          coalesce(new.raw_user_meta_data->>'username', split_part(new.email,'@',1)))
   on conflict (id) do nothing;
   return new;
 end; $$;
@@ -160,13 +163,13 @@ create trigger trg_new_user
 create or replace view public.v_ranking as
 select
   p.id                                       as user_id,
-  p.name, p.email, p.is_admin,
+  p.name, p.username, p.is_admin,
   coalesce(sum(pr.points), 0)::int           as total_points,
   coalesce(sum((pr.is_exact)::int), 0)::int  as exact_count
 from public.profiles p
 left join public.predictions pr on pr.user_id = p.id
 where p.is_admin = false
-group by p.id, p.name, p.email, p.is_admin
+group by p.id, p.name, p.username, p.is_admin
 order by total_points desc, exact_count desc, p.name asc;
 
 -- =====================================================================
@@ -223,7 +226,7 @@ create policy settings_admin_update on public.settings for update
   using (public.is_admin()) with check (public.is_admin());
 
 -- =====================================================================
---  DICA: para tornar um usuário ADMIN, rode (com o e-mail dele):
+--  DICA: para tornar um usuário ADMIN, rode (com o nome de usuário dele):
 --    update public.profiles set is_admin = true
---    where email = 'voce@email.com';
+--    where username = 'seuusuario';
 -- =====================================================================

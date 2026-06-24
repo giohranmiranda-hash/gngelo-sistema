@@ -58,16 +58,16 @@ const App = (function () {
           <form id="auth-form">
             ${!isLogin ? `
             <div class="field">
-              <label>Nome completo</label>
+              <label>Nome (aparece no ranking)</label>
               <div class="input-wrap">${I("user")}<input class="input has-icon" name="name" placeholder="Seu nome" required></div>
             </div>` : ""}
             <div class="field">
-              <label>E-mail</label>
-              <div class="input-wrap">${I("mail")}<input class="input has-icon" type="email" name="email" placeholder="seu@email.com" required></div>
+              <label>Nome de usuário</label>
+              <div class="input-wrap">${I("user")}<input class="input has-icon" name="username" placeholder="ex.: joaosilva" autocapitalize="none" autocomplete="username" required></div>
             </div>
             <div class="field">
               <div class="between"><label>Senha</label>${isLogin ? `<a href="#" id="forgot">Esqueceu a senha?</a>` : ""}</div>
-              <div class="input-wrap">${I("lock")}<input class="input has-icon" type="password" name="password" placeholder="••••••••" minlength="6" required></div>
+              <div class="input-wrap">${I("lock")}<input class="input has-icon" type="password" name="password" placeholder="••••••••" minlength="6" autocomplete="current-password" required></div>
             </div>
             <button class="btn btn-primary" type="submit" id="auth-submit">
               ${isLogin ? I("login") + " ENTRAR" : I("check") + " CRIAR CONTA"}
@@ -76,13 +76,13 @@ const App = (function () {
           <button class="btn btn-secondary" style="margin-top:12px" id="auth-toggle">
             ${isLogin ? "CRIAR CONTA" : "JÁ TENHO CONTA"}
           </button>
-          ${DB.isDemo && isLogin ? `<p class="auth-switch">Demo: <b>${UI.esc(APP_CONFIG.DEMO_ADMIN_EMAIL)}</b> / <b>admin123</b> (admin)<br>ou <b>mariana@demo.com</b> / <b>123456</b></p>` : ""}
+          ${DB.isDemo && isLogin ? `<p class="auth-switch">Demo: <b>admin</b> / <b>admin123</b> (organizador)<br>ou <b>mariana</b> / <b>123456</b></p>` : ""}
         </div>
       </div>`;
 
     $("#auth-toggle").onclick = () => renderAuth(isLogin ? "signup" : "login");
     const forgot = $("#forgot");
-    if (forgot) forgot.onclick = (e) => { e.preventDefault(); UI.toast("Recuperação de senha: verifique seu e-mail (configure no Supabase Auth).", "info"); };
+    if (forgot) forgot.onclick = (e) => { e.preventDefault(); UI.toast("Esqueceu a senha? Peça ao organizador para criar uma nova conta para você.", "info"); };
 
     $("#auth-form").onsubmit = async (e) => {
       e.preventDefault();
@@ -91,11 +91,11 @@ const App = (function () {
       btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>`;
       try {
         if (isLogin) {
-          state.user = await DB.signIn(f.email.value.trim(), f.password.value);
+          state.user = await DB.signIn(f.username.value.trim(), f.password.value);
         } else {
-          state.user = await DB.signUp(f.name.value.trim(), f.email.value.trim(), f.password.value);
+          state.user = await DB.signUp(f.name.value.trim(), f.username.value.trim(), f.password.value);
         }
-        if (!state.user) throw new Error("Não foi possível autenticar. Em produção, confirme o e-mail se exigido pelo Supabase.");
+        if (!state.user) throw new Error("Não foi possível autenticar.");
         state.settings = await DB.getSettings();
         UI.toast(`Olá, ${state.user.name.split(" ")[0]}! 👋`);
         renderApp();
@@ -152,7 +152,29 @@ const App = (function () {
   function setupAutoRefresh() {
     if (state._refreshTimer) { clearInterval(state._refreshTimer); state._refreshTimer = null; }
     const secs = Number(state.settings.auto_refresh ?? 30);
-    if (secs > 0) state._refreshTimer = setInterval(softRefresh, secs * 1000);
+    if (secs > 0) state._refreshTimer = setInterval(tick, secs * 1000);
+  }
+
+  // A cada ciclo: tenta sincronizar resultados da API (se houver jogo que já
+  // deveria ter terminado) e depois atualiza a tela.
+  async function tick() {
+    await maybeAutoSync();
+    await softRefresh();
+  }
+
+  // Sincronização automática: se algum jogo já passou do horário e ainda não
+  // está finalizado, busca o placar oficial na API (só no modo Supabase).
+  // É isso que faz "o jogo acaba e o próprio sistema atualiza".
+  async function maybeAutoSync() {
+    if (DB.isDemo) return;                          // demo não tem servidor/API
+    if (Date.now() - (state._lastSync || 0) < 120000) return; // no máx. a cada 2 min
+    const now = new Date();
+    const pending = (state.matches || []).some(
+      (m) => m.status !== "finalizado" && new Date(m.match_date) <= now
+    );
+    if (!pending) return;
+    state._lastSync = Date.now();
+    try { await DB.syncNow(); } catch (e) { /* silencioso: cron do servidor é o principal */ }
   }
 
   function setupRealtime() {
@@ -462,7 +484,7 @@ const App = (function () {
       <div class="profile-head">
         <div class="profile-avatar">${UI.initials(state.user.name)}</div>
         <div class="profile-name">${UI.esc(state.user.name)}</div>
-        <div class="muted">${UI.esc(state.user.email)}</div>
+        <div class="muted">@${UI.esc(state.user.username)}</div>
         ${state.user.is_admin ? `<span class="chip chip-green">${I("shield")} Administrador</span>` : ""}
       </div>
 
@@ -562,11 +584,24 @@ const App = (function () {
   async function adminJogos(body) {
     const matches = await DB.listMatches();
     body.innerHTML = `
-      <button class="btn btn-primary" id="new-match">${I("plus")} Novo Jogo</button>
+      <div class="row gap-sm">
+        <button class="btn btn-primary flex-1" id="new-match">${I("plus")} Novo Jogo</button>
+        <button class="btn btn-ghost flex-1" id="sync-now" title="Buscar resultados oficiais na API">${I("refresh")} Sincronizar resultados</button>
+      </div>
+      <p class="dim" style="font-size:12px;margin-top:8px">${I("info")} "Sincronizar" busca os placares oficiais do Brasil automaticamente (requer Supabase + API configurada — veja o README).</p>
       <div class="mt">
         ${matches.length ? matches.map(adminMatchRow).join("") : `<div class="empty">${I("flag")}<p>Nenhum jogo cadastrado.</p></div>`}
       </div>`;
     $("#new-match").onclick = () => matchForm();
+    $("#sync-now").onclick = async (e) => {
+      const b = e.currentTarget; const html = b.innerHTML;
+      b.disabled = true; b.innerHTML = `<span class="spinner"></span> Sincronizando…`;
+      try {
+        const r = await DB.syncNow();
+        UI.toast(`Resultados sincronizados! ${r?.updated ?? 0} jogo(s) atualizado(s). ⚽`);
+        adminJogos(body);
+      } catch (err) { UI.toast(err.message, "error"); b.disabled = false; b.innerHTML = html; }
+    };
     body.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => matchForm(matches.find((m) => m.id === b.dataset.edit))));
     body.querySelectorAll("[data-score]").forEach((b) => (b.onclick = () => scoreForm(matches.find((m) => m.id === b.dataset.score))));
     body.querySelectorAll("[data-del]").forEach((b) => (b.onclick = async () => {
@@ -686,11 +721,11 @@ const App = (function () {
 
     const listEl = $("#user-list", body);
     const draw = (term = "") => {
-      const filtered = participants.filter((u) => u.name.toLowerCase().includes(term) || (u.email || "").toLowerCase().includes(term));
+      const filtered = participants.filter((u) => u.name.toLowerCase().includes(term) || (u.username || "").toLowerCase().includes(term));
       listEl.innerHTML = filtered.length ? filtered.map((u) => `
         <div class="list-row">
           <div class="pay-avatar">${UI.initials(u.name)}</div>
-          <div class="grow"><div style="font-weight:700">${UI.esc(u.name)}</div><div class="s muted" style="font-size:12px">${UI.esc(u.email || "")}</div></div>
+          <div class="grow"><div style="font-weight:700">${UI.esc(u.name)}</div><div class="s muted" style="font-size:12px">@${UI.esc(u.username || "")}</div></div>
           <div style="text-align:right"><div class="pts" style="font-family:var(--font-display);font-weight:800;color:var(--primary-bright)">${u.points} pts</div></div>
         </div>`).join("") : `<p class="muted center" style="padding:18px">Nenhum participante encontrado.</p>`;
     };
@@ -701,8 +736,8 @@ const App = (function () {
 
   async function exportRankingCSV() {
     const rows = await DB.getRanking();
-    const header = ["Posicao", "Nome", "Email", "Pontos", "Placares_Exatos"];
-    const lines = rows.map((r) => [r.position, `"${r.name}"`, r.email || "", r.total, r.exact_count].join(","));
+    const header = ["Posicao", "Nome", "Usuario", "Pontos", "Placares_Exatos"];
+    const lines = rows.map((r) => [r.position, `"${r.name}"`, r.username || "", r.total, r.exact_count].join(","));
     const csv = "﻿" + header.join(",") + "\n" + lines.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

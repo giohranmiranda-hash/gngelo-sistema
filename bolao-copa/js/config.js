@@ -1,14 +1,9 @@
 /* =====================================================================
    CONFIGURAÇÃO
    ---------------------------------------------------------------------
-   Preencha SUPABASE_URL e SUPABASE_ANON_KEY com os dados do seu projeto
-   (painel Supabase > Project Settings > API).
-
-   • Se os dois campos estiverem preenchidos, o app usa o Supabase.
-   • Se ficarem vazios, o app roda em MODO DEMO (dados no localStorage),
-     permitindo testar tudo sem backend.
-
-   Bolão GRATUITO — sem pagamento. Veja o README.md.
+   • Preencha SUPABASE_URL e SUPABASE_ANON_KEY para usar o Supabase.
+   • Vazio = MODO DEMO (dados no localStorage).
+   • Login é por NOME DE USUÁRIO (não e-mail).
    ===================================================================== */
 
 window.APP_CONFIG = {
@@ -16,11 +11,15 @@ window.APP_CONFIG = {
   SUPABASE_URL: "",       // ex.: "https://xxxxxxxx.supabase.co"
   SUPABASE_ANON_KEY: "",  // ex.: "eyJhbGciOi..."
 
-  // === Identidade do bolão (também editável pelo admin) ===
+  // === Identidade do bolão (editável pelo admin) ===
   APP_NAME: "Bolão Brasil",
   SEASON_NAME: "Copa do Mundo 2026",
 
-  // === E-mail tratado como ADMIN no modo demo ===
-  // (No Supabase, o admin é definido pela coluna is_admin na tabela profiles.)
-  DEMO_ADMIN_EMAIL: "admin@bolao.com",
+  // === Login por usuário ===
+  // O Supabase Auth exige e-mail internamente; o usuário entra só com o
+  // nome de usuário e o sistema usa "usuario@este-dominio" por baixo.
+  USERNAME_EMAIL_DOMAIN: "bolao.local",
+
+  // Usuário tratado como ADMIN no modo demo:
+  DEMO_ADMIN_USER: "admin",
 };
