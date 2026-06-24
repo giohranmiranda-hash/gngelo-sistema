@@ -1,0 +1,27 @@
+# =====================================================================
+#  Configuração de deploy no Netlify
+#  --------------------------------------------------------------------
+#  Site estático (HTML/CSS/JS puro) — não há etapa de build.
+#
+#  Se publicar o repositório inteiro: defina "Base directory" = bolao-copa
+#  e "Publish directory" = bolao-copa no painel do Netlify, OU use este
+#  arquivo colocando-o na raiz do projeto publicado.
+# =====================================================================
+
+[build]
+  publish = "."
+  command = ""
+
+# SPA: qualquer rota cai no index.html (a navegação é por JS)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Cabeçalhos de segurança básicos
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
