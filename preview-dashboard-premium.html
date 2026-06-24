@@ -853,7 +853,11 @@
     <div id="ia-cards"></div>
     <div class="card" style="margin-top:16px">
       <h3><span class="sym">auto_awesome</span>Converse com a GN IA</h3>
-      <div class="csub">Pergunte sobre lucro, vendas, estoque, custos, contas a receber... Responde dos seus dados, aqui no aparelho.</div>
+      <div class="csub">Pergunte sobre lucro, vendas, estoque, custos, contas a receber... Responde dos seus dados.</div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+        <span id="ia-gem-status" style="font-size:11.5px"></span>
+        <span class="chip" style="cursor:pointer;font-size:11px" onclick="conectarGemini()">⚙️ Conectar IA avançada (Gemini grátis)</span>
+      </div>
       <div id="ia-chat" style="margin-top:12px;max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px"></div>
       <div id="ia-sugest" style="display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 10px"></div>
       <div style="display:flex;gap:8px;align-items:center">
@@ -1236,7 +1240,7 @@ var sb=null, sbUser=null, _syncTimer=null;
 function userParaEmail(u){u=(u||"").trim().toLowerCase();if(!u)return"";return u.indexOf("@")>=0?u:u.replace(/\s+/g,"")+"@"+LOGIN_DOMAIN;}
 function emailParaUser(e){e=(e||"");return e.indexOf("@"+LOGIN_DOMAIN)>=0?e.split("@")[0]:e;}
 try{ if(window.supabase&&window.supabase.createClient){ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON); } }catch(e){ console.warn("Supabase indisponível:",e); }
-function _chavesDados(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("gng_")===0&&k!=="gng__cloud_updated"&&k!=="gng__owner"&&k!=="gng__local_updated"){out[k]=localStorage.getItem(k);}}return out;}
+function _chavesDados(){const out={};const PULAR={"gng__cloud_updated":1,"gng__owner":1,"gng__local_updated":1,"gng__geminiKey":1};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("gng_")===0&&!PULAR[k]){out[k]=localStorage.getItem(k);}}return out;}
 function agendarSync(){if(!sb||!sbUser)return;clearTimeout(_syncTimer);_syncTimer=setTimeout(()=>{nuvemEnviar(true);},3000);}
 function _msgNuvem(t){const el=document.getElementById("sync-msg");if(el)el.textContent=t;const l=document.getElementById("login-msg");if(l)l.textContent=t;}
 function limparDadosLocais(){const rem=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("gng_")===0)rem.push(k);}rem.forEach(k=>localStorage.removeItem(k));}
@@ -1931,6 +1935,7 @@ function renderIA(){
     const qs=["O que fazer hoje?","Qual meu lucro?","Sabor campeão","Estoque baixo?","Clientes sumidos","Contas a receber"];
     sug.innerHTML=qs.map(q=>`<span class="chip" style="cursor:pointer;font-size:11.5px" onclick="iaPergunta(this.textContent)">${q}</span>`).join("");
   }
+  atualizarStatusGemini();
 }
 /* ===== CHAT DA IA (local, offline — responde dos dados reais) ===== */
 function iaBolha(html,quem){
@@ -1943,11 +1948,66 @@ function iaBolha(html,quem){
   d.innerHTML=html; wrap.appendChild(d); wrap.scrollTop=wrap.scrollHeight;
 }
 function iaPergunta(q){iaEnviar(q);}
-function iaEnviar(texto){
+/* ---- IA avançada (Gemini grátis) — chave fica só no aparelho, cai na IA local se faltar ---- */
+function conectarGemini(){
+  const atual=localStorage.getItem("gng__geminiKey")||"";
+  const k=prompt("Cole sua chave do Gemini (gratuita — crie em aistudio.google.com/apikey).\n\nDeixe em branco e dê OK para DESCONECTAR.",atual);
+  if(k===null)return;
+  const key=k.trim();
+  if(key){ localStorage.setItem("gng__geminiKey",key); alert("✅ IA avançada conectada! O chat agora responde com o Gemini. Sem internet, ele volta sozinho pra IA local."); }
+  else { localStorage.removeItem("gng__geminiKey"); alert("IA avançada desconectada — o chat volta a usar a IA local (grátis, offline)."); }
+  atualizarStatusGemini();
+}
+function atualizarStatusGemini(){
+  const el=document.getElementById("ia-gem-status"); if(!el)return;
+  el.innerHTML=localStorage.getItem("gng__geminiKey")?'<span style="color:var(--green)">● Gemini conectado</span>':'<span style="color:var(--muted)">○ Usando IA local (grátis, offline)</span>';
+}
+function mdToHtml(t){let s=(t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  s=s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/(^|<br>|\n)\s*[\*\-]\s+/g,"$1• ").replace(/\n/g,"<br>");return s;}
+function contextoNegocio(){
+  const {m,mesNome}=mesCtx();
+  const V=getV(), vMes=V.filter(v=>(v.data||"").startsWith(m)), est=getEst(), ie=getInsE();
+  const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), luc=vMes.reduce((a,v)=>a+(v.lucro||0),0), liq=vMes.reduce((a,v)=>a+(v.liq||0),0);
+  const gMes=gastosDoMes(m), fixos=gMes.filter(g=>g.tipo==="Custo fixo"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0),
+        variaveis=gMes.filter(g=>g.tipo==="Custo variável"&&!ehInvestimento(g)).reduce((a,g)=>a+(g.valor||0),0), resultado=liq-variaveis-fixos;
+  const porQ={}; vMes.forEach(v=>porQ[v.produto]=(porQ[v.produto]||0)+(v.qtd||0));
+  const topS=Object.entries(porQ).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,q])=>`${SB[k]||k} ${q}un`).join(", ");
+  const estoqueStr=Object.entries(est).filter(([k,q])=>q>0).map(([k,q])=>`${SB[k]||k}:${q}`).join(", ")||"vazio";
+  const insumoStr=Object.keys(ie).map(n=>`${INSUMO_LABEL[n]||n}:${dispInsumo(n,ie)}`).join(", ")||"nenhum";
+  const ar=V.filter(v=>v.recebido===false), tAR=ar.reduce((a,v)=>a+(v.bruto||0),0);
+  const sug=sugestoesIA().slice(0,6).map(s=>s.tit).join("; ");
+  return `Negócio: GN Gelo, gelos saborizados gourmet, São João de Meriti-RJ. Mês atual: ${mesNome}. Faturamento ${R0(fat)}; lucro das vendas ${R0(luc)}; custos fixos ${R0(fixos)}; custos variáveis ${R0(variaveis)}; resultado do mês ${R0(resultado)}. Nº de vendas no mês: ${vMes.length}. Sabores mais vendidos: ${topS||"sem vendas"}. Estoque de gelos: ${estoqueStr}. Insumos disponíveis: ${insumoStr}. Contas a receber: ${ar.length} pedido(s), ${R0(tAR)}. Custo por gelo: receita Padrão ~R$0,55, Econômica ~R$0,39 a R$0,43. Sugestões automáticas do sistema agora: ${sug}.`;
+}
+async function geminiResponder(pergunta){
+  const key=localStorage.getItem("gng__geminiKey")||""; if(!key)throw new Error("sem chave");
+  const sys="Você é a GN IA, consultora do negócio GN Gelo. Responda em português do Brasil, curta, prática e amigável, como um consultor que ajuda a vender mais e lucrar. Use SOMENTE os dados fornecidos; se faltar um dado, diga que não tem. Não invente números. Pode dar conselhos de gestão, marketing e precificação.\n\nDADOS ATUAIS:\n"+contextoNegocio();
+  const body={contents:[{role:"user",parts:[{text:pergunta}]}],systemInstruction:{parts:[{text:sys}]},generationConfig:{temperature:0.4,maxOutputTokens:600}};
+  const url="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+encodeURIComponent(key);
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok){let m="";try{m=(await r.json()).error.message;}catch(e){} throw new Error("HTTP "+r.status+(m?": "+m:""));}
+  const d=await r.json();
+  const c=d&&d.candidates&&d.candidates[0];
+  const txt=c&&c.content&&c.content.parts&&c.content.parts.map(p=>p.text||"").join("");
+  if(!txt)throw new Error("resposta vazia");
+  return txt;
+}
+function iaBolhaPensando(){
+  const wrap=document.getElementById("ia-chat"); if(!wrap)return null;
+  const d=document.createElement("div");
+  d.style.cssText="align-self:flex-start;background:var(--panel2);border:1px solid var(--line);color:var(--muted);max-width:85%;padding:9px 13px;border-radius:13px;font-size:13px;font-style:italic";
+  d.textContent="digitando…"; wrap.appendChild(d); wrap.scrollTop=wrap.scrollHeight; return d;
+}
+async function iaEnviar(texto){
   const inp=document.getElementById("ia-input");
   const q=((texto!=null&&typeof texto==="string")?texto:(inp?inp.value:"")).trim(); if(!q)return;
   iaBolha(q,"eu"); if(inp)inp.value="";
-  setTimeout(()=>iaBolha(iaResponder(q),"ia"),200);
+  const key=localStorage.getItem("gng__geminiKey")||"";
+  if(key && navigator.onLine){
+    const pensa=iaBolhaPensando();
+    try{ const resp=await geminiResponder(q); if(pensa)pensa.remove(); iaBolha(mdToHtml(resp),"ia"); return; }
+    catch(e){ if(pensa)pensa.remove(); console.warn("gemini:",e); iaBolha(iaResponder(q),"ia"); return; }
+  }
+  setTimeout(()=>iaBolha(iaResponder(q),"ia"),150);
 }
 function iaResponder(q){
   const s=(q||"").toLowerCase(), has=(...ks)=>ks.some(k=>s.includes(k));
