@@ -335,9 +335,9 @@ const App = (function () {
         <div class="match-body">
           ${!opts.compact ? `<div class="label center" style="margin-bottom:12px">${UI.esc(m.phase)}</div>` : ""}
           <div class="match-teams">
-            <div class="team"><div class="flag">🇧🇷</div><div class="name">Brasil</div></div>
+            <div class="team"><div class="flag">${UI.flag("Brasil", "🇧🇷")}</div><div class="name">Brasil</div></div>
             <div class="score-set">${center}</div>
-            <div class="team"><div class="flag">${m.flag || "🏳️"}</div><div class="name">${UI.esc(m.opponent)}</div></div>
+            <div class="team"><div class="flag">${UI.flag(m.opponent, m.flag)}</div><div class="name">${UI.esc(m.opponent)}</div></div>
           </div>
           <div class="match-foot">${foot}</div>
         </div>
@@ -625,9 +625,9 @@ const App = (function () {
       <div class="card">
         <div class="between" style="margin-bottom:10px"><span class="label">${UI.esc(m.phase)} · ${UI.fmtDate(m.match_date)}</span>${statusChip}</div>
         <div class="admin-match-row">
-          <div class="row gap-sm"><span style="font-size:24px">🇧🇷</span></div>
+          <div class="flag flag-sm">${UI.flag("Brasil", "🇧🇷")}</div>
           <div class="teams center" style="text-align:center">Brasil ${score} ${UI.esc(m.opponent)}</div>
-          <div class="row gap-sm"><span style="font-size:24px">${m.flag || "🏳️"}</span></div>
+          <div class="flag flag-sm">${UI.flag(m.opponent, m.flag)}</div>
         </div>
         <div class="row gap-sm mt">
           <button class="btn btn-primary btn-sm flex-1" data-score="${m.id}">${I("edit")} ${m.brazil_score != null ? "Editar placar" : "Inserir placar"}</button>
@@ -682,13 +682,13 @@ const App = (function () {
       <p class="muted" style="margin:6px 0 18px">Brasil x ${UI.esc(m.opponent)} · ${UI.esc(m.phase)}</p>
       <form id="score-form">
         <div class="match-teams" style="margin-bottom:18px">
-          <div class="team"><div class="flag">🇧🇷</div><div class="name">Brasil</div></div>
+          <div class="team"><div class="flag">${UI.flag("Brasil", "🇧🇷")}</div><div class="name">Brasil</div></div>
           <div class="score-set">
             <input class="score-input" name="bs" type="number" min="0" max="20" value="${m.brazil_score ?? ""}" placeholder="-" required>
             <div class="vs">x</div>
             <input class="score-input" name="os" type="number" min="0" max="20" value="${m.opponent_score ?? ""}" placeholder="-" required>
           </div>
-          <div class="team"><div class="flag">${m.flag || "🏳️"}</div><div class="name">${UI.esc(m.opponent)}</div></div>
+          <div class="team"><div class="flag">${UI.flag(m.opponent, m.flag)}</div><div class="name">${UI.esc(m.opponent)}</div></div>
         </div>
         <p class="dim center" style="font-size:13px;margin-bottom:14px">${I("info")} Ao salvar, o jogo é marcado como <b>finalizado</b> e os pontos são recalculados.</p>
         <div class="row gap-sm"><button type="button" class="btn btn-ghost" onclick="UI.closeModal()">Cancelar</button><button class="btn btn-primary" type="submit">${I("check")} Salvar placar</button></div>

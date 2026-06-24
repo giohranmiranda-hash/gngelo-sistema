@@ -404,6 +404,11 @@ select.input { appearance: none; cursor: pointer; }
   display: grid; place-items: center; font-size: 30px;
   background: var(--surface-3); border: 1px solid var(--border);
 }
+/* Bandeiras em imagem (renderizam em qualquer aparelho) */
+.flag .flag-img, .flag-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.flag .flag-fallback { font-size: 30px; line-height: 1; }
+.flag.flag-sm { width: 34px; height: 34px; border-radius: 8px; overflow: hidden; display: grid; place-items: center; background: var(--surface-3); border: 1px solid var(--border); flex-shrink: 0; }
+.flag.flag-sm .flag-fallback { font-size: 18px; }
 .team .name { font-family: var(--font-display); font-weight: 800; font-size: 17px; }
 .vs { font-family: var(--font-display); font-weight: 800; color: var(--text-dim); font-size: 18px; }
 

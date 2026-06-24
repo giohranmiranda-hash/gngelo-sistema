@@ -55,6 +55,41 @@ window.UI = (function () {
     return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || "?";
   }
 
+  /* ---------- Bandeiras (imagens, renderizam em qualquer aparelho) ----------
+     Emojis de bandeira não funcionam no Windows e em alguns Androids, então
+     usamos imagens do flagcdn.com a partir do NOME do país (mapeado p/ ISO).
+     Se o nome não for reconhecido, cai no emoji informado como reserva. */
+  const COUNTRY_CODES = {
+    "brasil": "br", "marrocos": "ma", "haiti": "ht", "escocia": "gb-sct",
+    "inglaterra": "gb-eng", "pais de gales": "gb-wls", "irlanda do norte": "gb-nir",
+    "argentina": "ar", "franca": "fr", "espanha": "es", "alemanha": "de",
+    "portugal": "pt", "croacia": "hr", "holanda": "nl", "paises baixos": "nl",
+    "italia": "it", "belgica": "be", "uruguai": "uy", "colombia": "co",
+    "mexico": "mx", "estados unidos": "us", "eua": "us", "canada": "ca",
+    "japao": "jp", "coreia do sul": "kr", "coreia": "kr", "australia": "au",
+    "senegal": "sn", "camaroes": "cm", "gana": "gh", "nigeria": "ng",
+    "costa do marfim": "ci", "egito": "eg", "tunisia": "tn", "argelia": "dz",
+    "marrocos ": "ma", "suica": "ch", "servia": "rs", "polonia": "pl",
+    "dinamarca": "dk", "suecia": "se", "noruega": "no", "equador": "ec",
+    "peru": "pe", "paraguai": "py", "chile": "cl", "catar": "qa", "qatar": "qa",
+    "arabia saudita": "sa", "ira": "ir", "iraque": "iq", "nova zelandia": "nz",
+    "panama": "pa", "costa rica": "cr", "honduras": "hn", "jamaica": "jm",
+    "africa do sul": "za", "russia": "ru", "ucrania": "ua", "turquia": "tr",
+    "grecia": "gr", "austria": "at", "tchequia": "cz", "republica tcheca": "cz",
+    "irlanda": "ie", "romenia": "ro", "hungria": "hu", "eslovenia": "si",
+    "eslovaquia": "sk", "venezuela": "ve", "bolivia": "bo",
+  };
+  const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+  function flag(name, fallbackEmoji) {
+    const code = COUNTRY_CODES[norm(name)];
+    if (code) {
+      return `<img class="flag-img" src="https://flagcdn.com/w160/${code}.png" srcset="https://flagcdn.com/w320/${code}.png 2x" alt="${esc(name)}" loading="lazy"
+        onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'flag-fallback',textContent:'${esc(fallbackEmoji || "🏳️")}'}))">`;
+    }
+    return `<span class="flag-fallback">${esc(fallbackEmoji || "🏳️")}</span>`;
+  }
+
   /* ---------- Formatadores de data ---------- */
   function fmtDate(iso) {
     const d = new Date(iso);
@@ -121,5 +156,5 @@ window.UI = (function () {
     });
   }
 
-  return { icon, esc, initials, fmtDate, fmtMoney, countdown, toast, modal, closeModal, confirm };
+  return { icon, esc, initials, flag, fmtDate, fmtMoney, countdown, toast, modal, closeModal, confirm };
 })();
