@@ -8,8 +8,8 @@
 
 window.APP_CONFIG = {
   // === Supabase ===
-  SUPABASE_URL: "",       // ex.: "https://xxxxxxxx.supabase.co"
-  SUPABASE_ANON_KEY: "",  // ex.: "eyJhbGciOi..."
+  SUPABASE_URL: "https://vtwclvuteckvlrxvejpc.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_DvtnaBLYISNi_YZN4GjnPg_qvh5f2P5",
 
   // === Identidade do bolão (editável pelo admin) ===
   APP_NAME: "Bolão Brasil",
