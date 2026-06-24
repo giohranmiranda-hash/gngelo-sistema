@@ -1,0 +1,24 @@
+# =====================================================================
+#  Netlify — publica o BOLÃO DA COPA (pasta bolao-copa/)
+#  --------------------------------------------------------------------
+#  Este arquivo na RAIZ faz o Netlify publicar a pasta do bolão mesmo
+#  quando o site está conectado à raiz do repositório.
+#  Site estático (HTML/CSS/JS) — sem etapa de build.
+# =====================================================================
+
+[build]
+  publish = "bolao-copa"
+  command = ""
+
+# SPA: qualquer rota cai no index.html (a navegação é por JS)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

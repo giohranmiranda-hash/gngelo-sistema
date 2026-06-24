@@ -7,17 +7,13 @@
      • SupabaseDB → quando há credenciais em config.js (produção)
      • LocalDB    → modo demo, dados no localStorage (sem backend)
 
-   Assim a interface não muda: trocar de demo para produção é só
-   preencher as credenciais no config.js.
+   Bolão GRATUITO (sem pagamento). Jogos reais do Brasil na Copa 2026.
    ===================================================================== */
 
 (function () {
   const cfg = window.APP_CONFIG;
   const hasSupabase = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
 
-  /* =================================================================
-     UTILIDADES COMPARTILHADAS
-     ================================================================= */
   const uid = () => "id_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
   /* =================================================================
@@ -29,19 +25,17 @@
       users: "bolao_users",
       matches: "bolao_matches",
       preds: "bolao_predictions",
-      pays: "bolao_payments",
       settings: "bolao_settings",
     };
     const read = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
     const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-    const wait = (v) => new Promise((r) => setTimeout(() => r(v), 120)); // simula latência
+    const wait = (v) => new Promise((r) => setTimeout(() => r(v), 90));
 
     // -------- Semente inicial (executa apenas uma vez) --------
+    // Versão da semente: ao mudar, recria os dados (descarta dados antigos)
+    const SEED_VERSION = "2026wc-c-v2";
     function seed() {
-      if (read(K.users)) return;
-
-      const now = Date.now();
-      const day = 86400000;
+      if (read(K.settings)?._seed === SEED_VERSION) return;
 
       const adminId = "u_admin", uMari = "u_mari", uCarlos = "u_carlos",
             uJoao = "u_joao", uRafa = "u_rafa", uAmanda = "u_amanda";
@@ -55,31 +49,29 @@
         { id: uAmanda, name: "Amanda Torres",   email: "amanda@demo.com",  password: "123456", is_admin: false },
       ];
 
+      // Jogos REAIS do Brasil — Copa do Mundo 2026, Grupo C
       const matches = [
-        { id: "m1", opponent: "Sérvia",   flag: "🇷🇸", phase: "Fase de Grupos", round_number: 1,
-          match_date: new Date(now - 5 * day).toISOString(), status: "finalizado", brazil_score: 2, opponent_score: 0 },
-        { id: "m2", opponent: "Suíça",    flag: "🇨🇭", phase: "Fase de Grupos", round_number: 2,
-          match_date: new Date(now - 2 * day).toISOString(), status: "finalizado", brazil_score: 1, opponent_score: 0 },
-        { id: "m3", opponent: "Camarões", flag: "🇨🇲", phase: "Fase de Grupos", round_number: 3,
-          match_date: new Date(now + 2 * day + 14 * 3600000).toISOString(), status: "aberto", brazil_score: null, opponent_score: null },
-        { id: "m4", opponent: "Croácia",  flag: "🇭🇷", phase: "Quartas de Final", round_number: 4,
-          match_date: new Date(now + 6 * day).toISOString(), status: "aberto", brazil_score: null, opponent_score: null },
+        { id: "m1", opponent: "Marrocos", flag: "🇲🇦", phase: "Fase de Grupos", round_number: 1,
+          match_date: "2026-06-13T22:00:00Z", status: "finalizado", brazil_score: 1, opponent_score: 1 },
+        { id: "m2", opponent: "Haiti", flag: "🇭🇹", phase: "Fase de Grupos", round_number: 2,
+          match_date: "2026-06-19T22:00:00Z", status: "finalizado", brazil_score: 3, opponent_score: 0 },
+        { id: "m3", opponent: "Escócia", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", phase: "Fase de Grupos", round_number: 3,
+          match_date: "2026-06-24T22:00:00Z", status: "aberto", brazil_score: null, opponent_score: null },
       ];
 
-      // Palpites de demonstração nos jogos já finalizados
+      // Palpites de demonstração nos jogos já finalizados (m1 1x1, m2 3x0)
       const rawPreds = [
-        // m1 (real 2x0)
-        { user_id: uMari,   match_id: "m1", brazil: 2, opp: 0 }, // exato
-        { user_id: uCarlos, match_id: "m1", brazil: 2, opp: 1 }, // vencedor + gols Brasil
-        { user_id: uJoao,   match_id: "m1", brazil: 1, opp: 0 }, // vencedor + gols adv
-        { user_id: uRafa,   match_id: "m1", brazil: 3, opp: 0 }, // vencedor + gols adv
-        { user_id: uAmanda, match_id: "m1", brazil: 0, opp: 1 }, // errou
-        // m2 (real 1x0)
-        { user_id: uMari,   match_id: "m2", brazil: 1, opp: 0 }, // exato
-        { user_id: uCarlos, match_id: "m2", brazil: 2, opp: 0 }, // vencedor + gols adv
-        { user_id: uJoao,   match_id: "m2", brazil: 1, opp: 1 }, // gols Brasil
-        { user_id: uRafa,   match_id: "m2", brazil: 1, opp: 0 }, // exato
-        { user_id: uAmanda, match_id: "m2", brazil: 0, opp: 0 }, // errou (empate)
+        { user_id: uMari,   match_id: "m1", brazil: 1, opp: 1 }, // exato
+        { user_id: uCarlos, match_id: "m1", brazil: 2, opp: 2 }, // empate (+5)
+        { user_id: uJoao,   match_id: "m1", brazil: 0, opp: 0 }, // empate (+5)
+        { user_id: uRafa,   match_id: "m1", brazil: 1, opp: 2 }, // gols Brasil (+2)
+        { user_id: uAmanda, match_id: "m1", brazil: 2, opp: 0 }, // errou (0)
+
+        { user_id: uMari,   match_id: "m2", brazil: 3, opp: 0 }, // exato (+10) => 20
+        { user_id: uCarlos, match_id: "m2", brazil: 2, opp: 0 }, // venc+golsAdv (+7) => 12
+        { user_id: uJoao,   match_id: "m2", brazil: 3, opp: 1 }, // venc+golsBrasil (+7) => 12
+        { user_id: uRafa,   match_id: "m2", brazil: 1, opp: 0 }, // venc+golsAdv (+7) => 9
+        { user_id: uAmanda, match_id: "m2", brazil: 3, opp: 0 }, // exato (+10) => 10
       ];
       const findMatch = (id) => matches.find((m) => m.id === id);
       const preds = rawPreds.map((p) => {
@@ -89,37 +81,23 @@
                  points: r.points, is_exact: r.exact, updated_at: new Date().toISOString() };
       });
 
-      const payments = [
-        { id: uid(), user_id: uMari,   amount: 20, status: "pago",     pix_key: "", receipt_url: "comprovante-demo.jpg", created_at: new Date(now - 4 * day).toISOString() },
-        { id: uid(), user_id: uCarlos, amount: 20, status: "pago",     pix_key: "", receipt_url: "comprovante-demo.jpg", created_at: new Date(now - 4 * day).toISOString() },
-        { id: uid(), user_id: uRafa,   amount: 20, status: "pago",     pix_key: "", receipt_url: "comprovante-demo.jpg", created_at: new Date(now - 3 * day).toISOString() },
-        { id: uid(), user_id: uJoao,   amount: 20, status: "pendente", pix_key: "", receipt_url: "comprovante-demo.jpg", created_at: new Date(now - 1 * day).toISOString() },
-        { id: uid(), user_id: uAmanda, amount: 20, status: "pendente", pix_key: "", receipt_url: "comprovante-demo.jpg", created_at: new Date(now - 1 * day).toISOString() },
-      ];
-
       const settings = {
-        id: 1,
+        id: 1, _seed: SEED_VERSION,
         app_name: cfg.APP_NAME,
         season_name: cfg.SEASON_NAME,
-        money_mode: true,
-        entry_fee: 20,
-        pix_key: "bolao@brasil.com.br",
-        pix_copia_cola: "00020126360014BR.GOV.BCB.PIX0114bolao@brasil5204000053039865802BR5909BolaoCopa6009SAO PAULO62070503***6304ABCD",
       };
 
       write(K.users, users);
       write(K.matches, matches);
       write(K.preds, preds);
-      write(K.pays, payments);
       write(K.settings, settings);
+      // Mantém a sessão atual, se houver
     }
     seed();
 
-    // -------- Helpers internos --------
     const users = () => read(K.users, []);
     const matches = () => read(K.matches, []);
     const preds = () => read(K.preds, []);
-    const pays = () => read(K.pays, []);
     const publicUser = (u) => u && ({ id: u.id, name: u.name, email: u.email, is_admin: u.is_admin });
 
     function recalcMatch(matchId) {
@@ -141,7 +119,6 @@
       write(K.preds, all);
     }
 
-    // -------- API pública --------
     return {
       mode: "demo",
 
@@ -196,7 +173,6 @@
         if (!m) throw new Error("Jogo não encontrado.");
         Object.assign(m, patch);
         write(K.matches, list);
-        // Se mexeu no placar, recalcula a pontuação de todos os palpites do jogo
         if ("brazil_score" in patch || "opponent_score" in patch) recalcMatch(id);
         return m;
       },
@@ -222,7 +198,6 @@
       async savePrediction(userId, matchId, brazil, opp) {
         await wait();
         const m = matches().find((x) => x.id === matchId);
-        // Trava de segurança: só permite palpite com jogo aberto e antes do horário
         if (!m || m.status !== "aberto" || new Date(m.match_date) <= new Date())
           throw new Error("Palpites encerrados para este jogo.");
         const list = preds();
@@ -240,15 +215,12 @@
       /* ----- Ranking ----- */
       async getRanking() {
         await wait();
-        const s = read(K.settings, {});
-        const payByUser = {}; pays().forEach((p) => { payByUser[p.user_id] = p.status; });
         const rows = users().filter((u) => !u.is_admin).map((u) => {
           const my = preds().filter((p) => p.user_id === u.id);
           return {
             user_id: u.id, name: u.name, email: u.email,
             total: my.reduce((s2, p) => s2 + (p.points || 0), 0),
             exact_count: my.filter((p) => p.is_exact).length,
-            payment_status: payByUser[u.id] || (s.money_mode ? "pendente" : "pago"),
           };
         });
         return rankSort(rows);
@@ -258,48 +230,30 @@
         const rows = users().filter((u) => !u.is_admin).map((u) => {
           const p = preds().find((x) => x.user_id === u.id && x.match_id === matchId);
           return { user_id: u.id, name: u.name, total: p ? p.points : 0, exact_count: p && p.is_exact ? 1 : 0,
-                   guess: p ? `${p.brazil_score}x${p.opponent_score}` : "—", payment_status: "pago" };
+                   guess: p ? `${p.brazil_score}x${p.opponent_score}` : "—" };
         });
         return rankSort(rows);
-      },
-
-      /* ----- Pagamentos ----- */
-      async getMyPayment(userId) {
-        await wait();
-        return pays().filter((p) => p.user_id === userId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
-      },
-      async submitPayment(userId, receiptName) {
-        await wait();
-        const s = read(K.settings, {});
-        const list = pays();
-        let p = list.find((x) => x.user_id === userId);
-        if (p) { p.status = "pendente"; p.receipt_url = receiptName; p.created_at = new Date().toISOString(); }
-        else { p = { id: uid(), user_id: userId, amount: s.entry_fee, status: "pendente", pix_key: s.pix_key, receipt_url: receiptName, created_at: new Date().toISOString() }; list.push(p); }
-        write(K.pays, list); return p;
-      },
-      async listPayments() {
-        await wait();
-        const byId = {}; users().forEach((u) => (byId[u.id] = u));
-        return pays().map((p) => ({ ...p, user: publicUser(byId[p.user_id]) }))
-                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      },
-      async updatePayment(id, status) {
-        await wait();
-        const list = pays();
-        const p = list.find((x) => x.id === id);
-        if (p) { p.status = status; p.reviewed_at = new Date().toISOString(); }
-        write(K.pays, list); return p;
       },
 
       /* ----- Admin: usuários ----- */
       async listUsers() {
         await wait();
-        const payByUser = {}; pays().forEach((p) => { payByUser[p.user_id] = p.status; });
         return users().map((u) => {
           const my = preds().filter((p) => p.user_id === u.id);
-          return { ...publicUser(u), points: my.reduce((s, p) => s + (p.points || 0), 0),
-                   payment_status: payByUser[u.id] || "—" };
+          return { ...publicUser(u), points: my.reduce((s, p) => s + (p.points || 0), 0) };
         });
+      },
+
+      /* ----- Tempo real (entre abas do navegador) -----
+         O evento 'storage' dispara em OUTRAS abas quando o localStorage
+         muda. Assim, quando o admin salva um placar numa aba/dispositivo,
+         as outras abas abertas recebem o aviso e atualizam sozinhas. */
+      onDataChange(cb) {
+        const handler = (e) => {
+          if (!e.key || [K.matches, K.preds, K.settings, K.users].includes(e.key)) cb();
+        };
+        window.addEventListener("storage", handler);
+        return () => window.removeEventListener("storage", handler);
       },
     };
   }
@@ -327,14 +281,10 @@
       mode: "supabase",
       _sb: sb,
 
-      /* ----- Autenticação ----- */
       async signUp(name, email, password) {
         const { data, error } = await sb.auth.signUp({ email, password, options: { data: { name } } });
         if (error) throw new Error(error.message);
-        // Cria/garante o perfil (também coberto por trigger no banco)
-        if (data.user) {
-          await sb.from("profiles").upsert({ id: data.user.id, name, email }).then(() => {});
-        }
+        if (data.user) await sb.from("profiles").upsert({ id: data.user.id, name, email }).then(() => {});
         return profileFromAuth(data.user);
       },
       async signIn(email, password) {
@@ -348,7 +298,6 @@
         return profileFromAuth(data.user);
       },
 
-      /* ----- Configurações ----- */
       async getSettings() {
         const { data } = await sb.from("settings").select("*").eq("id", 1).single();
         return data || {};
@@ -359,7 +308,6 @@
         return data;
       },
 
-      /* ----- Jogos ----- */
       async listMatches() {
         const { data, error } = await sb.from("matches").select("*").order("match_date", { ascending: true });
         if (error) throw new Error(error.message);
@@ -384,7 +332,6 @@
         if ("opponent_score" in patch) p.opponent_score = patch.opponent_score;
         const { data, error } = await sb.from("matches").update(p).eq("id", id).select().single();
         if (error) throw new Error(error.message);
-        // O recálculo dos pontos é feito por TRIGGER no banco (ver schema.sql)
         return mapMatch(data);
       },
       async deleteMatch(id) {
@@ -395,7 +342,6 @@
         return this.updateMatch(id, { brazil_score: null, opponent_score: null, status: "aberto" });
       },
 
-      /* ----- Palpites ----- */
       async getMyPredictions(userId) {
         const { data, error } = await sb.from("predictions").select("*").eq("user_id", userId);
         if (error) throw new Error(error.message);
@@ -414,14 +360,12 @@
         return data;
       },
 
-      /* ----- Ranking (lê a view v_ranking) ----- */
       async getRanking() {
         const { data, error } = await sb.from("v_ranking").select("*");
         if (error) throw new Error(error.message);
         return rankSort((data || []).map((r) => ({
           user_id: r.user_id, name: r.name, email: r.email,
           total: r.total_points || 0, exact_count: r.exact_count || 0,
-          payment_status: r.payment_status || "pendente",
         })));
       },
       async getRoundRanking(matchId) {
@@ -431,52 +375,33 @@
         if (error) throw new Error(error.message);
         return rankSort((data || []).map((r) => ({
           user_id: r.user_id, name: r.profiles?.name || "—", total: r.points || 0,
-          exact_count: r.is_exact ? 1 : 0, guess: `${r.brazil_score}x${r.opponent_score}`, payment_status: "pago",
+          exact_count: r.is_exact ? 1 : 0, guess: `${r.brazil_score}x${r.opponent_score}`,
         })));
       },
 
-      /* ----- Pagamentos ----- */
-      async getMyPayment(userId) {
-        const { data } = await sb.from("payments").select("*").eq("user_id", userId)
-          .order("created_at", { ascending: false }).limit(1).maybeSingle();
-        return data || null;
-      },
-      async submitPayment(userId, receiptName) {
-        const s = await this.getSettings();
-        const { data, error } = await sb.from("payments")
-          .upsert({ user_id: userId, amount: s.entry_fee, status: "pendente", receipt_url: receiptName },
-                  { onConflict: "user_id" })
-          .select().single();
-        if (error) throw new Error(error.message);
-        return data;
-      },
-      async listPayments() {
-        const { data, error } = await sb.from("payments").select("*, profiles(name, email)").order("created_at", { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data || []).map((p) => ({ ...p, user: { id: p.user_id, name: p.profiles?.name, email: p.profiles?.email } }));
-      },
-      async updatePayment(id, status) {
-        const { data, error } = await sb.from("payments").update({ status, reviewed_at: new Date().toISOString() }).eq("id", id).select().single();
-        if (error) throw new Error(error.message);
-        return data;
-      },
-
-      /* ----- Admin: usuários ----- */
       async listUsers() {
         const { data, error } = await sb.from("v_ranking").select("*");
         if (error) throw new Error(error.message);
         return (data || []).map((u) => ({
           id: u.user_id, name: u.name, email: u.email, is_admin: u.is_admin,
-          points: u.total_points || 0, payment_status: u.payment_status || "—",
+          points: u.total_points || 0,
         }));
+      },
+
+      /* ----- Tempo real (Supabase Realtime) -----
+         Recebe avisos instantâneos quando jogos/palpites mudam no banco,
+         para a tela atualizar sozinha assim que um placar é salvo. */
+      onDataChange(cb) {
+        const ch = sb.channel("bolao-live")
+          .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, cb)
+          .on("postgres_changes", { event: "*", schema: "public", table: "predictions" }, cb)
+          .subscribe();
+        return () => sb.removeChannel(ch);
       },
     };
   }
 
-  /* =================================================================
-     Ordenação de ranking compartilhada:
-     pontos desc → placares exatos desc → nome asc
-     ================================================================= */
+  /* Ordenação: pontos desc → exatos desc → nome asc */
   function rankSort(rows) {
     rows.sort((a, b) =>
       b.total - a.total ||
@@ -487,7 +412,6 @@
     return rows;
   }
 
-  // Exporta a instância escolhida
   window.DB = hasSupabase ? SupabaseDB() : LocalDB();
   window.DB.isDemo = !hasSupabase;
 })();

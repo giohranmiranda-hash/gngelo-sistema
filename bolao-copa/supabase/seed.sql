@@ -1,24 +1,23 @@
 -- =====================================================================
---  SEED — jogos de exemplo do Brasil (opcional)
+--  SEED — jogos REAIS do Brasil na Copa do Mundo 2026 (Grupo C)
 --  --------------------------------------------------------------------
---  Rode DEPOIS do schema.sql. Ajuste datas/adversários conforme a tabela
---  oficial da Copa. As datas usam horário do servidor (UTC) — adapte se
---  necessário.
+--  Rode DEPOIS do schema.sql.
+--  Resultados:
+--    Brasil 1 x 1 Marrocos  (13/06/2026) — finalizado
+--    Brasil 3 x 0 Haiti     (19/06/2026) — finalizado
+--    Brasil x Escócia       (24/06/2026, 19h Brasília / 22:00 UTC) — aberto
+--  Datas em UTC. Ajuste conforme a tabela oficial / fase eliminatória.
 -- =====================================================================
 
 insert into public.matches (opponent, opponent_flag, phase, round_number, match_date, status, brazil_score, opponent_score)
 values
-  ('Sérvia',   '🇷🇸', 'Fase de Grupos',   1, now() - interval '5 days',  'finalizado', 2, 0),
-  ('Suíça',    '🇨🇭', 'Fase de Grupos',   2, now() - interval '2 days',  'finalizado', 1, 0),
-  ('Camarões', '🇨🇲', 'Fase de Grupos',   3, now() + interval '2 days',  'aberto',     null, null),
-  ('Croácia',  '🇭🇷', 'Quartas de Final', 4, now() + interval '6 days',  'aberto',     null, null);
+  ('Marrocos', '🇲🇦', 'Fase de Grupos', 1, '2026-06-13T22:00:00Z', 'finalizado', 1, 1),
+  ('Haiti',    '🇭🇹', 'Fase de Grupos', 2, '2026-06-19T22:00:00Z', 'finalizado', 3, 0),
+  ('Escócia',  '🏴󠁧󠁢󠁳󠁣󠁴󠁿', 'Fase de Grupos', 3, '2026-06-24T22:00:00Z', 'aberto',     null, null);
 
--- Atualiza a configuração do bolão (exemplo: valendo dinheiro, R$ 20)
+-- Identidade do bolão (gratuito)
 update public.settings set
-  app_name       = 'Bolão Brasil',
-  season_name    = 'Copa do Mundo 2026',
-  money_mode     = true,
-  entry_fee      = 20.00,
-  pix_key        = 'bolao@brasil.com.br',
-  pix_copia_cola = '00020126360014BR.GOV.BCB.PIX0114bolao@brasil5204000053039865802BR5909BolaoCopa6009SAO PAULO62070503***6304ABCD'
+  app_name     = 'Bolão Brasil',
+  season_name  = 'Copa do Mundo 2026',
+  auto_refresh = 30
 where id = 1;

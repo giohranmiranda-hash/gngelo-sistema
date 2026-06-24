@@ -17,9 +17,11 @@ const App = (function () {
     tab: "inicio",
     rankingMode: "geral", // 'geral' | 'rodada'
     rankingMatchId: null,
-    adminTab: "jogos",    // 'jogos' | 'pagamentos' | 'usuarios' | 'config'
+    adminTab: "jogos",    // 'jogos' | 'usuarios' | 'config'
     matches: [],
     myPreds: {},          // match_id -> prediction
+    _refreshTimer: null,  // timer do polling automático
+    _unsub: null,         // cancela a assinatura de tempo real
   };
 
   const root = () => document.getElementById("app");
@@ -115,7 +117,6 @@ const App = (function () {
       { id: "ranking", label: "Ranking", icon: "chart" },
     ];
     if (state.user.is_admin) items.push({ id: "admin", label: "Admin", icon: "shield" });
-    else if (state.settings.money_mode) items.push({ id: "pix", label: "Pix", icon: "pix" });
     items.push({ id: "perfil", label: "Perfil", icon: "user" });
     return items;
   }
@@ -135,6 +136,43 @@ const App = (function () {
     $("#bell-btn").onclick = showNotifications;
     renderNav();
     renderScreen();
+    setupAutoRefresh();
+    setupRealtime();
+  }
+
+  /* ===================================================================
+     ATUALIZAÇÃO AUTOMÁTICA
+     -------------------------------------------------------------------
+     • Realtime: assina mudanças no banco (Supabase) ou entre abas (demo);
+       quando um placar é salvo, a tela atualiza na hora para todos.
+     • Polling: como rede de segurança, recarrega a tela a cada N segundos
+       (configurável pelo admin). Nunca atrapalha quem está digitando um
+       palpite (pula o refresh se há modal aberto ou input em foco).
+     =================================================================== */
+  function setupAutoRefresh() {
+    if (state._refreshTimer) { clearInterval(state._refreshTimer); state._refreshTimer = null; }
+    const secs = Number(state.settings.auto_refresh ?? 30);
+    if (secs > 0) state._refreshTimer = setInterval(softRefresh, secs * 1000);
+  }
+
+  function setupRealtime() {
+    if (state._unsub || !DB.onDataChange) return;
+    try {
+      state._unsub = DB.onDataChange(() => {
+        // recarrega configurações (caso admin tenha mudado) e atualiza tela
+        DB.getSettings().then((s) => { state.settings = s; softRefresh(true); });
+      });
+    } catch (e) { console.warn("Realtime indisponível:", e); }
+  }
+
+  async function softRefresh(announce = false) {
+    if (!state.user) return;
+    // Não atrapalha o usuário: pula se há modal aberto ou campo em foco
+    if (document.getElementById("modal-overlay")) return;
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === "INPUT" || ae.tagName === "SELECT" || ae.tagName === "TEXTAREA")) return;
+    await renderScreen(true);
+    if (announce) UI.toast("Resultados atualizados! 🔄");
   }
 
   function renderNav() {
@@ -154,15 +192,16 @@ const App = (function () {
     window.scrollTo(0, 0);
   }
 
-  async function renderScreen() {
+  async function renderScreen(soft = false) {
     const screen = $("#screen");
-    screen.innerHTML = `<div class="loading-screen" style="min-height:50vh"><span class="spinner"></span></div>`;
+    if (!screen) return;
+    // Em refresh "soft" não mostra spinner (evita piscar a tela a cada atualização)
+    if (!soft) screen.innerHTML = `<div class="loading-screen" style="min-height:50vh"><span class="spinner"></span></div>`;
     try {
       switch (state.tab) {
         case "inicio":   await renderDashboard(screen); break;
         case "palpites": await renderPalpites(screen); break;
         case "ranking":  await renderRanking(screen); break;
-        case "pix":      await renderPix(screen); break;
         case "perfil":   await renderPerfil(screen); break;
         case "admin":    await renderAdmin(screen); break;
       }
@@ -188,7 +227,6 @@ const App = (function () {
     const me = ranking.find((r) => r.user_id === state.user.id);
     const myPoints = me ? me.total : 0;
     const myPos = me ? me.position : "—";
-    const payment = state.settings.money_mode ? await DB.getMyPayment(state.user.id) : null;
 
     // Próximo jogo aberto (data futura)
     const next = state.matches.find((m) => m.status === "aberto" && new Date(m.match_date) > new Date());
@@ -216,23 +254,11 @@ const App = (function () {
       </div>
       ${next ? matchCardHtml(next, state.myPreds[next.id], { compact: true }) : `<div class="card center muted">Nenhum jogo aberto no momento. 🏆</div>`}
 
-      ${state.settings.money_mode ? paymentBanner(payment) : `<div class="banner info">${I("info")}<div><div class="b-title">Bolão gratuito</div><div class="b-sub">Participe e dispute o ranking sem custo.</div></div></div>`}
+      <div class="banner info">${I("info")}<div><div class="b-title">Bolão gratuito 💚</div><div class="b-sub">Participe e dispute o ranking sem custo nenhum.</div></div></div>
     `;
 
     $("#see-all").onclick = (e) => { e.preventDefault(); go("palpites"); };
     bindMatchCard(el, next);
-    // Banner de pagamento pendente leva para a tela Pix
-    const bp = el.querySelector("[data-goto-pix]");
-    if (bp) bp.onclick = () => go("pix");
-  }
-
-  function paymentBanner(payment) {
-    const status = payment?.status;
-    if (status === "pago")
-      return `<div class="banner success">${I("checkCircle")}<div><div class="b-title">Pagamento Confirmado</div><div class="b-sub">Sua participação no bolão está ativa.</div></div></div>`;
-    if (status === "pendente")
-      return `<div class="banner pending" data-goto-pix style="cursor:pointer">${I("clock")}<div><div class="b-title">Pagamento em análise</div><div class="b-sub">Aguardando o organizador aprovar seu comprovante.</div></div></div>`;
-    return `<div class="banner pending" data-goto-pix style="cursor:pointer">${I("warn")}<div><div class="b-title">Pagamento pendente</div><div class="b-sub">Toque para pagar e entrar no ranking oficial.</div></div></div>`;
   }
 
   /* ===================================================================
@@ -354,10 +380,7 @@ const App = (function () {
       ? await DB.getRoundRanking(state.rankingMatchId)
       : await DB.getRanking();
 
-    // Filtra: no modo dinheiro, ranking oficial = somente pagos
-    const officialOnly = state.settings.money_mode;
-    const ranked = officialOnly && !isRound ? rows.filter((r) => r.payment_status === "pago") : rows;
-    // Reposiciona após filtro
+    const ranked = rows;
     ranked.forEach((r, i) => (r.position = i + 1));
 
     const finishedMatches = (state.matches.length ? state.matches : await DB.listMatches()).filter((m) => m.status === "finalizado");
@@ -384,7 +407,6 @@ const App = (function () {
           ${ranked.length ? ranked.map((r) => rankRow(r, isRound)).join("") : `<tr><td colspan="5" class="center muted" style="padding:24px">Ninguém pontuou ainda.</td></tr>`}
         </tbody>
       </table>
-      ${officialOnly && !isRound ? `<p class="dim center" style="margin-top:12px;font-size:13px">${I("info")} Ranking oficial: apenas participantes com pagamento confirmado.</p>` : ""}
     `;
 
     el.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => {
@@ -416,11 +438,9 @@ const App = (function () {
   function rankRow(r, isRound) {
     const me = r.user_id === state.user.id;
     const posCls = r.position === 1 ? "gold" : r.position === 2 ? "silver" : r.position === 3 ? "bronze" : "";
-    const payChip = !isRound && state.settings.money_mode
-      ? `<br><span class="chip ${r.payment_status === "pago" ? "chip-green" : "chip-yellow"}" style="margin-top:4px">${r.payment_status}</span>` : "";
     return `<tr class="${me ? "me" : ""}">
       <td class="pos ${posCls}">${r.position}</td>
-      <td><div class="rank-name">${UI.esc(r.name.split(" ").slice(0,2).join(" "))}${me ? " ⭐" : ""}${payChip}</div></td>
+      <td><div class="rank-name">${UI.esc(r.name.split(" ").slice(0,2).join(" "))}${me ? " ⭐" : ""}</div></td>
       ${isRound ? `<td class="muted">${UI.esc(r.guess || "—")}</td>` : ""}
       <td class="pts">${r.total}</td>
       <td class="center">${r.exact_count || 0}</td>
@@ -430,54 +450,6 @@ const App = (function () {
   /* ===================================================================
      PIX / PAGAMENTO
      =================================================================== */
-  async function renderPix(el) {
-    const s = state.settings;
-    const payment = await DB.getMyPayment(state.user.id);
-    const code = s.pix_copia_cola || s.pix_key || "";
-    const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(code);
-
-    el.innerHTML = `
-      <h1 style="text-align:center">${UI.esc(s.app_name)}</h1>
-      <p class="muted center">Participe do ranking oficial e concorra a prêmios!</p>
-
-      <div class="card mt pix-amount-card">
-        <span class="label">Valor da entrada</span>
-        <div class="pix-amount">${UI.fmtMoney(s.entry_fee)}</div>
-        <p class="muted" style="margin-top:8px">Escaneie o QR Code abaixo no app do seu banco ou use o Pix Copia e Cola.</p>
-        <div class="qr-box"><img src="${qrUrl}" alt="QR Code Pix" onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'QR indisponível',style:'width:200px;height:200px;display:grid;place-items:center;color:#333'}))"></div>
-        <div class="pix-code">
-          <code title="${UI.esc(code)}">${UI.esc(s.pix_key || code)}</code>
-          <button class="btn btn-ghost btn-sm" id="copy-pix">${I("copy")} Copiar</button>
-        </div>
-      </div>
-
-      <div class="card mt" style="background:linear-gradient(160deg,#1c8f47,#147a39);border-color:transparent">
-        <div class="row gap-sm" style="color:#eafff0"><span>${I("checkCircle")}</span><b style="font-family:var(--font-display)">Confirmação</b></div>
-        <p style="color:#dffbe8;margin:10px 0 16px">Após pagar, envie o comprovante para validar sua participação no ranking.</p>
-        <button class="btn btn-warning" id="send-receipt">${I("upload")} Enviar Comprovante</button>
-        <input type="file" id="receipt-file" accept="image/*,.pdf" class="hidden">
-        ${payment ? `<div class="banner ${payment.status === "pago" ? "success" : "pending"}" style="margin-top:14px">${I(payment.status === "pago" ? "checkCircle" : "clock")}<div><div class="b-title">${payment.status === "pago" ? "Pagamento aprovado" : "Comprovante em análise"}</div><div class="b-sub">${payment.receipt_url ? "Arquivo: " + UI.esc(payment.receipt_url) : ""}</div></div></div>` : ""}
-      </div>
-      <p class="dim center" style="margin-top:14px;font-size:13px">${I("warn")} Somente participantes com pagamento aprovado entram no ranking oficial.</p>
-    `;
-
-    $("#copy-pix").onclick = async () => {
-      try { await navigator.clipboard.writeText(code); UI.toast("Código Pix copiado! 📋"); }
-      catch { UI.toast("Não foi possível copiar automaticamente.", "error"); }
-    };
-    const fileInput = $("#receipt-file");
-    $("#send-receipt").onclick = () => fileInput.click();
-    fileInput.onchange = async () => {
-      const f = fileInput.files[0];
-      if (!f) return;
-      try {
-        await DB.submitPayment(state.user.id, f.name);
-        UI.toast("Comprovante enviado! Aguarde a aprovação do organizador. ✅");
-        renderScreen();
-      } catch (e) { UI.toast(e.message, "error"); }
-    };
-  }
-
   /* ===================================================================
      PERFIL
      =================================================================== */
@@ -485,7 +457,6 @@ const App = (function () {
     const ranking = await DB.getRanking();
     const me = ranking.find((r) => r.user_id === state.user.id);
     const myPreds = await DB.getMyPredictions(state.user.id);
-    const payment = state.settings.money_mode ? await DB.getMyPayment(state.user.id) : null;
 
     el.innerHTML = `
       <div class="profile-head">
@@ -505,7 +476,6 @@ const App = (function () {
       </div>
 
       <div class="card mt-lg" style="padding:0">
-        ${state.settings.money_mode ? `<div class="list-row" id="row-pix">${I("pix")}<span class="grow">Pagamento <span class="${payment?.status === "pago" ? "status-pago" : "status-pendente"}">(${payment?.status || "pendente"})</span></span><span class="arrow">${I("chevron")}</span></div>` : ""}
         <div class="list-row" id="row-rank">${I("chart")}<span class="grow">Ver meu ranking</span><span class="arrow">${I("chevron")}</span></div>
         ${state.user.is_admin ? `<div class="list-row" id="row-admin">${I("shield")}<span class="grow">Painel do Organizador</span><span class="arrow">${I("chevron")}</span></div>` : ""}
         <div class="list-row" id="row-about">${I("info")}<span class="grow">Regras de pontuação</span><span class="arrow">${I("chevron")}</span></div>
@@ -515,13 +485,14 @@ const App = (function () {
       <p class="dim center" style="margin-top:18px;font-size:12px">${UI.esc(state.settings.app_name)} · ${DB.isDemo ? "Modo Demo" : "Supabase"}</p>
     `;
 
-    const rowPix = $("#row-pix"); if (rowPix) rowPix.onclick = () => go("pix");
     $("#row-rank").onclick = () => go("ranking");
     const rowAdmin = $("#row-admin"); if (rowAdmin) rowAdmin.onclick = () => go("admin");
     $("#row-about").onclick = showRules;
     $("#logout-btn").onclick = async () => {
       if (!(await UI.confirm("Sair", "Deseja realmente sair da sua conta?", "Sair", true))) return;
       await DB.signOut();
+      if (state._refreshTimer) { clearInterval(state._refreshTimer); state._refreshTimer = null; }
+      if (state._unsub) { state._unsub(); state._unsub = null; }
       state.user = null; state.tab = "inicio";
       UI.toast("Você saiu da conta.");
       renderAuth();
@@ -574,7 +545,6 @@ const App = (function () {
       <div class="admin-warn">${I("info")}<div><div class="t">Cálculo automático</div><div class="d">Ao inserir o placar oficial, o sistema calcula vencedor, pontos e rankings automaticamente.</div></div></div>
       <div class="admin-tabs">
         <button data-atab="jogos" class="${state.adminTab === "jogos" ? "active" : ""}">Jogos</button>
-        <button data-atab="pagamentos" class="${state.adminTab === "pagamentos" ? "active" : ""}">Pagamentos</button>
         <button data-atab="usuarios" class="${state.adminTab === "usuarios" ? "active" : ""}">Participantes</button>
         <button data-atab="config" class="${state.adminTab === "config" ? "active" : ""}">Configurações</button>
       </div>
@@ -584,7 +554,6 @@ const App = (function () {
 
     const body = $("#admin-body", el);
     if (state.adminTab === "jogos") await adminJogos(body);
-    else if (state.adminTab === "pagamentos") await adminPagamentos(body);
     else if (state.adminTab === "usuarios") await adminUsuarios(body);
     else await adminConfig(body);
   }
@@ -703,41 +672,6 @@ const App = (function () {
     };
   }
 
-  /* ---------- Admin: Pagamentos ---------- */
-  async function adminPagamentos(body) {
-    const pays = await DB.listPayments();
-    const pending = pays.filter((p) => p.status === "pendente");
-    body.innerHTML = `
-      <div class="between"><h2 style="font-size:18px">Pagamentos Pendentes</h2><span class="chip chip-yellow">${pending.length} aguardando</span></div>
-      <div class="card mt">
-        ${pending.length ? pending.map(payRow).join("") : `<p class="muted center" style="padding:16px">Nenhum pagamento pendente. ✅</p>`}
-      </div>
-      <h2 style="font-size:18px;margin-top:22px">Histórico</h2>
-      <div class="card mt">
-        ${pays.length ? pays.map((p) => payRow(p, true)).join("") : `<p class="muted center" style="padding:16px">Sem pagamentos.</p>`}
-      </div>`;
-    body.querySelectorAll("[data-approve]").forEach((b) => (b.onclick = async () => { await DB.updatePayment(b.dataset.approve, "pago"); UI.toast("Pagamento aprovado! ✅"); adminPagamentos(body); }));
-    body.querySelectorAll("[data-reject]").forEach((b) => (b.onclick = async () => { await DB.updatePayment(b.dataset.reject, "recusado"); UI.toast("Pagamento recusado.", "warning"); adminPagamentos(body); }));
-    body.querySelectorAll("[data-receipt]").forEach((b) => (b.onclick = () => UI.toast("Comprovante: " + b.dataset.receipt + " (integre o Supabase Storage para visualizar).", "info")));
-  }
-
-  function payRow(p, hist = false) {
-    const u = p.user || {};
-    const statusChip = p.status === "pago" ? `<span class="chip chip-green">Pago</span>` : p.status === "recusado" ? `<span class="chip chip-red">Recusado</span>` : `<span class="chip chip-yellow">Pendente</span>`;
-    return `<div class="pay-row">
-      <div class="pay-avatar">${UI.initials(u.name)}</div>
-      <div class="pay-info">
-        <div class="n">${UI.esc(u.name || "—")}</div>
-        <div class="s">${UI.esc(u.email || "")} · ${UI.fmtMoney(p.amount)}</div>
-        ${p.receipt_url ? `<button class="btn btn-sm btn-ghost" style="margin-top:6px;padding:4px 10px" data-receipt="${UI.esc(p.receipt_url)}">${I("search")} Ver comprovante</button>` : ""}
-      </div>
-      ${hist ? statusChip : `<div class="pay-actions">
-        <button class="no" data-reject="${p.id}" title="Recusar">${I("x")}</button>
-        <button class="ok" data-approve="${p.id}" title="Aprovar">${I("check")}</button>
-      </div>`}
-    </div>`;
-  }
-
   /* ---------- Admin: Participantes ---------- */
   async function adminUsuarios(body) {
     const users = await DB.listUsers();
@@ -757,7 +691,7 @@ const App = (function () {
         <div class="list-row">
           <div class="pay-avatar">${UI.initials(u.name)}</div>
           <div class="grow"><div style="font-weight:700">${UI.esc(u.name)}</div><div class="s muted" style="font-size:12px">${UI.esc(u.email || "")}</div></div>
-          <div style="text-align:right"><div class="pts" style="font-family:var(--font-display);font-weight:800;color:var(--primary-bright)">${u.points} pts</div>${state.settings.money_mode ? `<span class="chip ${u.payment_status === "pago" ? "chip-green" : "chip-yellow"}" style="margin-top:4px">${u.payment_status}</span>` : ""}</div>
+          <div style="text-align:right"><div class="pts" style="font-family:var(--font-display);font-weight:800;color:var(--primary-bright)">${u.points} pts</div></div>
         </div>`).join("") : `<p class="muted center" style="padding:18px">Nenhum participante encontrado.</p>`;
     };
     draw();
@@ -767,8 +701,8 @@ const App = (function () {
 
   async function exportRankingCSV() {
     const rows = await DB.getRanking();
-    const header = ["Posicao", "Nome", "Email", "Pontos", "Placares_Exatos", "Status_Pagamento"];
-    const lines = rows.map((r) => [r.position, `"${r.name}"`, r.email || "", r.total, r.exact_count, r.payment_status].join(","));
+    const header = ["Posicao", "Nome", "Email", "Pontos", "Placares_Exatos"];
+    const lines = rows.map((r) => [r.position, `"${r.name}"`, r.email || "", r.total, r.exact_count].join(","));
     const csv = "﻿" + header.join(",") + "\n" + lines.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -784,15 +718,14 @@ const App = (function () {
     body.innerHTML = `
       <form id="config-form">
         <div class="card">
-          <div class="between" style="margin-bottom:14px">
-            <div><div style="font-weight:700;font-family:var(--font-display)">Bolão valendo dinheiro</div><div class="muted" style="font-size:13px">Ativa pagamento Pix e ranking oficial.</div></div>
-            <label class="switch"><input type="checkbox" name="money_mode" ${s.money_mode ? "checked" : ""} style="width:20px;height:20px"></label>
-          </div>
+          <div class="banner info" style="margin-bottom:16px">${I("info")}<div><div class="b-title">Bolão gratuito 💚</div><div class="b-sub">Sem pagamento — todos os participantes entram no ranking.</div></div></div>
           <div class="field"><label>Nome do bolão</label><input class="input" name="app_name" value="${UI.esc(s.app_name || "")}"></div>
           <div class="field"><label>Temporada</label><input class="input" name="season_name" value="${UI.esc(s.season_name || "")}"></div>
-          <div class="field"><label>Valor da entrada (R$)</label><input class="input" type="number" step="0.01" name="entry_fee" value="${s.entry_fee || 0}"></div>
-          <div class="field"><label>Chave Pix</label><input class="input" name="pix_key" value="${UI.esc(s.pix_key || "")}"></div>
-          <div class="field"><label>Pix Copia e Cola (opcional)</label><input class="input" name="pix_copia_cola" value="${UI.esc(s.pix_copia_cola || "")}"></div>
+          <div class="field">
+            <label>Atualização automática (segundos)</label>
+            <input class="input" type="number" min="0" name="auto_refresh" value="${s.auto_refresh ?? 30}">
+            <p class="dim" style="font-size:12px;margin-top:6px">Telas atualizam sozinhas neste intervalo (0 = desligado). Quando um placar é salvo, o ranking de todos atualiza automaticamente.</p>
+          </div>
           <button class="btn btn-primary" type="submit">${I("save")} Salvar configurações</button>
         </div>
       </form>`;
@@ -801,14 +734,12 @@ const App = (function () {
       const f = e.target;
       try {
         state.settings = await DB.updateSettings({
-          money_mode: f.money_mode.checked,
           app_name: f.app_name.value.trim(),
           season_name: f.season_name.value.trim(),
-          entry_fee: parseFloat(f.entry_fee.value) || 0,
-          pix_key: f.pix_key.value.trim(),
-          pix_copia_cola: f.pix_copia_cola.value.trim(),
+          auto_refresh: Math.max(0, parseInt(f.auto_refresh.value, 10) || 0),
         });
         UI.toast("Configurações salvas! ⚙️");
+        setupAutoRefresh();
         renderApp();
         state.tab = "admin"; state.adminTab = "config"; renderNav(); renderScreen();
       } catch (err) { UI.toast(err.message, "error"); }
