@@ -1240,7 +1240,7 @@ var sb=null, sbUser=null, _syncTimer=null;
 function userParaEmail(u){u=(u||"").trim().toLowerCase();if(!u)return"";return u.indexOf("@")>=0?u:u.replace(/\s+/g,"")+"@"+LOGIN_DOMAIN;}
 function emailParaUser(e){e=(e||"");return e.indexOf("@"+LOGIN_DOMAIN)>=0?e.split("@")[0]:e;}
 try{ if(window.supabase&&window.supabase.createClient){ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON); } }catch(e){ console.warn("Supabase indisponível:",e); }
-function _chavesDados(){const out={};const PULAR={"gng__cloud_updated":1,"gng__owner":1,"gng__local_updated":1,"gng__geminiKey":1};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("gng_")===0&&!PULAR[k]){out[k]=localStorage.getItem(k);}}return out;}
+function _chavesDados(){const out={};const PULAR={"gng__cloud_updated":1,"gng__owner":1,"gng__local_updated":1};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("gng_")===0&&!PULAR[k]){out[k]=localStorage.getItem(k);}}return out;}
 function agendarSync(){if(!sb||!sbUser)return;clearTimeout(_syncTimer);_syncTimer=setTimeout(()=>{nuvemEnviar(true);},3000);}
 function _msgNuvem(t){const el=document.getElementById("sync-msg");if(el)el.textContent=t;const l=document.getElementById("login-msg");if(l)l.textContent=t;}
 function limparDadosLocais(){const rem=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("gng_")===0)rem.push(k);}rem.forEach(k=>localStorage.removeItem(k));}
@@ -1980,16 +1980,20 @@ function contextoNegocio(){
 }
 async function geminiResponder(pergunta){
   const key=localStorage.getItem("gng__geminiKey")||""; if(!key)throw new Error("sem chave");
-  const sys="Você é a GN IA, consultora do negócio GN Gelo. Responda em português do Brasil, curta, prática e amigável, como um consultor que ajuda a vender mais e lucrar. Use SOMENTE os dados fornecidos; se faltar um dado, diga que não tem. Não invente números. Pode dar conselhos de gestão, marketing e precificação.\n\nDADOS ATUAIS:\n"+contextoNegocio();
-  const body={contents:[{role:"user",parts:[{text:pergunta}]}],systemInstruction:{parts:[{text:sys}]},generationConfig:{temperature:0.4,maxOutputTokens:600}};
-  const url="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+encodeURIComponent(key);
-  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-  if(!r.ok){let m="";try{m=(await r.json()).error.message;}catch(e){} throw new Error("HTTP "+r.status+(m?": "+m:""));}
-  const d=await r.json();
-  const c=d&&d.candidates&&d.candidates[0];
-  const txt=c&&c.content&&c.content.parts&&c.content.parts.map(p=>p.text||"").join("");
-  if(!txt)throw new Error("resposta vazia");
-  return txt;
+  const sys="Você é a GN IA, consultora do negócio GN Gelo (gelos saborizados gourmet em São João de Meriti-RJ). Responda em português do Brasil, curta, prática e amigável, como um consultor que ajuda a vender mais e lucrar. Use SOMENTE os dados abaixo; se faltar um dado, diga que não tem. Não invente números.\n\nDADOS ATUAIS:\n"+contextoNegocio();
+  const body={contents:[{role:"user",parts:[{text:sys+"\n\nPergunta: "+pergunta+"\n\nResposta:"}]}],generationConfig:{temperature:0.4,maxOutputTokens:600}};
+  const modelos=["gemini-2.0-flash","gemini-1.5-flash"]; let erro="falhou";
+  for(const mdl of modelos){
+    try{
+      const url="https://generativelanguage.googleapis.com/v1beta/models/"+mdl+":generateContent?key="+encodeURIComponent(key);
+      const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      if(!r.ok){ let m=""; try{m=(await r.json()).error.message;}catch(e){} erro="HTTP "+r.status+(m?": "+m:""); if(r.status===404)continue; throw new Error(erro); }
+      const d=await r.json(); const c=d&&d.candidates&&d.candidates[0];
+      const txt=c&&c.content&&c.content.parts&&c.content.parts.map(p=>p.text||"").join("");
+      if(txt)return txt; erro="resposta vazia (pode ser bloqueio de segurança do Gemini)";
+    }catch(e){ erro=e.message||(""+e); if(/failed to fetch|networkerror/i.test(erro)){ throw new Error("conexão bloqueada (CSP/internet) — "+erro); } }
+  }
+  throw new Error(erro);
 }
 function iaBolhaPensando(){
   const wrap=document.getElementById("ia-chat"); if(!wrap)return null;
@@ -2005,7 +2009,9 @@ async function iaEnviar(texto){
   if(key && navigator.onLine){
     const pensa=iaBolhaPensando();
     try{ const resp=await geminiResponder(q); if(pensa)pensa.remove(); iaBolha(mdToHtml(resp),"ia"); return; }
-    catch(e){ if(pensa)pensa.remove(); console.warn("gemini:",e); iaBolha(iaResponder(q),"ia"); return; }
+    catch(e){ if(pensa)pensa.remove(); console.warn("gemini:",e);
+      iaBolha('<span style="color:#e0a73a">⚠️ A IA avançada não respondeu: <b>'+((e&&e.message)||e)+'</b><br>Responde com a IA local por enquanto.</span>',"ia");
+      iaBolha(iaResponder(q),"ia"); return; }
   }
   setTimeout(()=>iaBolha(iaResponder(q),"ia"),150);
 }
