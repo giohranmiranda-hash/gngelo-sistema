@@ -2134,9 +2134,9 @@ function mapaReal(ent,ordemMap){
   box.innerHTML='<div id="leafmap" style="height:360px;width:100%"></div>';
   if(window.__lgmap){try{window.__lgmap.remove();}catch(e){}window.__lgmap=null;}
   const map=L.map("leafmap",{zoomControl:true,attributionControl:false,center:DEPOT,zoom:12}); window.__lgmap=map;
-  // tema escuro (CARTO, grátis sem chave); se falhar, cai no OpenStreetMap padrão
-  const tiles=L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd"}).addTo(map);
-  tiles.on("tileerror",()=>{ if(!map.__fallback){ map.__fallback=true; L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map); } });
+  // mapa claro com ruas coloridas (OpenStreetMap, grátis); se falhar, cai na CARTO clara
+  const tiles=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
+  tiles.on("tileerror",()=>{ if(!map.__fallback){ map.__fallback=true; L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd"}).addTo(map); } });
   const pts=[DEPOT];
   const mkDep=L.marker(DEPOT,{draggable:true,autoPan:true,icon:L.divIcon({className:"",html:'<div style="background:#1a1408;border:2px solid #C9A84C;color:#e6c364;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-family:\'Material Symbols Outlined\';font-size:17px">factory</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(map).bindPopup('<b>Depósito GN Gelo</b><br><span style="color:#8a7f5a;font-size:11px">📍 arraste p/ ajustar o local da fábrica</span>');
   mkDep.on("dragend",ev=>{const ll=ev.target.getLatLng();DEPOT=[ll.lat,ll.lng];set("depotLL",DEPOT);toast&&toast("Local da fábrica ajustado");});
