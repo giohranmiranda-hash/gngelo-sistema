@@ -1981,13 +1981,16 @@ function contextoNegocio(){
 async function geminiResponder(pergunta){
   const key=localStorage.getItem("gng__geminiKey")||""; if(!key)throw new Error("sem chave");
   const sys="Você é a GN IA, consultora do negócio GN Gelo (gelos saborizados gourmet em São João de Meriti-RJ). Responda em português do Brasil, curta, prática e amigável, como um consultor que ajuda a vender mais e lucrar. Use SOMENTE os dados abaixo; se faltar um dado, diga que não tem. Não invente números.\n\nDADOS ATUAIS:\n"+contextoNegocio();
-  const body={contents:[{role:"user",parts:[{text:sys+"\n\nPergunta: "+pergunta+"\n\nResposta:"}]}],generationConfig:{temperature:0.4,maxOutputTokens:600}};
-  const modelos=["gemini-2.0-flash","gemini-1.5-flash"]; let erro="falhou";
+  const texto=sys+"\n\nPergunta: "+pergunta+"\n\nResposta:";
+  const modelos=["gemini-2.5-flash","gemini-flash-latest","gemini-2.0-flash"]; let erro="falhou";
   for(const mdl of modelos){
     try{
+      const gen={temperature:0.4,maxOutputTokens:800};
+      if(/2\.5|latest/.test(mdl)) gen.thinkingConfig={thinkingBudget:0}; // 2.5: desliga o "pensar" pra não cortar a resposta
+      const body={contents:[{role:"user",parts:[{text:texto}]}],generationConfig:gen};
       const url="https://generativelanguage.googleapis.com/v1beta/models/"+mdl+":generateContent?key="+encodeURIComponent(key);
       const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      if(!r.ok){ let m=""; try{m=(await r.json()).error.message;}catch(e){} erro="HTTP "+r.status+(m?": "+m:""); if(r.status===404)continue; throw new Error(erro); }
+      if(!r.ok){ let m=""; try{m=(await r.json()).error.message;}catch(e){} erro="HTTP "+r.status+(m?": "+m:""); continue; } // tenta o próximo modelo
       const d=await r.json(); const c=d&&d.candidates&&d.candidates[0];
       const txt=c&&c.content&&c.content.parts&&c.content.parts.map(p=>p.text||"").join("");
       if(txt)return txt; erro="resposta vazia (pode ser bloqueio de segurança do Gemini)";
