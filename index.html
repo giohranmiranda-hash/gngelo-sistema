@@ -1421,8 +1421,9 @@ function getVendedores(){const v=get("vendedores",null);return (v&&v.length)?v:S
 function getOrdens(){const v=get("ordens",null);return (v&&v.length)?v:SEED.ordens;}
 function getLotes(){const v=get("lotesAndamento",null);return (v&&v.length)?v:SEED.lotesAndamento;}
 function fillVendedores(sel,val){const vs=getVendedores();sel.innerHTML='<option value="">Venda direta (sem comissão)</option>'+vs.map(v=>`<option value="${v.id}">${v.nome} (${v.com}%)</option>`).join("");if(val)sel.value=val;}
-const INSUMOS_DEF={"Base Líquida":"ml","Base/Aroma":"g","Glicose":"g","Goma Xantana":"g","Embalagens":"un","Açúcar":"g"};
-const INSUMO_LABEL={"Base/Aroma":"Base em pó (c/ adoçante)","Base Líquida":"Base líquida"}; // nomes amigáveis na tela
+const INSUMOS_DEF=Object.assign({"Base Líquida":"ml","Glicose":"g","Goma Xantana":"g","Embalagens":"un","Açúcar":"g"},
+  Object.fromEntries(Object.keys(SB).filter(k=>!k.startsWith("combo")).map(s=>["Base "+SB[s],"g"]))); // base em pó POR SABOR
+const INSUMO_LABEL={"Base Líquida":"Base líquida"}; // nomes amigáveis na tela
 const LIMITE_PIC=2500; // abaixo disso o insumo é "acabando"
 // ===== RECEITA + CUSTO REAL (recalcula pelo preço dos insumos) =====
 const RECEITA_PADRAO={base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1,baseInsumo:"Base Líquida"}; // antiga: base líquida + açúcar
@@ -1450,15 +1451,24 @@ function getReceitas(){
 function getReceita(id){const a=getReceitas();return a[id]||a.padrao;}
 // base por gelo: Coco pode levar mais base (baseCoco); demais sabores usam base
 function baseDe(r,sabor){return (sabor==="coco"&&r.baseCoco!=null&&r.baseCoco!=="")?+r.baseCoco:+r.base;}
+// ===== Econômica: base em pó POR SABOR (cada sabor = 1 insumo separado) =====
+// 200ml/gelo, 20g de pó por litro (25g no Coco) => 4g/gelo (5g Coco)
+const PO_GL=20, PO_COCO_GL=25, ML_GELO=200;
+function poGramasGelo(sabor){return (sabor==="coco"?PO_COCO_GL:PO_GL)*ML_GELO/1000;}
+function poInsumoNome(sabor){return "Base "+(SB[sabor]||sabor);} // ex: "Base Coco"
+const PO_REV={}; Object.keys(SB).filter(k=>!k.startsWith("combo")).forEach(s=>{PO_REV[poInsumoNome(s)]=s;});
+// qual insumo de base 1 gelo usa, e quanto, pela receita
+function baseInsumoDe(id,sabor){return id==="economica"?poInsumoNome(sabor):(getReceita(id).baseInsumo||"Base Líquida");}
+function baseGramasDe(id,sabor){return id==="economica"?poGramasGelo(sabor):baseDe(getReceita(id),sabor);}
 // custo de produzir 1 gelo com a receita escolhida, a preço ATUAL dos insumos
-function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();const bi=r.baseInsumo||"Base/Aroma";
-  return baseDe(r,sabor)*custoInsumoUn(bi)+(+r.glicose||0)*custoInsumoUn("Glicose")+
+function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();
+  return baseGramasDe(id,sabor)*custoInsumoUn(baseInsumoDe(id,sabor))+(+r.glicose||0)*custoInsumoUn("Glicose")+
     (+r.xantana||0)*custoInsumoUn("Goma Xantana")+(+r.embalagem||0)*custoInsumoUn("Embalagens")+
     (+r.acucar||0)*(P.acucar||0);}
 // insumos consumidos por 1 gelo (pra baixar do estoque de insumo) pela receita escolhida
-function recInsDe(id,sabor){const r=getReceita(id);const bi=r.baseInsumo||"Base/Aroma";
+function recInsDe(id,sabor){const r=getReceita(id);
   const out={"Glicose":+r.glicose||0,"Goma Xantana":+r.xantana||0,"Embalagens":+r.embalagem||0,"Açúcar":+r.acucar||0};
-  out[bi]=baseDe(r,sabor); return out;}
+  out[baseInsumoDe(id,sabor)]=baseGramasDe(id,sabor); return out;}
 // custo real MÉDIO das unidades em estoque (FIFO) — é o que o lucro da venda usa
 function custoEstoqueSabor(sabor){
   let rem=getEst()[sabor]||0;
@@ -2441,8 +2451,12 @@ function dispInsumo(nome,ie){ ie=ie||getInsE(); return ((ie[nome]&&ie[nome].qtd)
 // Migração única: desfaz o antigo ajuste de açúcar (que baixava direto no estoque),
 // pra ele voltar a ser "registrado" e entrar no mesmo modelo dos outros insumos.
 function migrarInsumosDisponivel(){
-  try{ const ie=get("insumoEst",null); if(!ie)return;
-    if(ie["Açúcar"]&&ie["Açúcar"].ajustado){ ie["Açúcar"]={...ie["Açúcar"], qtd:(ie["Açúcar"].qtd||0)+consumidoInsumo("Açúcar")}; delete ie["Açúcar"].ajustado; set("insumoEst",ie); }
+  try{ const ie=get("insumoEst",null); if(!ie)return; let mud=false;
+    if(ie["Açúcar"]&&ie["Açúcar"].ajustado){ ie["Açúcar"]={...ie["Açúcar"], qtd:(ie["Açúcar"].qtd||0)+consumidoInsumo("Açúcar")}; delete ie["Açúcar"].ajustado; mud=true; }
+    // pó por sabor: cria a entrada (qtd 0) pra cada sabor já produzido na Econômica, pra aparecer nos Insumos
+    const fl=new Set(); getPr().forEach(p=>{ if((p.receita||"padrao")==="economica") fl.add(p.sabor); });
+    fl.forEach(s=>{ const nm=poInsumoNome(s); if(!ie[nm]){ ie[nm]={qtd:0,un:"g",custoUnit:0.03}; mud=true; } });
+    if(mud) set("insumoEst",ie);
   }catch(e){console.warn("migra insumos:",e);}
 }
 function rerenderAll(){migrarInsumosDisponivel();render();renderVendas();renderEstoque();renderLogistica();renderCalendario();renderFinanceiro();renderInvestimentos();renderMetas();renderRelatorios();renderProducao();renderInsumos();renderReceitas();renderClientes();renderComissoes();renderIA();renderConfig();}
@@ -2666,10 +2680,10 @@ function salvarGasto(){
 /* ===== TELA INSUMOS ===== */
 // quanto de cada insumo 1 gelo consome (considerando as duas receitas/bases)
 function consumoPorGelo(nome){
+  if(PO_REV[nome]!==undefined) return poGramasGelo(PO_REV[nome]); // base em pó por sabor (Econômica)
   const pad=getReceita("padrao"), eco=getReceita("economica");
   switch(nome){
     case "Base Líquida": return +pad.base||0;        // base líquida -> receita Padrão
-    case "Base/Aroma":   return +eco.base||0;         // base em pó   -> receita Econômica
     case "Glicose":      return +pad.glicose||0;
     case "Goma Xantana": return +pad.xantana||0;
     case "Embalagens":   return +pad.embalagem||+eco.embalagem||1;
@@ -2678,13 +2692,13 @@ function consumoPorGelo(nome){
   }
 }
 function rendeGelos(ie){ // quantos gelos ainda dá pra fazer com o DISPONÍVEL (registrado − produzido)
-  const q=n=>Math.max(0,dispInsumo(n,ie)), pad=getReceita("padrao"), eco=getReceita("economica");
+  const q=n=>Math.max(0,dispInsumo(n,ie)), pad=getReceita("padrao");
   let padMax=Infinity;
   if(+pad.base)    padMax=Math.min(padMax,q("Base Líquida")/+pad.base);
   if(+pad.glicose) padMax=Math.min(padMax,q("Glicose")/+pad.glicose);
   if(+pad.xantana) padMax=Math.min(padMax,q("Goma Xantana")/+pad.xantana);
   if(!isFinite(padMax))padMax=0;
-  const ecoMax=(+eco.base)?q("Base/Aroma")/+eco.base:0;
+  let ecoMax=0; Object.keys(SB).filter(k=>!k.startsWith("combo")).forEach(s=>{const g=poGramasGelo(s); if(g)ecoMax+=q(poInsumoNome(s))/g;}); // soma do pó de cada sabor
   const emb=q("Embalagens")/(+pad.embalagem||1);
   const total=Math.min(padMax+ecoMax,emb);
   return isFinite(total)?Math.floor(total):0;
