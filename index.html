@@ -1460,7 +1460,7 @@ function fillVendedores(sel,val){const vs=getVendedores();sel.innerHTML='<option
 const INSUMOS_DEF=Object.assign({"Base Líquida":"ml","Glicose":"g","Goma Xantana":"g","Açúcar":"g"},
   Object.fromEntries(Object.keys(SB).filter(k=>!k.startsWith("combo")).flatMap(s=>[["Base "+SB[s],"g"],["Embalagem "+SB[s],"un"]]))); // base em pó + embalagem POR SABOR
 const INSUMO_LABEL={"Base Líquida":"Base líquida"}; // nomes amigáveis na tela
-const LIMITE_PIC=2500; // abaixo disso o insumo é "acabando"
+const LIMITE_PIC=300; // abaixo de ~300 gelos de capacidade o insumo é "acabando"
 // ===== RECEITA + CUSTO REAL (recalcula pelo preço dos insumos) =====
 const RECEITA_PADRAO={base:2,glicose:5,acucar:4,xantana:0.08,embalagem:1,baseInsumo:"Base Líquida"}; // antiga: base líquida + açúcar
 function getReceitaPadrao(){return Object.assign({},RECEITA_PADRAO,get("receitaPadrao",null)||{});}
