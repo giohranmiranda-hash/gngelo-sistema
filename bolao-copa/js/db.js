@@ -279,7 +279,7 @@
 
       /* ----- Sincronização automática de placares (chama a Edge Function) ----- */
       async syncNow() {
-        const { data, error } = await sb.functions.invoke("sync-brazil");
+        const { data, error } = await sb.functions.invoke(cfg.SYNC_FUNCTION_NAME || "sync-brazil");
         if (error) throw new Error("Falha ao sincronizar: " + error.message);
         return data; // { updated: n, created: n }
       },

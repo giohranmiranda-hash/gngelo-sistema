@@ -22,4 +22,7 @@ window.APP_CONFIG = {
 
   // Usuário tratado como ADMIN no modo demo:
   DEMO_ADMIN_USER: "admin",
+
+  // Nome da Edge Function que sincroniza os placares (no Supabase).
+  SYNC_FUNCTION_NAME: "quick-function",
 };
