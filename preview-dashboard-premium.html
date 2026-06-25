@@ -1077,6 +1077,8 @@
         <div class="f-row" style="margin:0"><label>Quantidade (un)</label><input type="number" class="f-in" id="rep-emb-qtd" min="0" value="0" placeholder="ex: 500"></div>
         <div class="f-row" style="margin:0"><label>Valor pago (R$)</label><input type="number" step="0.01" class="f-in" id="rep-emb-val" min="0" value="0"></div>
       </div>
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12.5px;margin-top:12px;color:var(--text)">
+        <input type="checkbox" id="rep-ajuste" onchange="repAjusteUI()" style="width:auto;accent-color:var(--gold);margin-top:2px"> <span>Só ajustar o estoque que já tenho (o custo já está lançado no Financeiro — <b>não lançar de novo</b>). A quantidade vira o disponível atual.</span></label>
       <div class="f-grid2" style="margin-top:10px">
         <div class="f-row" style="margin:0"><label>Data</label><input type="date" class="f-in" id="rep-data"></div>
         <div class="f-row" style="margin:0"><label>Fornecedor</label><input class="f-in" id="rep-forn" placeholder="Ex: Shoppe"></div>
@@ -2790,27 +2792,39 @@ function abrirReporSabor(sabor){
   sel.innerHTML=flav.map(s=>`<option value="${s}">${SB[s]}</option>`).join("");
   if(sabor)sel.value=sabor;
   ["rep-po-qtd","rep-po-val","rep-emb-qtd","rep-emb-val"].forEach(id=>document.getElementById(id).value=0);
+  document.getElementById("rep-ajuste").checked=false;
   document.getElementById("rep-data").value=hoje();
   document.getElementById("rep-forn").value="Shoppe";
-  const upd=()=>{ const s=sel.value, ie=getInsE(); const dp=dispInsumo(poInsumoNome(s),ie),de=dispInsumo(embInsumoNome(s),ie);
-    document.getElementById("rep-hint").innerHTML=`Hoje em estoque: <b>${dp.toLocaleString("pt-BR")}g</b> de pó · <b>${de.toLocaleString("pt-BR")}</b> embalagens. Dose: ${s==="coco"?"5g":"4g"}/gelo.`; };
-  sel.onchange=upd; upd();
+  sel.onchange=repHint; repHint();
   document.getElementById("modal-repor").style.display="flex";
 }
+function repHint(){
+  const s=document.getElementById("rep-sabor").value, ie=getInsE();
+  const dp=dispInsumo(poInsumoNome(s),ie),de=dispInsumo(embInsumoNome(s),ie);
+  const aj=document.getElementById("rep-ajuste").checked;
+  document.getElementById("rep-hint").innerHTML=`Hoje em estoque: <b>${dp.toLocaleString("pt-BR")}g</b> de pó · <b>${de.toLocaleString("pt-BR")}</b> embalagens. `+
+    (aj?'<span style="color:var(--gold-soft)">Modo ajuste: a quantidade que você digitar vira o disponível atual; deixe o valor em 0 (o custo já está no Financeiro).</span>':`Dose do pó: ${s==="coco"?"5g":"4g"}/gelo.`);
+}
+function repAjusteUI(){ repHint(); }
 function salvarReporSabor(){
-  const s=document.getElementById("rep-sabor").value;
+  const s=document.getElementById("rep-sabor").value, ajuste=document.getElementById("rep-ajuste").checked;
   const pq=+document.getElementById("rep-po-qtd").value||0, pv=+document.getElementById("rep-po-val").value||0;
   const eq=+document.getElementById("rep-emb-qtd").value||0, ev=+document.getElementById("rep-emb-val").value||0;
-  if(pq<=0 && eq<=0){alert("Coloque a quantidade de pó e/ou embalagem que você comprou.");return;}
+  if(pq<=0 && eq<=0){alert("Coloque a quantidade de pó e/ou embalagem.");return;}
   const data=document.getElementById("rep-data").value||hoje(), forn=document.getElementById("rep-forn").value||"—";
   const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
   const gastos=get("gastos",null)||SEED.gastos.slice();
-  const addCompra=(nome,un,qtd,val,tag)=>{ const prev=ie[nome]||{qtd:0,un,custoUnit:0};
-    const nq=(prev.qtd||0)+qtd, ncu=nq>0?(((prev.qtd||0)*(prev.custoUnit||0))+val)/nq:0;
-    ie[nome]={qtd:nq,un,custoUnit:ncu,forn};
-    gastos.push({id:Date.now()+tag,data,desc:"Compra de insumo: "+nome,cat:un==="un"?"Embalagens":"Ingredientes",valor:val,tipo:"Custo variável",status:"Pago"}); };
-  if(pq>0) addCompra(poInsumoNome(s),"g",pq,pv,0);
-  if(eq>0) addCompra(embInsumoNome(s),"un",eq,ev,1);
+  const aplicar=(nome,un,qtd,val,tag)=>{ if(qtd<=0)return; const prev=ie[nome]||{qtd:0,un,custoUnit:0};
+    if(ajuste){ // define o DISPONÍVEL = qtd, SEM lançar gasto (custo já no Financeiro)
+      let cu=prev.custoUnit||0; if(val>0)cu=val; // se informar, atualiza o custo por unidade
+      ie[nome]={qtd:qtd+consumidoInsumo(nome),un,custoUnit:cu,forn:prev.forn||forn};
+    } else { // compra normal: soma ao estoque + lança gasto
+      const nq=(prev.qtd||0)+qtd, ncu=nq>0?(((prev.qtd||0)*(prev.custoUnit||0))+val)/nq:0;
+      ie[nome]={qtd:nq,un,custoUnit:ncu,forn};
+      if(val>0) gastos.push({id:Date.now()+tag,data,desc:"Compra de insumo: "+nome,cat:un==="un"?"Embalagens":"Ingredientes",valor:val,tipo:"Custo variável",status:"Pago"});
+    } };
+  aplicar(poInsumoNome(s),"g",pq,pv,0);
+  aplicar(embInsumoNome(s),"un",eq,ev,1);
   set("insumoEst",ie); set("gastos",gastos); fecharModal(); rerenderAll(); show("insumos");
 }
 /* ---- COMPRAR INSUMO (gerais) -> entra no insumoEst + vira gasto ---- */
