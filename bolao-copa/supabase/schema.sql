@@ -107,9 +107,9 @@ create or replace function public.recalc_match_points()
 returns trigger language plpgsql security definer as $$
 begin
   update public.predictions pr
-     set points = c.points, is_exact = c.is_exact, updated_at = now()
-    from lateral public.calc_points(pr.brazil_score, pr.opponent_score,
-                                    new.brazil_score, new.opponent_score) c
+     set points   = (select cp.points   from public.calc_points(pr.brazil_score, pr.opponent_score, new.brazil_score, new.opponent_score) cp),
+         is_exact = (select cp.is_exact from public.calc_points(pr.brazil_score, pr.opponent_score, new.brazil_score, new.opponent_score) cp),
+         updated_at = now()
    where pr.match_id = new.id;
   return new;
 end; $$;
