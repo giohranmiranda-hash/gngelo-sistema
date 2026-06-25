@@ -124,13 +124,20 @@ create or replace function public.score_prediction()
 returns trigger language plpgsql security definer as $$
 declare m public.matches%rowtype;
 begin
-  select * into m from public.matches where id = new.match_id;
-  if m.status <> 'aberto' or m.match_date <= now() then
-    raise exception 'Palpites encerrados para este jogo.';
+  -- Só valida a trava quando o PALPITE em si muda (novo palpite ou
+  -- alteração do placar palpitado). Em recálculos do sistema (que mexem só
+  -- em points/is_exact) não trava nem recalcula aqui.
+  if TG_OP = 'INSERT'
+     or new.brazil_score   is distinct from old.brazil_score
+     or new.opponent_score is distinct from old.opponent_score then
+    select * into m from public.matches where id = new.match_id;
+    if m.status <> 'aberto' or m.match_date <= now() then
+      raise exception 'Palpites encerrados para este jogo.';
+    end if;
+    select c.points, c.is_exact into new.points, new.is_exact
+      from public.calc_points(new.brazil_score, new.opponent_score,
+                              m.brazil_score, m.opponent_score) c;
   end if;
-  select c.points, c.is_exact into new.points, new.is_exact
-    from public.calc_points(new.brazil_score, new.opponent_score,
-                            m.brazil_score, m.opponent_score) c;
   new.updated_at := now();
   return new;
 end; $$;
