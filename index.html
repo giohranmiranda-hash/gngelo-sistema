@@ -642,11 +642,21 @@
       <div class="kpi"><div class="ic"><span class="sym">ac_unit</span></div><div class="k-lbl">Dá pra produzir</div><div class="k-val" id="in-rende">—</div><div class="k-foot">gelos saborizados (estimativa)</div></div>
     </div>
     <div class="card">
-      <h3><span class="sym">inventory_2</span>Estoque de insumos</h3>
-      <div class="csub">Quantidade restante, custo médio e fornecedor</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><h3 style="margin:0"><span class="sym">ac_unit</span>Estoque por sabor</h3><div class="csub">Base em pó + embalagem de cada sabor — veja qual está acabando</div></div>
+        <span class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent;cursor:pointer" onclick="abrirReporSabor()"><span class="sym" style="color:#1a1408">add</span> Repor / novo sabor</span>
+      </div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Sabor</th><th>Base em pó</th><th>Embalagem</th><th>≈ gelos</th><th></th></tr></thead>
+        <tbody id="in-sabores"></tbody>
+      </table>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="sym">inventory_2</span>Insumos gerais</h3>
+      <div class="csub">Compartilhados da receita Padrão (líquida)</div>
       <table>
-        <thead><tr><th>Insumo</th><th>Restante</th><th>Custo médio</th><th>Fornecedor</th><th>Status</th></tr></thead>
-        <tbody id="in-tab"></tbody>
+        <thead><tr><th>Insumo</th><th>Disponível</th><th>Custo</th><th></th></tr></thead>
+        <tbody id="in-gerais"></tbody>
       </table>
     </div>
     <div class="card" style="margin-top:16px">
@@ -1052,9 +1062,33 @@
     <div class="modal-foot"><button class="btn-gold" onclick="salvarInsumoEdit()">Salvar</button></div>
   </div>
 </div>
+<div class="modal-bg" id="modal-repor" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3>Repor sabor</h3><span class="sym x" onclick="fecharModal()">close</span></div>
+    <div class="modal-body">
+      <div class="f-row"><label>Sabor</label><select class="f-in" id="rep-sabor"></select></div>
+      <div class="f-row" style="margin:10px 0 0"><b style="font-size:13px">🧪 Base em pó</b></div>
+      <div class="f-grid2">
+        <div class="f-row" style="margin:0"><label>Quantidade (g)</label><input type="number" class="f-in" id="rep-po-qtd" min="0" value="0" placeholder="ex: 1000"></div>
+        <div class="f-row" style="margin:0"><label>Valor pago (R$)</label><input type="number" step="0.01" class="f-in" id="rep-po-val" min="0" value="0"></div>
+      </div>
+      <div class="f-row" style="margin:10px 0 0"><b style="font-size:13px">📦 Embalagem (rotulada do sabor)</b></div>
+      <div class="f-grid2">
+        <div class="f-row" style="margin:0"><label>Quantidade (un)</label><input type="number" class="f-in" id="rep-emb-qtd" min="0" value="0" placeholder="ex: 500"></div>
+        <div class="f-row" style="margin:0"><label>Valor pago (R$)</label><input type="number" step="0.01" class="f-in" id="rep-emb-val" min="0" value="0"></div>
+      </div>
+      <div class="f-grid2" style="margin-top:10px">
+        <div class="f-row" style="margin:0"><label>Data</label><input type="date" class="f-in" id="rep-data"></div>
+        <div class="f-row" style="margin:0"><label>Fornecedor</label><input class="f-in" id="rep-forn" placeholder="Ex: Shoppe"></div>
+      </div>
+      <div class="csub" id="rep-hint" style="margin-top:10px"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-gold" onclick="salvarReporSabor()">Salvar reposição</button></div>
+  </div>
+</div>
 <div class="modal-bg" id="modal-insumo" style="display:none">
   <div class="modal">
-    <div class="modal-head"><h3>Comprar insumo</h3><span class="sym x" onclick="fecharModal()">close</span></div>
+    <div class="modal-head"><h3>Comprar insumo (gerais)</h3><span class="sym x" onclick="fecharModal()">close</span></div>
     <div class="modal-body">
       <div class="f-grid2">
         <div class="f-row"><label>Data</label><input type="date" class="f-in" id="i-data"></div>
@@ -1421,8 +1455,8 @@ function getVendedores(){const v=get("vendedores",null);return (v&&v.length)?v:S
 function getOrdens(){const v=get("ordens",null);return (v&&v.length)?v:SEED.ordens;}
 function getLotes(){const v=get("lotesAndamento",null);return (v&&v.length)?v:SEED.lotesAndamento;}
 function fillVendedores(sel,val){const vs=getVendedores();sel.innerHTML='<option value="">Venda direta (sem comissão)</option>'+vs.map(v=>`<option value="${v.id}">${v.nome} (${v.com}%)</option>`).join("");if(val)sel.value=val;}
-const INSUMOS_DEF=Object.assign({"Base Líquida":"ml","Glicose":"g","Goma Xantana":"g","Embalagens":"un","Açúcar":"g"},
-  Object.fromEntries(Object.keys(SB).filter(k=>!k.startsWith("combo")).map(s=>["Base "+SB[s],"g"]))); // base em pó POR SABOR
+const INSUMOS_DEF=Object.assign({"Base Líquida":"ml","Glicose":"g","Goma Xantana":"g","Açúcar":"g"},
+  Object.fromEntries(Object.keys(SB).filter(k=>!k.startsWith("combo")).flatMap(s=>[["Base "+SB[s],"g"],["Embalagem "+SB[s],"un"]]))); // base em pó + embalagem POR SABOR
 const INSUMO_LABEL={"Base Líquida":"Base líquida"}; // nomes amigáveis na tela
 const LIMITE_PIC=2500; // abaixo disso o insumo é "acabando"
 // ===== RECEITA + CUSTO REAL (recalcula pelo preço dos insumos) =====
@@ -1456,19 +1490,22 @@ function baseDe(r,sabor){return (sabor==="coco"&&r.baseCoco!=null&&r.baseCoco!==
 const PO_GL=20, PO_COCO_GL=25, ML_GELO=200;
 function poGramasGelo(sabor){return (sabor==="coco"?PO_COCO_GL:PO_GL)*ML_GELO/1000;}
 function poInsumoNome(sabor){return "Base "+(SB[sabor]||sabor);} // ex: "Base Coco"
-const PO_REV={}; Object.keys(SB).filter(k=>!k.startsWith("combo")).forEach(s=>{PO_REV[poInsumoNome(s)]=s;});
+function embInsumoNome(sabor){return "Embalagem "+(SB[sabor]||sabor);} // embalagem POR SABOR (rotulada)
+const PO_REV={}, EMB_REV={}; Object.keys(SB).filter(k=>!k.startsWith("combo")).forEach(s=>{PO_REV[poInsumoNome(s)]=s;EMB_REV[embInsumoNome(s)]=s;});
+const GERAIS_INSUMOS=["Base Líquida","Glicose","Goma Xantana","Açúcar"]; // compartilhados (receita Padrão/líquida)
 // qual insumo de base 1 gelo usa, e quanto, pela receita
 function baseInsumoDe(id,sabor){return id==="economica"?poInsumoNome(sabor):(getReceita(id).baseInsumo||"Base Líquida");}
 function baseGramasDe(id,sabor){return id==="economica"?poGramasGelo(sabor):baseDe(getReceita(id),sabor);}
 // custo de produzir 1 gelo com a receita escolhida, a preço ATUAL dos insumos
 function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();
   return baseGramasDe(id,sabor)*custoInsumoUn(baseInsumoDe(id,sabor))+(+r.glicose||0)*custoInsumoUn("Glicose")+
-    (+r.xantana||0)*custoInsumoUn("Goma Xantana")+(+r.embalagem||0)*custoInsumoUn("Embalagens")+
+    (+r.xantana||0)*custoInsumoUn("Goma Xantana")+(+r.embalagem||1)*custoInsumoUn(embInsumoNome(sabor))+
     (+r.acucar||0)*(P.acucar||0);}
 // insumos consumidos por 1 gelo (pra baixar do estoque de insumo) pela receita escolhida
 function recInsDe(id,sabor){const r=getReceita(id);
-  const out={"Glicose":+r.glicose||0,"Goma Xantana":+r.xantana||0,"Embalagens":+r.embalagem||0,"Açúcar":+r.acucar||0};
-  out[baseInsumoDe(id,sabor)]=baseGramasDe(id,sabor); return out;}
+  const out={"Glicose":+r.glicose||0,"Goma Xantana":+r.xantana||0,"Açúcar":+r.acucar||0};
+  out[baseInsumoDe(id,sabor)]=baseGramasDe(id,sabor);
+  out[embInsumoNome(sabor)]=+r.embalagem||1; return out;}
 // custo real MÉDIO das unidades em estoque (FIFO) — é o que o lucro da venda usa
 function custoEstoqueSabor(sabor){
   let rem=getEst()[sabor]||0;
@@ -2453,9 +2490,14 @@ function dispInsumo(nome,ie){ ie=ie||getInsE(); return ((ie[nome]&&ie[nome].qtd)
 function migrarInsumosDisponivel(){
   try{ const ie=get("insumoEst",null); if(!ie)return; let mud=false;
     if(ie["Açúcar"]&&ie["Açúcar"].ajustado){ ie["Açúcar"]={...ie["Açúcar"], qtd:(ie["Açúcar"].qtd||0)+consumidoInsumo("Açúcar")}; delete ie["Açúcar"].ajustado; mud=true; }
-    // pó por sabor: cria a entrada (qtd 0) pra cada sabor já produzido na Econômica, pra aparecer nos Insumos
-    const fl=new Set(); getPr().forEach(p=>{ if((p.receita||"padrao")==="economica") fl.add(p.sabor); });
-    fl.forEach(s=>{ const nm=poInsumoNome(s); if(!ie[nm]){ ie[nm]={qtd:0,un:"g",custoUnit:0.03}; mud=true; } });
+    // pó (Econômica) + embalagem (todos) por sabor: cria a entrada (qtd 0) pros sabores já produzidos
+    const flPo=new Set(), flEmb=new Set();
+    getPr().forEach(p=>{ flEmb.add(p.sabor); if((p.receita||"padrao")==="economica") flPo.add(p.sabor); });
+    flPo.forEach(s=>{ const nm=poInsumoNome(s), cur=ie[nm];
+      if(!cur){ ie[nm]={qtd:0,un:"g",custoUnit:0.0424}; mud=true; }                       // R$42,40/kg
+      else if((cur.qtd||0)===0 && cur.custoUnit===0.03){ ie[nm]={...cur,custoUnit:0.0424}; mud=true; } });
+    const embPad=(ie["Embalagens"]&&ie["Embalagens"].custoUnit)||0.10;
+    flEmb.forEach(s=>{ const nm=embInsumoNome(s); if(!ie[nm]){ ie[nm]={qtd:0,un:"un",custoUnit:embPad}; mud=true; } });
     if(mud) set("insumoEst",ie);
   }catch(e){console.warn("migra insumos:",e);}
 }
@@ -2681,47 +2723,56 @@ function salvarGasto(){
 // quanto de cada insumo 1 gelo consome (considerando as duas receitas/bases)
 function consumoPorGelo(nome){
   if(PO_REV[nome]!==undefined) return poGramasGelo(PO_REV[nome]); // base em pó por sabor (Econômica)
-  const pad=getReceita("padrao"), eco=getReceita("economica");
+  if(EMB_REV[nome]!==undefined) return +getReceita("padrao").embalagem||1; // embalagem por sabor (1/gelo)
+  const pad=getReceita("padrao");
   switch(nome){
     case "Base Líquida": return +pad.base||0;        // base líquida -> receita Padrão
     case "Glicose":      return +pad.glicose||0;
     case "Goma Xantana": return +pad.xantana||0;
-    case "Embalagens":   return +pad.embalagem||+eco.embalagem||1;
     case "Açúcar":       return +pad.acucar||0;
     default: return 0;
   }
 }
-function rendeGelos(ie){ // quantos gelos ainda dá pra fazer com o DISPONÍVEL (registrado − produzido)
-  const q=n=>Math.max(0,dispInsumo(n,ie)), pad=getReceita("padrao");
-  let padMax=Infinity;
-  if(+pad.base)    padMax=Math.min(padMax,q("Base Líquida")/+pad.base);
-  if(+pad.glicose) padMax=Math.min(padMax,q("Glicose")/+pad.glicose);
-  if(+pad.xantana) padMax=Math.min(padMax,q("Goma Xantana")/+pad.xantana);
-  if(!isFinite(padMax))padMax=0;
-  let ecoMax=0; Object.keys(SB).filter(k=>!k.startsWith("combo")).forEach(s=>{const g=poGramasGelo(s); if(g)ecoMax+=q(poInsumoNome(s))/g;}); // soma do pó de cada sabor
-  const emb=q("Embalagens")/(+pad.embalagem||1);
-  const total=Math.min(padMax+ecoMax,emb);
+function rendeGelos(ie){ // estimativa: por sabor, o menor entre pó e embalagem disponíveis
+  const q=n=>Math.max(0,dispInsumo(n,ie));
+  let total=0;
+  Object.keys(SB).filter(k=>!k.startsWith("combo")).forEach(s=>{
+    const g=poGramasGelo(s); const poGel=g?q(poInsumoNome(s))/g:0; const embGel=q(embInsumoNome(s));
+    total+=Math.min(poGel,embGel);
+  });
   return isFinite(total)?Math.floor(total):0;
 }
 function renderInsumos(){
   const ie=getInsE();
-  const nomes=Object.keys(ie);
-  const valor=nomes.reduce((a,n)=>a+Math.max(0,dispInsumo(n,ie))*(ie[n].custoUnit||0),0);
-  const baixo=nomes.filter(n=>{const c=consumoPorGelo(n);return c && dispInsumo(n,ie)/c < LIMITE_PIC;});
-  T("in-n",nomes.length); T("in-val",R0(valor)); T("in-baixo",baixo.length);
-  T("in-rende",rendeGelos(ie).toLocaleString("pt-BR"));
-  document.getElementById("in-tab").innerHTML=nomes.map(n=>{
-    const i=ie[n], cons=consumoPorGelo(n), disp=dispInsumo(n,ie), usado=consumidoInsumo(n), reg=i.qtd||0;
-    const rende=cons?disp/cons:null;
-    const crit=rende!=null&&rende<LIMITE_PIC, neg=disp<0;
+  const flav=Object.keys(SB).filter(k=>!k.startsWith("combo"));
+  const ativos=flav.filter(s=> ie[poInsumoNome(s)]||ie[embInsumoNome(s)] || consumidoInsumo(poInsumoNome(s))>0 || consumidoInsumo(embInsumoNome(s))>0 );
+  let acabando=0;
+  // ---- estoque POR SABOR ----
+  document.getElementById("in-sabores").innerHTML=ativos.map(s=>{
+    const dPo=dispInsumo(poInsumoNome(s),ie), dEm=dispInsumo(embInsumoNome(s),ie), g=poGramasGelo(s);
+    const gel=Math.max(0,Math.floor(Math.min(g?dPo/g:0, dEm)));
+    const crit=gel<LIMITE_PIC; if(crit)acabando++;
+    const cel=(v,un)=> v<0?`<span style="color:var(--red)">faltam ${Math.abs(v).toLocaleString("pt-BR")}${un}</span>`:`${v.toLocaleString("pt-BR")}${un}`;
     return `<tr>
-      <td><span class="tag"><span class="sym" style="color:var(--gold-soft);font-size:17px">science</span><b>${INSUMO_LABEL[n]||n}</b></span></td>
-      <td><b style="color:${neg?'var(--red)':'inherit'}">${disp.toLocaleString("pt-BR")} ${i.un||''}</b>${rende!=null&&!neg?`<br><span style="font-size:10.5px;color:var(--muted)">≈ ${Math.floor(rende).toLocaleString("pt-BR")} gelos saborizados</span>`:(neg?`<br><span style="font-size:10.5px;color:var(--red)">faltam ${Math.abs(disp).toLocaleString("pt-BR")} ${i.un||''} (produziu mais do que registrou)</span>`:'')}<br><span style="font-size:10px;color:var(--muted)">registrado ${reg.toLocaleString("pt-BR")} · produzido ${usado.toLocaleString("pt-BR")}</span></td>
-      <td class="money">${R(i.custoUnit||0)}<span style="font-size:10.5px;color:var(--muted)">/${i.un||''}</span></td>
-      <td>${i.forn||'—'}</td>
-      <td style="white-space:nowrap">${crit?'<span class="tag" style="color:var(--red)"><span class="dot" style="background:var(--red)"></span>Acabando</span>':'<span class="tag" style="color:var(--green)"><span class="dot" style="background:var(--green)"></span>OK</span>'} ${lapis("editarInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}${lixo("delInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}</td>
+      <td><span class="tag"><span class="dot" style="background:${CC[s]||'#888'}"></span><b>${SB[s]}</b></span></td>
+      <td>${cel(dPo,' g')}</td>
+      <td>${cel(dEm,' un')}</td>
+      <td><b style="color:${crit?'var(--red)':'var(--green)'}">${gel.toLocaleString("pt-BR")}</b></td>
+      <td style="text-align:right;white-space:nowrap"><span class="chip" style="cursor:pointer;font-size:11px" onclick="abrirReporSabor('${s}')">Repor</span></td>
     </tr>`;
-  }).join("")||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhum insumo cadastrado.</td></tr>';
+  }).join("")||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhum sabor com estoque ainda. Toque em "Repor / novo sabor".</td></tr>';
+  // ---- insumos GERAIS ----
+  document.getElementById("in-gerais").innerHTML=GERAIS_INSUMOS.filter(n=>ie[n]).map(n=>{
+    const i=ie[n], disp=dispInsumo(n,ie), cons=consumoPorGelo(n), rende=cons?Math.floor(disp/cons):null;
+    return `<tr><td><b>${INSUMO_LABEL[n]||n}</b></td>
+      <td><b style="color:${disp<0?'var(--red)':'inherit'}">${disp.toLocaleString("pt-BR")} ${i.un||''}</b>${rende!=null&&disp>=0?` <span class="csub">≈${rende.toLocaleString("pt-BR")} gelos</span>`:''}</td>
+      <td class="money">${R(i.custoUnit||0)}<span class="csub">/${i.un||''}</span></td>
+      <td style="text-align:right;white-space:nowrap">${lapis("editarInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}${lixo("delInsumoEstoque('"+n.replace(/'/g,"\\'")+"')")}</td></tr>`;
+  }).join("")||'<tr><td colspan="4" class="csub" style="padding-top:14px">Sem insumos gerais. Use "Comprar insumo" (Base líquida, Glicose, Goma, Açúcar).</td></tr>';
+  // ---- KPIs ----
+  const todos=[...ativos.flatMap(s=>[poInsumoNome(s),embInsumoNome(s)]), ...GERAIS_INSUMOS.filter(n=>ie[n])];
+  const valor=todos.reduce((a,n)=>a+Math.max(0,dispInsumo(n,ie))*((ie[n]&&ie[n].custoUnit)||0),0);
+  T("in-n",ativos.length); T("in-val",R0(valor)); T("in-baixo",acabando); T("in-rende",rendeGelos(ie).toLocaleString("pt-BR"));
   // Histórico das últimas compras de insumo (gastos de compra)
   const compras=getG().filter(g=>/^Compra de insumo/i.test(g.desc||g.descricao||"")).sort((a,b)=>(b.data||"").localeCompare(a.data||"")).slice(0,30);
   const ihEl=document.getElementById("in-hist");
@@ -2732,7 +2783,37 @@ function renderInsumos(){
     ||'<tr><td colspan="4" class="csub" style="padding-top:14px">Nenhuma compra registrada ainda. Use "Comprar insumo".</td></tr>';
 }
 
-/* ---- COMPRAR INSUMO (vários itens) -> entra no insumoEst + vira gasto ---- */
+/* ---- REPOR SABOR: base em pó + embalagem de um sabor de uma vez ---- */
+function abrirReporSabor(sabor){
+  const sel=document.getElementById("rep-sabor");
+  const flav=Object.keys(SB).filter(k=>!k.startsWith("combo"));
+  sel.innerHTML=flav.map(s=>`<option value="${s}">${SB[s]}</option>`).join("");
+  if(sabor)sel.value=sabor;
+  ["rep-po-qtd","rep-po-val","rep-emb-qtd","rep-emb-val"].forEach(id=>document.getElementById(id).value=0);
+  document.getElementById("rep-data").value=hoje();
+  document.getElementById("rep-forn").value="Shoppe";
+  const upd=()=>{ const s=sel.value, ie=getInsE(); const dp=dispInsumo(poInsumoNome(s),ie),de=dispInsumo(embInsumoNome(s),ie);
+    document.getElementById("rep-hint").innerHTML=`Hoje em estoque: <b>${dp.toLocaleString("pt-BR")}g</b> de pó · <b>${de.toLocaleString("pt-BR")}</b> embalagens. Dose: ${s==="coco"?"5g":"4g"}/gelo.`; };
+  sel.onchange=upd; upd();
+  document.getElementById("modal-repor").style.display="flex";
+}
+function salvarReporSabor(){
+  const s=document.getElementById("rep-sabor").value;
+  const pq=+document.getElementById("rep-po-qtd").value||0, pv=+document.getElementById("rep-po-val").value||0;
+  const eq=+document.getElementById("rep-emb-qtd").value||0, ev=+document.getElementById("rep-emb-val").value||0;
+  if(pq<=0 && eq<=0){alert("Coloque a quantidade de pó e/ou embalagem que você comprou.");return;}
+  const data=document.getElementById("rep-data").value||hoje(), forn=document.getElementById("rep-forn").value||"—";
+  const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
+  const gastos=get("gastos",null)||SEED.gastos.slice();
+  const addCompra=(nome,un,qtd,val,tag)=>{ const prev=ie[nome]||{qtd:0,un,custoUnit:0};
+    const nq=(prev.qtd||0)+qtd, ncu=nq>0?(((prev.qtd||0)*(prev.custoUnit||0))+val)/nq:0;
+    ie[nome]={qtd:nq,un,custoUnit:ncu,forn};
+    gastos.push({id:Date.now()+tag,data,desc:"Compra de insumo: "+nome,cat:un==="un"?"Embalagens":"Ingredientes",valor:val,tipo:"Custo variável",status:"Pago"}); };
+  if(pq>0) addCompra(poInsumoNome(s),"g",pq,pv,0);
+  if(eq>0) addCompra(embInsumoNome(s),"un",eq,ev,1);
+  set("insumoEst",ie); set("gastos",gastos); fecharModal(); rerenderAll(); show("insumos");
+}
+/* ---- COMPRAR INSUMO (gerais) -> entra no insumoEst + vira gasto ---- */
 function abrirInsumo(){
   document.getElementById("i-data").value=hoje();
   document.getElementById("i-forn").value="Shoppe";
@@ -2741,7 +2822,7 @@ function abrirInsumo(){
 }
 function addLinhaI(){
   const d=document.createElement("div"); d.className="linha";
-  const opts=Object.keys(INSUMOS_DEF).map(n=>`<option value="${n}">${INSUMO_LABEL[n]||n} (${INSUMOS_DEF[n]})</option>`).join("");
+  const opts=GERAIS_INSUMOS.map(n=>`<option value="${n}">${INSUMO_LABEL[n]||n} (${INSUMOS_DEF[n]})</option>`).join("");
   d.innerHTML=`<span class="sym rm" onclick="this.parentNode.remove();calcI()">delete</span>
     <div class="f-row" style="margin:0 0 8px"><label>Insumo</label><select class="f-in i-nome">${opts}</select></div>
     <div class="f-grid2"><div class="f-row" style="margin:0"><label>Quantidade</label><input type="number" class="f-in i-qtd" min="1" value="1000" oninput="calcI()"></div>
