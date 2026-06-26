@@ -1497,7 +1497,8 @@ const PO_REV={}, EMB_REV={}; Object.keys(SB).filter(k=>!k.startsWith("combo")).f
 const GERAIS_INSUMOS=["Base Líquida","Glicose","Goma Xantana","Açúcar"]; // compartilhados (receita Padrão/líquida)
 // qual insumo de base 1 gelo usa, e quanto, pela receita
 function baseInsumoDe(id,sabor){return id==="economica"?poInsumoNome(sabor):(getReceita(id).baseInsumo||"Base Líquida");}
-function baseGramasDe(id,sabor){return id==="economica"?poGramasGelo(sabor):baseDe(getReceita(id),sabor);}
+// Padrão (base líquida): todos os sabores usam a MESMA base. O "Base do Coco" só vale na Econômica (pó).
+function baseGramasDe(id,sabor){return id==="economica"?poGramasGelo(sabor):(+getReceita(id).base||0);}
 // custo de produzir 1 gelo com a receita escolhida, a preço ATUAL dos insumos
 function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();
   return baseGramasDe(id,sabor)*custoInsumoUn(baseInsumoDe(id,sabor))+(+r.glicose||0)*custoInsumoUn("Glicose")+
