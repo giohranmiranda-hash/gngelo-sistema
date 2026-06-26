@@ -919,7 +919,7 @@
         <div class="f-row"><label>Margem desejada (%)</label><input type="number" step="1" class="f-in" id="pa-marg"></div>
         <div class="f-row"><label>Preço do açúcar (R$/g)</label><input type="number" step="0.001" class="f-in" id="pa-acucar"></div>
         <div class="f-row"><label>Frete por km (R$)</label><input type="number" step="0.1" class="f-in" id="pa-fkm"></div>
-        <div class="f-row"><label>Validade dos gelos (dias)</label><input type="number" step="1" class="f-in" id="pa-val"></div>
+        <div class="f-row"><label>Validade dos gelos (dias) — 180 = 6 meses</label><input type="number" step="1" class="f-in" id="pa-val"></div>
       </div>
       <button class="btn-gold" style="margin-top:6px" onclick="salvarParams()">Salvar parâmetros</button>
     </div>
@@ -2426,7 +2426,7 @@ function salvarParams(){
     margem:+document.getElementById("pa-marg").value||0,
     acucar:+document.getElementById("pa-acucar").value||0,
     fkm:+document.getElementById("pa-fkm").value||0,
-    validadeDias:+document.getElementById("pa-val").value||20
+    validadeDias:+document.getElementById("pa-val").value||180
   });
   set("params",p); rerenderAll(); alert("Parâmetros salvos. As contas já usam os novos valores.");
 }
@@ -2477,7 +2477,7 @@ function restaurarBackup(input){
 }
 
 /* ===== REGISTRAR (venda/produção/gasto) — multi-itens, grava de verdade ===== */
-const PARAMS=()=>Object.assign({imp:6,margem:40,acucar:0.005,fkm:2.5,validadeDias:20,com:0},get("params",null)||{});
+const PARAMS=()=>Object.assign({imp:6,margem:40,acucar:0.005,fkm:2.5,validadeDias:180,com:0},get("params",null)||{});
 function addDias(d,n){const dt=new Date(d+"T00:00:00");dt.setDate(dt.getDate()+n);return dt.toISOString().slice(0,10);}
 const SABORES_VENDA=Object.keys(SB).filter(k=>!k.startsWith("combo"));
 const hoje=()=>new Date().toISOString().slice(0,10);
@@ -2503,7 +2503,15 @@ function migrarInsumosDisponivel(){
     if(mud) set("insumoEst",ie);
   }catch(e){console.warn("migra insumos:",e);}
 }
-function rerenderAll(){migrarInsumosDisponivel();render();renderVendas();renderEstoque();renderLogistica();renderCalendario();renderFinanceiro();renderInvestimentos();renderMetas();renderRelatorios();renderProducao();renderInsumos();renderReceitas();renderClientes();renderComissoes();renderIA();renderConfig();}
+// Migração única: validade vira 6 meses (180 dias) e recalcula os lotes já produzidos
+function migrarValidade(){
+  try{ const pa=get("params",null)||{}; if(pa.validadeMigrada180)return;
+    const pr=get("producoes",null);
+    if(pr&&pr.length){ pr.forEach(p=>{ if(p.data)p.validade=addDias(p.data,180); }); set("producoes",pr); }
+    pa.validadeDias=180; pa.validadeMigrada180=true; set("params",pa);
+  }catch(e){console.warn("migra validade:",e);}
+}
+function rerenderAll(){migrarInsumosDisponivel();migrarValidade();render();renderVendas();renderEstoque();renderLogistica();renderCalendario();renderFinanceiro();renderInvestimentos();renderMetas();renderRelatorios();renderProducao();renderInsumos();renderReceitas();renderClientes();renderComissoes();renderIA();renderConfig();}
 
 /* ---- VENDA ---- */
 var EDIT_V=null,EDIT_P=null,EDIT_G=null,EDIT_E=null;
