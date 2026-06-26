@@ -1499,10 +1499,14 @@ const GERAIS_INSUMOS=["Base Líquida","Glicose","Goma Xantana","Açúcar"]; // c
 function baseInsumoDe(id,sabor){return id==="economica"?poInsumoNome(sabor):(getReceita(id).baseInsumo||"Base Líquida");}
 // Padrão (base líquida): todos os sabores usam a MESMA base. O "Base do Coco" só vale na Econômica (pó).
 function baseGramasDe(id,sabor){return id==="economica"?poGramasGelo(sabor):(+getReceita(id).base||0);}
+// preço médio da embalagem (uniforme entre sabores) — pra mesma receita dar o mesmo custo
+function precoEmbalagem(){ const ie=getInsE(); let soma=0,n=0;
+  Object.keys(ie).forEach(k=>{ if(EMB_REV[k]!==undefined){ const c=+ie[k].custoUnit||0; if(c>0){soma+=c;n++;} } });
+  return n?soma/n:((ie["Embalagens"]&&+ie["Embalagens"].custoUnit)||0.10); }
 // custo de produzir 1 gelo com a receita escolhida, a preço ATUAL dos insumos
 function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();
   return baseGramasDe(id,sabor)*custoInsumoUn(baseInsumoDe(id,sabor))+(+r.glicose||0)*custoInsumoUn("Glicose")+
-    (+r.xantana||0)*custoInsumoUn("Goma Xantana")+(+r.embalagem||1)*custoInsumoUn(embInsumoNome(sabor))+
+    (+r.xantana||0)*custoInsumoUn("Goma Xantana")+(+r.embalagem||1)*precoEmbalagem()+
     (+r.acucar||0)*(P.acucar||0);}
 // insumos consumidos por 1 gelo (pra baixar do estoque de insumo) pela receita escolhida
 function recInsDe(id,sabor){const r=getReceita(id);
