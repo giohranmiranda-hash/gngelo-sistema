@@ -30,13 +30,13 @@
     "semantic_hash": "11cf8959ba7f9644fe4ad3ac9ec668ec"
   },
   "index.html": {
-    "mtime": 1782955621.7401628,
-    "ast_hash": "54db88e22c0a6c0b423a8d9eb70b8456",
+    "mtime": 1782972686.033854,
+    "ast_hash": "5ba81bca936730d4d87331505f3794c7",
     "semantic_hash": ""
   },
   "preview-dashboard-premium.html": {
-    "mtime": 1782935967.7465386,
-    "ast_hash": "80491fb39e5b2680bc29171cbfff6ea2",
+    "mtime": 1782955680.858598,
+    "ast_hash": "54db88e22c0a6c0b423a8d9eb70b8456",
     "semantic_hash": ""
   },
   ".claude/settings.json": {

@@ -641,6 +641,7 @@
       <div class="kpi"><div class="ic" style="background:rgba(212,96,79,.12);border-color:rgba(212,96,79,.3);color:var(--red)"><span class="sym">warning</span></div><div class="k-lbl">Acabando</div><div class="k-val" id="in-baixo">—</div><div class="k-foot">precisam repor</div></div>
       <div class="kpi"><div class="ic"><span class="sym">ac_unit</span></div><div class="k-lbl">Dá pra produzir</div><div class="k-val" id="in-rende">—</div><div class="k-foot">gelos saborizados (estimativa)</div></div>
     </div>
+    <div id="in-gargalo"></div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div><h3 style="margin:0"><span class="sym">ac_unit</span>Estoque por sabor</h3><div class="csub">Base em pó + embalagem de cada sabor — veja qual está acabando</div></div>
@@ -2046,6 +2047,9 @@ function sugestoesIA(){
   if(acab.length){const x=acab[0];
     sug.push({p:1,ic:"🧪",cor:"var(--red)",tit:`Repor ${INSUMO_LABEL[x.n]||x.n}`,
       txt:x.d<0?`Produziu mais do que registrou (faltam ${Math.abs(x.d).toLocaleString("pt-BR")}). Lance a compra pra acertar.`:`Só dá pra ~${Math.max(0,Math.floor(x.rende)).toLocaleString("pt-BR")} gelos. Compre antes de travar a produção.`,acao:chip("Ir pros Insumos","show('insumos')")});}
+  // gargalo de produção (o que comprar pra liberar mais gelos)
+  const gg=gargaloProducao(ie);
+  if(gg && gg.total<1000) sug.push({p:2,ic:"⚙️",cor:"#e0a73a",tit:`Gargalo: ${gg.nome}`,txt:gg.txt,acao:chip("Ir pros Insumos","show('insumos')")});
   // validade
   let venc=0,vcd=0; Object.keys(est).forEach(k=>{ if((est[k]||0)>0)(lotesDoSabor(k)||[]).forEach(l=>{const st=statusValidade(l.validade); if(st.key==="vencido")vcd+=l.restante; else if(st.key==="vencendo")venc+=l.restante;});});
   if(vcd||venc) sug.push({p:1,ic:"⏰",cor:vcd?"var(--red)":"#e0a73a",tit:vcd?`${vcd} un vencidas no estoque`:`${venc} un vencendo`,
@@ -2885,6 +2889,27 @@ function rendeGelos(ie){ // total: (base líquida compartilhada + pó de cada sa
   const total=Math.min(padCapacidade(ie)+ecoMax, embTotal);
   return isFinite(total)?Math.floor(total):0;
 }
+// O que está LIMITANDO a produção agora — e quanto libera se repor
+function gargaloProducao(ie){
+  ie=ie||getInsE(); const q=n=>Math.max(0,dispInsumo(n,ie)), pad=getReceita("padrao");
+  const gerais=[];
+  if(+pad.base>0)    gerais.push({nome:"Base Líquida",un:"ml",por:+pad.base});
+  if(+pad.glicose>0) gerais.push({nome:"Glicose",un:"g",por:+pad.glicose});
+  if(+pad.xantana>0) gerais.push({nome:"Goma Xantana",un:"g",por:+pad.xantana});
+  gerais.forEach(g=>g.cap=Math.floor(q(g.nome)/g.por));
+  gerais.sort((a,b)=>a.cap-b.cap);
+  let poCap=0, embCap=0;
+  Object.keys(SB).filter(k=>!k.startsWith("combo")).forEach(s=>{ const g=poGramasGelo(s); if(g)poCap+=q(poInsumoNome(s))/g; embCap+=q(embInsumoNome(s)); });
+  const baseCap=(gerais.length?gerais[0].cap:0)+Math.floor(poCap);
+  const total=Math.min(baseCap,Math.floor(embCap));
+  if(embCap<baseCap)
+    return {tipo:"embalagem",nome:"Embalagens",total,txt:`As <b>embalagens</b> são o gargalo: dá pra embalar só <b>${Math.floor(embCap).toLocaleString("pt-BR")}</b> gelos (tem base pra ~${Math.floor(baseCap).toLocaleString("pt-BR")}). Reponha embalagem dos sabores que vendem mais.`};
+  if(!gerais.length) return null;
+  const g1=gerais[0], g2=gerais[1];
+  const ganhoMil=Math.floor(1000/g1.por); // +1000 un do insumo => +N gelos
+  const ate=g2?` Depois dela, o próximo gargalo é <b>${g2.nome}</b> (~${g2.cap.toLocaleString("pt-BR")} gelos).`:"";
+  return {tipo:"insumo",nome:g1.nome,total,txt:`Quem limita a produção é a <b>${g1.nome}</b>: dá pra ~<b>${g1.cap.toLocaleString("pt-BR")}</b> gelos na receita Padrão. Cada <b>+1.000 ${g1.un}</b> comprados liberam <b>+${ganhoMil.toLocaleString("pt-BR")} gelos</b>.${ate}`};
+}
 function renderInsumos(){
   const ie=getInsE();
   const flav=Object.keys(SB).filter(k=>!k.startsWith("combo"));
@@ -2896,12 +2921,13 @@ function renderInsumos(){
     const baseDisp=(g?Math.max(0,dPo)/g:0)+padCap; // pó do sabor + base líquida compartilhada
     const gel=Math.max(0,Math.floor(Math.min(baseDisp, Math.max(0,dEm))));
     const crit=gel<LIMITE_PIC; if(crit)acabando++;
+    const motivo=crit?(Math.max(0,dEm)<baseDisp?"falta embalagem":"falta base/pó"):"";
     const cel=(v,un)=> v<0?`<span style="color:var(--red)">faltam ${Math.abs(v).toLocaleString("pt-BR")}${un}</span>`:`${v.toLocaleString("pt-BR")}${un}`;
     return `<tr>
       <td><span class="tag"><span class="dot" style="background:${CC[s]||'#888'}"></span><b>${SB[s]}</b></span></td>
       <td>${cel(dPo,' g')}</td>
       <td>${cel(dEm,' un')}</td>
-      <td><b style="color:${crit?'var(--red)':'var(--green)'}">${gel.toLocaleString("pt-BR")}</b></td>
+      <td><b style="color:${crit?'var(--red)':'var(--green)'}">${gel.toLocaleString("pt-BR")}</b>${motivo?`<br><span style="font-size:10px;color:var(--red)">${motivo}</span>`:''}</td>
       <td style="text-align:right;white-space:nowrap"><span class="chip" style="cursor:pointer;font-size:11px" onclick="abrirReporSabor('${s}')">Repor</span></td>
     </tr>`;
   }).join("")||'<tr><td colspan="5" class="csub" style="padding-top:14px">Nenhum sabor com estoque ainda. Toque em "Repor / novo sabor".</td></tr>';
@@ -2917,6 +2943,10 @@ function renderInsumos(){
   const todos=[...ativos.flatMap(s=>[poInsumoNome(s),embInsumoNome(s)]), ...GERAIS_INSUMOS.filter(n=>ie[n])];
   const valor=todos.reduce((a,n)=>a+Math.max(0,dispInsumo(n,ie))*((ie[n]&&ie[n].custoUnit)||0),0);
   T("in-n",ativos.length); T("in-val",R0(valor)); T("in-baixo",acabando); T("in-rende",rendeGelos(ie).toLocaleString("pt-BR"));
+  // banner do gargalo: o que está segurando a produção
+  const gg=gargaloProducao(ie), ge=document.getElementById("in-gargalo");
+  if(ge) ge.innerHTML = gg ? `<div style="background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.35);border-radius:13px;padding:13px 15px;font-size:13px;line-height:1.55;margin-bottom:16px">
+    ⚙️ <b style="color:var(--gold-soft)">O que está te limitando:</b> ${gg.txt}</div>` : "";
   // Histórico das últimas compras de insumo (gastos de compra)
   const compras=getG().filter(g=>/^Compra de insumo/i.test(g.desc||g.descricao||"")).sort((a,b)=>(b.data||"").localeCompare(a.data||"")).slice(0,30);
   const ihEl=document.getElementById("in-hist");
