@@ -3194,17 +3194,19 @@ function editarEntrega(id){
   document.getElementById("e-status").value=e.status||"Aguardando carga";
   calcFrete(); calcTotalE(); document.getElementById("modal-entrega").style.display="flex";
 }
-// GPS preciso opcional (LocationIQ — grátis, 5.000 buscas/dia): cole a chave e os endereços ficam bem mais certeiros
+// GPS preciso (LocationIQ — grátis, 5.000 buscas/dia). Token publicável já embutido; dá pra trocar pelo botão.
+const LOC_KEY_PADRAO="pk.4422e3d8a9e92587e8a1a1e1115c9ac5";
+function locKey(){return localStorage.getItem("gng__locKey")||LOC_KEY_PADRAO;}
 function conectarGPS(){
   const atual=localStorage.getItem("gng__locKey")||"";
-  const k=prompt("GPS mais preciso (grátis):\n1. Crie uma conta em locationiq.com (plano Free)\n2. Copie sua Access Token\n3. Cole aqui.\n\nDeixe em branco e dê OK para desconectar (volta pro GPS normal).",atual);
+  const k=prompt("GPS preciso (LocationIQ) — já vem ATIVO com a chave da GN Gelo.\n\nPra usar OUTRA chave, cole aqui. Deixe em branco e dê OK pra voltar à chave padrão.",atual);
   if(k===null)return;
   const key=k.trim();
-  if(key){ localStorage.setItem("gng__locKey",key); alert("✅ GPS preciso conectado! Novos endereços vão usar o LocationIQ (os já marcados não mudam)."); }
-  else { localStorage.removeItem("gng__locKey"); alert("GPS preciso desconectado — voltou pro geocodificador padrão (grátis)."); }
+  if(key){ localStorage.setItem("gng__locKey",key); alert("✅ Chave própria salva! Novos endereços usam ela."); }
+  else { localStorage.removeItem("gng__locKey"); alert("✅ Usando a chave padrão da GN Gelo (GPS preciso continua ativo)."); }
   atualizarBtnGPS();
 }
-function atualizarBtnGPS(){ const b=document.getElementById("lg-gps"); if(b)b.textContent=localStorage.getItem("gng__locKey")?"📡 GPS ✓":"📡 GPS"; }
+function atualizarBtnGPS(){ const b=document.getElementById("lg-gps"); if(b)b.textContent=locKey()?"📡 GPS ✓":"📡 GPS"; }
 async function geocode(q){
   q=(q||"").trim(); if(!q)return null;
   const cep=q.replace(/\D/g,"");
@@ -3229,8 +3231,8 @@ async function geocode(q){
     const best=(perto.length?perto:cands).sort((a,b)=>dist(a)-dist(b))[0];
     return [best.lat,best.lng];
   };
-  // GPS preciso (LocationIQ, grátis com chave) — quando conectado, é a 1ª opção
-  const lk=localStorage.getItem("gng__locKey")||"";
+  // GPS preciso (LocationIQ) — 1ª opção; se falhar, cai no Nominatim abaixo
+  const lk=locKey();
   if(lk){
     try{
       const r=await fetch("https://us1.locationiq.com/v1/search?key="+encodeURIComponent(lk)+"&format=json&countrycodes=br&limit=6&q="+encodeURIComponent(q));
