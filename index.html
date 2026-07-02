@@ -1545,7 +1545,7 @@ function baseGramasDe(id,sabor){return id==="economica"?poGramasGelo(sabor):(+ge
 // preço médio da embalagem (uniforme entre sabores; só conta quem TEM estoque/preço real)
 function precoEmbalagem(){ const ie=getInsE(); let soma=0,n=0;
   Object.keys(ie).forEach(k=>{ if(EMB_REV[k]!==undefined && (ie[k].qtd||0)>0){ const c=+ie[k].custoUnit||0; if(c>0){soma+=c;n++;} } });
-  return n?soma/n:((ie["Embalagens"]&&+ie["Embalagens"].custoUnit)||0.10); }
+  return n?soma/n:0.16; }
 // preço médio da base em pó (uniforme; só conta compras reais; na falta usa R$42,40/kg = 0,0424/g)
 function precoPo(){ const ie=getInsE(); let soma=0,n=0;
   Object.keys(ie).forEach(k=>{ if(PO_REV[k]!==undefined && (ie[k].qtd||0)>0){ const c=+ie[k].custoUnit||0; if(c>0){soma+=c;n++;} } });
@@ -2649,8 +2649,9 @@ function migrarInsumosDisponivel(){
     flPo.forEach(s=>{ const nm=poInsumoNome(s), cur=ie[nm];
       if(!cur){ ie[nm]={qtd:0,un:"g",custoUnit:0.0424}; mud=true; }                       // R$42,40/kg
       else if((cur.qtd||0)===0 && cur.custoUnit===0.03){ ie[nm]={...cur,custoUnit:0.0424}; mud=true; } });
-    const embPad=(ie["Embalagens"]&&ie["Embalagens"].custoUnit)||0.10;
-    flEmb.forEach(s=>{ const nm=embInsumoNome(s); if(!ie[nm]){ ie[nm]={qtd:0,un:"un",custoUnit:embPad}; mud=true; } });
+    flEmb.forEach(s=>{ const nm=embInsumoNome(s); if(!ie[nm]){ ie[nm]={qtd:0,un:"un",custoUnit:0.16}; mud=true; } });
+    // preço real da embalagem informado (R$0,16): corrige entradas que ficaram no provisório (0,10) ou zeradas
+    Object.keys(ie).forEach(k=>{ if(EMB_REV[k]!==undefined){ const c=+ie[k].custoUnit||0; if(c===0||c===0.10){ ie[k]={...ie[k],custoUnit:0.16}; mud=true; } } });
     if(mud) set("insumoEst",ie);
   }catch(e){console.warn("migra insumos:",e);}
 }
