@@ -494,6 +494,7 @@
             <div onclick="toggleClientesMapa()" style="display:flex;align-items:center;gap:7px;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:6px 10px;font-size:12.5px;font-weight:600">
               <span class="sw" id="lg-sw-cli"><i></i></span> Clientes
             </div>
+            <button class="btn-ghost" style="width:auto;margin:0;padding:9px 13px;white-space:nowrap" onclick="conectarGPS()" title="GPS mais preciso (LocationIQ, grátis com chave)" id="lg-gps">📡 GPS</button>
             <button class="btn-ghost" style="width:auto;margin:0;padding:9px 13px;white-space:nowrap" onclick="renderLogistica()" title="Voltar o mapa pra sua região">🎯 Recentralizar</button>
             <button class="btn-ghost" style="width:auto;margin:0;padding:9px 13px;white-space:nowrap" onclick="otimizarRota()"><span class="sym" style="font-size:15px;vertical-align:-3px">auto_awesome</span> Otimizar rota</button>
           </div>
@@ -1576,13 +1577,10 @@ const R=v=>"R$ "+(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumF
 const R0=v=>"R$ "+Math.round(v||0).toLocaleString("pt-BR");
 
 /* Mês corrente (com fallback para o último mês que tem vendas) */
+// data/hora LOCAL do aparelho (não UTC) — evita virar o dia às 21h no Brasil
+function _hojeLocal(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString();}
 function mesAtivo(vendas){
-  const now=new Date(); let m=now.toISOString().slice(0,7);
-  if(!vendas.some(v=>(v.data||"").startsWith(m))){
-    const ms=vendas.map(v=>(v.data||"").slice(0,7)).filter(Boolean).sort();
-    if(ms.length)m=ms[ms.length-1];
-  }
-  return m;
+  return _hojeLocal().slice(0,7); // SEMPRE o mês do calendário atual (use as setas pra ver meses passados)
 }
 
 /* ===== GRÁFICOS (SVG puro, offline) ===== */
@@ -1773,7 +1771,7 @@ const fmtD=s=>{const p=(s||"").split("-");return p.length===3?p[2]+"/"+p[1]:s;};
 // modo="card" inclui sempre a data ("Hoje · 24/06"); modo="curto" só o nome quando próximo.
 function rotuloData(d,modo){
   if(!d)return "—";
-  const h=new Date().toISOString().slice(0,10);
+  const h=_hojeLocal().slice(0,10);
   const dias=Math.round((new Date(d+"T00:00:00")-new Date(h+"T00:00:00"))/86400000);
   const nome=dias===0?"Hoje":dias===1?"Amanhã":dias===2?"Depois de amanhã":dias===-1?"Ontem":dias===-2?"Anteontem":null;
   if(!nome)return fmtD(d);
@@ -1857,7 +1855,7 @@ function lotesDoSabor(sabor){
 }
 function statusValidade(v){
   if(!v)return {key:"sem",txt:"—",cor:"var(--muted)"};
-  const hoje=new Date().toISOString().slice(0,10);
+  const hoje=_hojeLocal().slice(0,10);
   if(v<hoje)return {key:"vencido",txt:"Vencido",cor:"var(--red)"};
   const d=Math.round((new Date(v+"T00:00:00")-new Date(hoje+"T00:00:00"))/86400000);
   if(d<=7)return {key:"vencendo",txt:"Vence em "+d+"d",cor:"#e0a73a"};
@@ -2403,6 +2401,7 @@ function renderLogistica(){
   T("lg-pend",ent.filter(e=>e.status==="Pendente").length);
   T("lg-ok",ent.filter(e=>e.status==="Concluída").length);
   const sw=document.getElementById("lg-sw-cli"); if(sw)sw.className="sw "+(mostrarCli()?"on":"off");
+  atualizarBtnGPS();
   const ordemMap={}; if(rotaOtim) rotaOtim.forEach((id,i)=>ordemMap[id]=i+1);
   desenharMapa(ent,ordemMap);
   // pinos com coordenada FORA da região (endereço geocodificado errado) — lista pra corrigir
@@ -2496,7 +2495,7 @@ function renderCalendario(){
   const a=+ano,mo=+mes;
   const primeiro=new Date(a,mo-1,1).getDay();
   const diasNoMes=new Date(a,mo,0).getDate();
-  const hojeStr=new Date().toISOString().slice(0,10);
+  const hojeStr=_hojeLocal().slice(0,10);
   let cells="";
   for(let i=0;i<primeiro;i++) cells+=`<div class="cal-cell cal-empty"></div>`;
   for(let d=1;d<=diasNoMes;d++){
@@ -2606,7 +2605,7 @@ function baixarBackup(){
   const dados={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.indexOf("gng_")===0)dados[k]=localStorage.getItem(k);}
   const blob=new Blob([JSON.stringify({app:"GN Gelo",data:new Date().toISOString(),dados})],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download="gngelo-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click();
+  a.download="gngelo-backup-"+hoje()+".json"; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
 function restaurarBackup(input){
@@ -2629,9 +2628,9 @@ function restaurarBackup(input){
 
 /* ===== REGISTRAR (venda/produção/gasto) — multi-itens, grava de verdade ===== */
 const PARAMS=()=>Object.assign({imp:6,margem:40,acucar:0.005,fkm:2.5,validadeDias:180,com:0},get("params",null)||{});
-function addDias(d,n){const dt=new Date(d+"T00:00:00");dt.setDate(dt.getDate()+n);return dt.toISOString().slice(0,10);}
+function addDias(d,n){const dt=new Date(d+"T00:00:00");dt.setDate(dt.getDate()+n);dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset());return dt.toISOString().slice(0,10);}
 const SABORES_VENDA=Object.keys(SB).filter(k=>!k.startsWith("combo"));
-const hoje=()=>new Date().toISOString().slice(0,10);
+const hoje=()=>_hojeLocal().slice(0,10);
 const sabOpts=()=>SABORES_VENDA.map(k=>`<option value="${k}">${SB[k]}</option>`).join("");
 function fecharModal(){document.querySelectorAll(".modal-bg").forEach(m=>m.style.display="none");}
 // ===== ESTOQUE DE INSUMOS = REGISTRADO − PRODUZIDO (sincroniza sozinho, em qualquer ordem) =====
@@ -3195,6 +3194,17 @@ function editarEntrega(id){
   document.getElementById("e-status").value=e.status||"Aguardando carga";
   calcFrete(); calcTotalE(); document.getElementById("modal-entrega").style.display="flex";
 }
+// GPS preciso opcional (LocationIQ — grátis, 5.000 buscas/dia): cole a chave e os endereços ficam bem mais certeiros
+function conectarGPS(){
+  const atual=localStorage.getItem("gng__locKey")||"";
+  const k=prompt("GPS mais preciso (grátis):\n1. Crie uma conta em locationiq.com (plano Free)\n2. Copie sua Access Token\n3. Cole aqui.\n\nDeixe em branco e dê OK para desconectar (volta pro GPS normal).",atual);
+  if(k===null)return;
+  const key=k.trim();
+  if(key){ localStorage.setItem("gng__locKey",key); alert("✅ GPS preciso conectado! Novos endereços vão usar o LocationIQ (os já marcados não mudam)."); }
+  else { localStorage.removeItem("gng__locKey"); alert("GPS preciso desconectado — voltou pro geocodificador padrão (grátis)."); }
+  atualizarBtnGPS();
+}
+function atualizarBtnGPS(){ const b=document.getElementById("lg-gps"); if(b)b.textContent=localStorage.getItem("gng__locKey")?"📡 GPS ✓":"📡 GPS"; }
 async function geocode(q){
   q=(q||"").trim(); if(!q)return null;
   const cep=q.replace(/\D/g,"");
@@ -3210,20 +3220,28 @@ async function geocode(q){
       if(dc&&!dc.erro){ const exp=[dc.logradouro,dc.bairro,dc.localidade,dc.uf].filter(Boolean).join(", "); if(exp)q=exp; } }catch(e){} }
   }
   if(!/brasil|brazil/i.test(q)) q+=", Brasil";
-  // Nominatim: pega vários e escolhe o mais perto da SUA região (evita rua de mesmo nome em outro estado)
+  // entre vários resultados, escolhe o mais perto da SUA região (evita rua de mesmo nome em outro estado)
+  const melhor=(lista)=>{
+    const cands=(lista||[]).map(x=>({lat:parseFloat(x.lat),lng:parseFloat(x.lon)})).filter(x=>isFinite(x.lat)&&isFinite(x.lng));
+    if(!cands.length)return null;
+    const perto=cands.filter(x=>Math.abs(x.lat-DEPOT[0])<1.3&&Math.abs(x.lng-DEPOT[1])<1.3);
+    const dist=x=>(x.lat-DEPOT[0])**2+(x.lng-DEPOT[1])**2;
+    const best=(perto.length?perto:cands).sort((a,b)=>dist(a)-dist(b))[0];
+    return [best.lat,best.lng];
+  };
+  // GPS preciso (LocationIQ, grátis com chave) — quando conectado, é a 1ª opção
+  const lk=localStorage.getItem("gng__locKey")||"";
+  if(lk){
+    try{
+      const r=await fetch("https://us1.locationiq.com/v1/search?key="+encodeURIComponent(lk)+"&format=json&countrycodes=br&limit=6&q="+encodeURIComponent(q));
+      if(r.ok){ const b=melhor(await r.json()); if(b)return b; }
+    }catch(e){}
+  }
+  // Nominatim (grátis, sem chave)
   try{
     const vb=`&viewbox=${DEPOT[1]-1.3},${DEPOT[0]+1.3},${DEPOT[1]+1.3},${DEPOT[0]-1.3}`;
     const r=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=br&limit=6"+vb+"&q="+encodeURIComponent(q));
-    const d=await r.json();
-    if(d&&d.length){
-      const cands=d.map(x=>({lat:parseFloat(x.lat),lng:parseFloat(x.lon)})).filter(x=>isFinite(x.lat)&&isFinite(x.lng));
-      if(cands.length){
-        const perto=cands.filter(x=>Math.abs(x.lat-DEPOT[0])<1.3&&Math.abs(x.lng-DEPOT[1])<1.3);
-        const dist=x=>(x.lat-DEPOT[0])**2+(x.lng-DEPOT[1])**2;
-        const best=(perto.length?perto:cands).sort((a,b)=>dist(a)-dist(b))[0];
-        return [best.lat,best.lng];
-      }
-    }
+    const b=melhor(await r.json()); if(b)return b;
   }catch(e){}
   return null;
 }
@@ -3499,10 +3517,10 @@ function exportarCSV(){
 function getMetas(){return get("metas",null)||{};}
 function getMeta(m){return getMetas()[m]||{fat:1000,lucro:500,vendas:25};}
 function diasRestantes(m){
-  const hoje=new Date(), atual=hoje.toISOString().slice(0,7);
+  const atual=_hojeLocal().slice(0,7);
   if(m!==atual)return null;
   const [a,mes]=m.split("-"); const ult=new Date(+a,+mes,0).getDate();
-  return Math.max(0,ult-hoje.getDate());
+  return Math.max(0,ult-(+_hojeLocal().slice(8,10)));
 }
 function barraMeta(nome,atual,meta,fmt){
   const pct=meta>0?Math.min(100,atual/meta*100):0;
