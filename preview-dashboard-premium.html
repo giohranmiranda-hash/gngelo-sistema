@@ -1635,7 +1635,7 @@ function svgDonut(entries){
 }
 function render(){
   const vendas=getV(), prod=getPr(), est=getEst();
-  const m=mesAtivo(vendas);
+  const m=mesCtx().m; // respeita o mês escolhido nas setas (‹ ›)
   const [ano,mes]=m.split("-");
   const vMes=vendas.filter(v=>(v.data||"").startsWith(m));
   const pMes=prod.filter(p=>(p.data||"").startsWith(m));
