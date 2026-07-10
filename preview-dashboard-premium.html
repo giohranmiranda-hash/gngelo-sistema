@@ -273,6 +273,45 @@
     /* sub-abas e seletor de mês */
     #subtabs .subtab{padding:7px 13px;font-size:12.5px}
   }
+
+  /* ===== ANIMAÇÕES (camada premium — sutil, dourado/preto) ===== */
+  @keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fadeBg{from{opacity:0}}
+  @keyframes modalUp{from{opacity:0;transform:translateY(30px) scale(.985)}to{opacity:1;transform:none}}
+  @keyframes growBar{from{transform:scaleX(0)}}
+  @keyframes pulsar{50%{opacity:.4}}
+  /* entrada de tela: KPIs sobem em cascata, cards logo atrás */
+  .view.active .kpis .kpi{animation:riseIn .5s cubic-bezier(.22,1,.36,1) both}
+  .view.active .kpis .kpi:nth-child(2){animation-delay:.06s}
+  .view.active .kpis .kpi:nth-child(3){animation-delay:.12s}
+  .view.active .kpis .kpi:nth-child(4){animation-delay:.18s}
+  .view.active .card{animation:riseIn .55s cubic-bezier(.22,1,.36,1) both;animation-delay:.12s}
+  .view.active .card~.card{animation-delay:.22s}
+  /* barras de gráfico crescem da esquerda */
+  .track .fill{transform-origin:left;animation:growBar .8s cubic-bezier(.22,1,.36,1) both}
+  /* modais: fundo esmaece, janela sobe suave */
+  .modal-bg{animation:fadeBg .22s ease both}
+  .modal{animation:modalUp .34s cubic-bezier(.22,1,.36,1) both}
+  /* micro-interações: botões e chips respondem ao toque */
+  .btn-gold{transition:transform .16s ease,box-shadow .25s ease,filter .2s ease}
+  .btn-gold:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(201,168,76,.32);filter:brightness(1.06)}
+  .btn-gold:active{transform:scale(.98);box-shadow:0 3px 10px rgba(201,168,76,.22)}
+  .chip{transition:transform .16s ease,border-color .2s ease,background .2s ease}
+  .chip:hover{transform:translateY(-1px);border-color:rgba(201,168,76,.55)}
+  .chip:active{transform:scale(.96)}
+  .btn-ghost{transition:transform .16s ease,border-color .2s ease}
+  .btn-ghost:hover{transform:translateY(-1px);border-color:rgba(201,168,76,.5)}
+  /* KPIs ganham vida no toque/hover */
+  .kpi{transition:transform .22s ease,border-color .25s ease,box-shadow .25s ease}
+  .kpi:hover{transform:translateY(-3px);border-color:rgba(201,168,76,.4);box-shadow:0 10px 26px rgba(0,0,0,.35)}
+  /* linhas de tabela destacam ao passar */
+  tbody tr{transition:background .15s ease}
+  tbody tr:hover{background:rgba(201,168,76,.05)}
+  /* menu lateral desliza levemente */
+  nav a{transition:background .2s ease,color .2s ease,transform .18s ease}
+  nav a:hover{transform:translateX(3px)}
+  /* acessibilidade: quem prefere menos movimento, não anima */
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 <style>
   /* Logo real GN Gelo (embutida) */
@@ -2189,7 +2228,7 @@ async function geminiResponder(pergunta){
 function iaBolhaPensando(){
   const wrap=document.getElementById("ia-chat"); if(!wrap)return null;
   const d=document.createElement("div");
-  d.style.cssText="align-self:flex-start;background:var(--panel2);border:1px solid var(--line);color:var(--muted);max-width:85%;padding:9px 13px;border-radius:13px;font-size:13px;font-style:italic";
+  d.style.cssText="align-self:flex-start;background:var(--panel2);border:1px solid var(--line);color:var(--muted);max-width:85%;padding:9px 13px;border-radius:13px;font-size:13px;font-style:italic;animation:pulsar 1.1s ease infinite";
   d.textContent="digitando…"; wrap.appendChild(d); wrap.scrollTop=wrap.scrollHeight; return d;
 }
 async function iaEnviar(texto){
