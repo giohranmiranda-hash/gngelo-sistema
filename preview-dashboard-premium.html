@@ -1888,7 +1888,7 @@ function renderEstoque(){
   tag.innerHTML = (vencido||vencendo)
     ? `<span style="font-size:11px;font-weight:700;color:var(--red);background:rgba(212,96,79,.15);border:1px solid rgba(212,96,79,.3);border-radius:999px;padding:2px 9px;margin-left:6px">${vencido?vencido+" vencidos · ":""}${vencendo} vencendo</span>` : "";
   document.getElementById("es-lotes").innerHTML=linhas.map(l=>`
-    <tr><td>${tagSabor(l.sabor)}</td><td>${l.restante.toLocaleString("pt-BR")} un</td>
+    <tr><td>${tagSabor(l.sabor)}${l.receita==="economica"?' <span class="tag" style="color:var(--green);font-size:10px;padding:1px 6px">econômica</span>':''}</td><td>${l.restante.toLocaleString("pt-BR")} un</td>
     <td>${l.data?rotuloData(l.data,"curto"):"—"}</td><td>${l.validade?rotuloData(l.validade,"curto"):"<span style='color:var(--muted)'>sem lote</span>"}</td>
     <td style="text-align:right"><span class="tag" style="color:${l.st.cor}"><span class="dot" style="background:${l.st.cor}"></span>${l.st.txt}</span></td></tr>`).join("")
     ||'<tr><td colspan="5" class="csub" style="padding-top:14px">Estoque zerado.</td></tr>';
@@ -1898,7 +1898,7 @@ function lotesDoSabor(sabor){
   let rem=getEst()[sabor]||0; if(rem<=0)return [];
   const prods=getPr().filter(p=>p.sabor===sabor).sort((a,b)=>(b.data||"").localeCompare(a.data||""));
   const out=[];
-  for(const p of prods){ if(rem<=0)break; const r=Math.min(p.qtd||0,rem); if(r>0){out.push({validade:p.validade||null,data:p.data,restante:r}); rem-=r;} }
+  for(const p of prods){ if(rem<=0)break; const r=Math.min(p.qtd||0,rem); if(r>0){out.push({validade:p.validade||null,data:p.data,restante:r,receita:p.receita}); rem-=r;} }
   if(rem>0) out.push({validade:null,data:null,restante:rem});
   return out;
 }
