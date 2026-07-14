@@ -1074,7 +1074,7 @@
         <div class="f-row"><label>Cliente</label><input class="f-in" id="v-cliente" placeholder="Ex: Bar do Zé" value="Avulso"></div>
         <div class="f-row"><label>Vendedor</label><select class="f-in" id="v-vendedor"></select></div>
       </div>
-      <div class="f-row"><label>Canal de venda</label><select class="f-in" id="v-canal"><option>Venda direta</option><option>Balcão</option><option>iFood</option><option>WhatsApp</option><option>Distribuidor</option></select></div>
+      <div class="f-row"><label>Canal de venda</label><select class="f-in" id="v-canal"><option>Venda direta</option><option>Anúncio</option><option>Marketing</option><option>Balcão</option><option>iFood</option><option>WhatsApp</option><option>Distribuidor</option></select></div>
       <div class="f-row"><label>Endereço do cliente (opcional) — salva no mapa</label><input class="f-in" id="v-end" placeholder="Rua, nº, bairro ou CEP — ex: 25571-220"></div>
       <label style="font-size:12px;color:var(--muted);font-weight:600">Sabores do pedido</label>
       <div id="v-linhas" style="margin-top:6px"></div>
@@ -1661,21 +1661,55 @@ function svgChartMensal(vendas,mAtivo){
   const W=340,H=170,padL=10,padR=10,padT=14,padB=26;
   const cw=(W-padL-padR)/dados.length, bw=Math.min(34,cw*0.5);
   const yOf=v=>padT+(1-v/max)*(H-padT-padB);
-  let bars="",line="",dots="",labels="";
+  let bars="",line="",dots="",labels="",hits="";
   dados.forEach((d,i)=>{
     const cx=padL+cw*i+cw/2, bh=(d.fat/max)*(H-padT-padB);
-    bars+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${(H-padB-bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="url(#gGold)"/>`;
+    bars+=`<rect id="cmBar${i}" x="${(cx-bw/2).toFixed(1)}" y="${(H-padB-bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="url(#gGold)" style="transition:opacity .15s"/>`;
     const ly=yOf(d.luc); line+=(i?" L":"M")+cx.toFixed(1)+" "+ly.toFixed(1);
     dots+=`<circle cx="${cx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3" fill="#46b17b" stroke="#0a0a0a" stroke-width="1.5"/>`;
-    const mm=d.mk.split("-")[1];
-    labels+=`<text x="${cx.toFixed(1)}" y="${H-padB+15}" text-anchor="middle" font-size="10" fill="#8a8170">${MESES[+mm-1].slice(0,3)}</text>`;
+    const mm=d.mk.split("-")[1], mesLbl=MESES[+mm-1];
+    labels+=`<text x="${cx.toFixed(1)}" y="${H-padB+15}" text-anchor="middle" font-size="10" fill="#8a8170">${mesLbl.slice(0,3)}</text>`;
+    // zona clicável/hover que cobre a coluna inteira (facilita no celular)
+    const leftPct=((padL+cw*i+cw/2)/W*100).toFixed(2);
+    hits+=`<rect x="${(padL+cw*i).toFixed(1)}" y="0" width="${cw.toFixed(1)}" height="${H}" fill="transparent" style="cursor:pointer"
+      onmouseenter="chartTip(${i},'${mesLbl} ${d.mk.split("-")[0]}',${d.fat.toFixed(2)},${d.luc.toFixed(2)},${leftPct})"
+      onmouseleave="chartTipHide()"
+      onclick="chartTip(${i},'${mesLbl} ${d.mk.split("-")[0]}',${d.fat.toFixed(2)},${d.luc.toFixed(2)},${leftPct},true)"/>`;
   });
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;margin-top:8px;max-height:200px">
+  return `<div id="cmWrap" style="position:relative;margin-top:8px">
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-height:200px;overflow:visible">
     <defs><linearGradient id="gGold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e6c364"/><stop offset="1" stop-color="#a07f2e"/></linearGradient></defs>
-    ${bars}<path d="${line}" fill="none" stroke="#46b17b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}${labels}</svg>
+    ${bars}<path d="${line}" fill="none" stroke="#46b17b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}${labels}${hits}</svg>
+    <div id="cmTip" style="position:absolute;display:none;pointer-events:none;transform:translateX(-50%);background:rgba(18,17,14,.97);border:1px solid var(--gold);border-radius:10px;padding:8px 11px;font-size:12px;line-height:1.55;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:5"></div>
+  </div>
   <div style="display:flex;gap:18px;justify-content:center;font-size:11.5px;color:var(--muted);margin-top:2px">
     <span><span style="display:inline-block;width:10px;height:10px;background:var(--gold);border-radius:2px;vertical-align:-1px"></span> Faturamento</span>
-    <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:50%;vertical-align:-1px"></span> Lucro</span></div>`;
+    <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:50%;vertical-align:-1px"></span> Lucro</span></div>
+  <div class="csub" style="text-align:center;margin-top:4px;font-size:10.5px;opacity:.7">Toque numa coluna pra ver os valores</div>`;
+}
+let _cmTipTimer=null;
+function chartTip(i,titulo,fat,luc,leftPct,toque){
+  const tip=document.getElementById("cmTip"); if(!tip)return;
+  const marg=fat>0?Math.round(luc/fat*100):0;
+  tip.innerHTML=`<b style="color:var(--gold-soft)">${titulo}</b>
+    <div style="margin-top:4px">🟡 Faturamento: <b>${R(fat)}</b></div>
+    <div>🟢 Lucro: <b style="color:var(--green)">${R(luc)}</b> <span style="color:var(--muted)">(${marg}%)</span></div>`;
+  tip.style.top="0px";
+  tip.style.display="block";
+  // trava dentro do card pra não vazar pra fora da tela
+  const wrap=document.getElementById("cmWrap");
+  if(wrap){ const ww=wrap.clientWidth, half=tip.offsetWidth/2;
+    let cxp=leftPct/100*ww; cxp=Math.max(half+2,Math.min(ww-half-2,cxp));
+    tip.style.left=cxp+"px"; }
+  else tip.style.left=leftPct+"%";
+  // realça a barra selecionada
+  document.querySelectorAll('[id^="cmBar"]').forEach(b=>b.style.opacity=(b.id==="cmBar"+i)?"1":".38");
+  clearTimeout(_cmTipTimer);
+  if(toque) _cmTipTimer=setTimeout(chartTipHide,3500); // no celular some sozinho
+}
+function chartTipHide(){
+  const tip=document.getElementById("cmTip"); if(tip)tip.style.display="none";
+  document.querySelectorAll('[id^="cmBar"]').forEach(b=>b.style.opacity="1");
 }
 function svgDonut(entries){
   const data=entries.filter(e=>e[1]>0), total=data.reduce((a,e)=>a+e[1],0);
@@ -2533,6 +2567,7 @@ function registrarVendaEntrega(id){
   const e=getEnt().find(x=>x.id===id); if(!e){return;}
   abrirVenda();
   document.getElementById("v-cliente").value=e.cliente||"Avulso";
+  const cn=document.getElementById("v-canal"); if(cn)cn.value="Anúncio"; // veio da logística/entrega → conta como tráfego
   const end=document.getElementById("v-end"); if(end)end.value=e.endereco||"";
   if(e.produtos&&e.produtos.length){
     document.getElementById("v-linhas").innerHTML="";
