@@ -1553,7 +1553,22 @@ function abrirInvestimento(){
   const d=l.querySelector(".g-desc"); if(d)d.placeholder="Ex: Freezer / Máquina teknofrio";
   const h=document.querySelector("#modal-gasto h3"); if(h)h.textContent="Novo investimento";
 }
-function getEnt(){const v=get("entregas",null);return (v&&v.length)?v:SEED.entregas;}
+function getEnt(){
+  const v=get("entregas",null); if(!(v&&v.length))return SEED.entregas;
+  // Auto-correção: remove duplicatas acidentais (mesma entrega salva 2x) e garante id único,
+  // pra concluir uma entrega não "abrir outra" idêntica.
+  const vistos=new Set(),usados=new Set(),out=[]; let mudou=false;
+  for(const e of v){
+    const sig=[e.id,e.cliente,e.data,e.eta,e.itens,e.preco].join("|");
+    if(vistos.has(sig)){mudou=true;continue;} // cópia idêntica → descarta
+    vistos.add(sig);
+    let id=e.id||"";
+    if(!id||usados.has(id)){ let base=8947,cand; do{cand="#ORD-"+(base++);}while(usados.has(cand)); id=cand; mudou=true; }
+    usados.add(id); out.push(id===e.id?e:{...e,id});
+  }
+  if(mudou)set("entregas",out);
+  return out;
+}
 function getEquipe(){const v=get("equipe",null);return (v&&v.length)?v:SEED.equipe;}
 function getInsE(){const v=get("insumoEst",null);return (v&&Object.keys(v).length)?v:SEED.insumoEst;}
 function getVendedores(){const v=get("vendedores",null);return (v&&v.length)?v:SEED.vendedores;}
@@ -3298,12 +3313,16 @@ async function geocode(q){
 }
 // quando não acha o endereço no mapa: pino perto da fábrica pra você arrastar
 function _depotFallback(){const dep=(typeof DEPOT!=="undefined"&&DEPOT&&DEPOT.length)?DEPOT:[-22.79,-43.37];return [dep[0]+(Math.random()-.5)*0.012, dep[1]+(Math.random()-.5)*0.012];}
-async function salvarEntrega(){
+let _salvandoEntrega=false;
+async function salvarEntrega(){ if(_salvandoEntrega)return; _salvandoEntrega=true;
+  try{ await _salvarEntregaInterno(); } finally{ _salvandoEntrega=false; }
+}
+async function _salvarEntregaInterno(){
   const cliente=document.getElementById("e-cliente").value.trim();
   if(!cliente){alert("Informe o cliente.");return;}
   const endereco=document.getElementById("e-end").value.trim();
   if(EDIT_E!=null){ // edição de entrega
-    const ent=get("entregas",null)||SEED.entregas.slice();
+    const ent=getEnt().slice();
     const idx=ent.findIndex(x=>x.id===EDIT_E); if(idx<0){EDIT_E=null;fecharModal();return;}
     const old=ent[idx];
     const km=+document.getElementById("e-km").value||0;
@@ -3322,13 +3341,14 @@ async function salvarEntrega(){
     if(!achou && endereco) alert("📍 Não encontrei esse endereço exato no mapa.\nPus o pino perto da fábrica — abra o mapa e ARRASTE o pino pro local certo (ele salva sozinho).\n\nDica: inclua a cidade (ex: \"Rua Carlos Matoso Correia, 22, Benfica, Rio de Janeiro\").");
     return;
   }
-  const ent=get("entregas",null)||SEED.entregas.slice();
-  const n=ent.filter(e=>/^#ORD-\d+$/.test(e.id||"")).length;
+  const ent=getEnt().slice();
+  const nums=ent.map(e=>{const mm=/^#ORD-(\d+)$/.exec(e.id||"");return mm?+mm[1]:0;});
+  const novoId="#ORD-"+(Math.max(8946,...nums)+1); // sempre único (maior existente + 1)
   const km=+document.getElementById("e-km").value||0;
   const gratis=document.getElementById("e-fretegratis").checked;
   const min=+document.getElementById("e-min").value||0, preco=+document.getElementById("e-preco").value||0;
   const {produtos,itens}=_coletarItensE();
-  const nova={id:"#ORD-"+(8947+n),data:document.getElementById("e-data").value||hoje(),cliente,rota:document.getElementById("e-rota").value||"Rota a definir",
+  const nova={id:novoId,data:document.getElementById("e-data").value||hoje(),cliente,rota:document.getElementById("e-rota").value||"Rota a definir",
     endereco,eta:document.getElementById("e-eta").value||"—",status:document.getElementById("e-status").value,
     produtos,itens,min,preco,km,freteGratis:gratis,frete:gratis?0:km*(PARAMS().fkm||0),
     x:15+Math.round(Math.random()*70),y:15+Math.round(Math.random()*70)};
@@ -3340,14 +3360,14 @@ async function salvarEntrega(){
   if(!achou && endereco) alert("✅ Entrega agendada!\n\n📍 Mas não encontrei esse endereço exato no mapa. Pus o pino perto da fábrica — abra o mapa e ARRASTE o pino pro local certo (ele salva sozinho).\n\nDica: inclua a cidade (ex: \"Rua Carlos Matoso Correia, 22, Benfica, Rio de Janeiro\").");
 }
 function avancarEntrega(id){
-  const ent=get("entregas",null)||SEED.entregas.slice();
+  const ent=getEnt();
   const e=ent.find(x=>x.id===id); if(!e)return;
   const i=STATUS_ORDER.indexOf(e.status); e.status=STATUS_ORDER[Math.min(i+1,STATUS_ORDER.length-1)];
   set("entregas",ent); rerenderAll();
 }
 function delEntrega(id){
   if(!confirm("Apagar esta entrega?"))return;
-  const ent=get("entregas",null)||SEED.entregas.slice();
+  const ent=getEnt();
   set("entregas",ent.filter(x=>x.id!==id)); rerenderAll();
 }
 
