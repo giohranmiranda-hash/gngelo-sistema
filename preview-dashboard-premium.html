@@ -3112,7 +3112,7 @@ function salvarReporSabor(){
     } else { // compra normal: soma ao estoque + lança gasto
       const nq=(prev.qtd||0)+qtd, ncu=nq>0?(((prev.qtd||0)*(prev.custoUnit||0))+val)/nq:0;
       ie[nome]={qtd:nq,un,custoUnit:ncu,forn};
-      if(val>0) gastos.push({id:Date.now()+tag,data,desc:"Compra de insumo: "+nome,cat:un==="un"?"Embalagens":"Ingredientes",valor:val,tipo:"Custo variável",status:"Pago"});
+      if(val>0) gastos.push({id:Date.now()+tag,data,desc:"Compra de insumo: "+nome,cat:un==="un"?"Embalagens":"Ingredientes",valor:val,tipo:"Custo variável",status:"Pago",insumo:nome,qtdIns:qtd,unIns:un});
     } };
   aplicar(poInsumoNome(s),"g",pq,pv,0);
   aplicar(embInsumoNome(s),"un",eq,ev,1);
@@ -3149,7 +3149,7 @@ function salvarInsumo(){
     const prev=ie[nome]||{qtd:0,un:INSUMOS_DEF[nome],custoUnit:0};
     const nq=prev.qtd+qtd, ncu=nq>0?((prev.qtd*prev.custoUnit)+custo)/nq:0;
     ie[nome]={qtd:nq,un:INSUMOS_DEF[nome],custoUnit:ncu,forn};
-    gastos.push({id:Date.now()+idx,data,desc:"Compra de insumo: "+nome,cat:nome==="Embalagens"?"Embalagens":"Ingredientes",valor:custo,tipo:"Custo variável",status:"Pago"});
+    gastos.push({id:Date.now()+idx,data,desc:"Compra de insumo: "+nome,cat:nome==="Embalagens"?"Embalagens":"Ingredientes",valor:custo,tipo:"Custo variável",status:"Pago",insumo:nome,qtdIns:qtd,unIns:INSUMOS_DEF[nome]});
     add++;
   });
   if(!add){alert("Adicione ao menos um insumo com quantidade e custo.");return;}
@@ -3236,8 +3236,18 @@ function delProducao(id){
   set("producoes",prod.filter(x=>x.id!=id)); set("estoque",est); rerenderAll();
 }
 function delGasto(id){
-  if(!confirm("Apagar este gasto?"))return;
   const gastos=get("gastos",null)||SEED.gastos.slice();
+  const g=gastos.find(x=>x.id==id);
+  // compra de insumo com quantidade gravada → excluir também tira do estoque
+  if(g&&g.insumo&&g.qtdIns>0){
+    if(!confirm(`Apagar esta compra de ${INSUMO_LABEL[g.insumo]||g.insumo}?\n\nAlém do gasto, ${g.qtdIns.toLocaleString("pt-BR")} ${g.unIns||""} saem do estoque de insumos.`))return;
+    const ie=get("insumoEst",null)||JSON.parse(JSON.stringify(SEED.insumoEst));
+    if(ie[g.insumo]){
+      // não deixa o registrado cair abaixo do já produzido (disponível nunca fica negativo)
+      ie[g.insumo]={...ie[g.insumo],qtd:Math.max(consumidoInsumo(g.insumo),(ie[g.insumo].qtd||0)-g.qtdIns)};
+      set("insumoEst",ie);
+    }
+  } else if(!confirm("Apagar este gasto?"))return;
   set("gastos",gastos.filter(x=>x.id!=id)); rerenderAll();
 }
 const lixo=fn=>`<span class="sym" style="font-size:18px;color:var(--muted);cursor:pointer" onclick="${fn}" title="Apagar">delete</span>`;
