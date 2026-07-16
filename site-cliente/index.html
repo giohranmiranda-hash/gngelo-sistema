@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="Peça seu gelo gourmet GN Gelo pelo celular. Escolha os sabores, informe a entrega e pronto.">
+<title>GN Gelo — Faça seu pedido</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GN Gelo">
+
+<style>
+/* =====================================================================
+   GN Gelo — Site de Pedidos do Cliente
+   Tema escuro premium (preto + dourado), mobile-first, vanilla.
+   ===================================================================== */
+
+/* ---------- Tokens / paleta ---------- */
+:root{
+  --bg:#0a0a0a;
+  --bg-2:#12110e;
+  --panel:#16150f;
+  --panel-2:#1c1b13;
+  --border:#2a2820;
+  --border-soft:#221f18;
+
+  --gold:#C9A84C;
+  --gold-soft:#e6c364;
+  --gold-deep:#a8852f;
+
+  --green:#46b17b;
+  --green-bg:rgba(70,177,123,.12);
+  --red:#d4604f;
+  --red-bg:rgba(212,96,79,.12);
+
+  --text:#f5f1e6;
+  --muted:#8a8170;
+  --muted-2:#635c4e;
+
+  --r-sm:10px;
+  --r-md:14px;
+  --r-lg:18px;
+  --r-pill:999px;
+
+  --shadow:0 6px 20px rgba(0,0,0,.45);
+  --shadow-soft:0 2px 10px rgba(0,0,0,.3);
+  --halo:0 8px 26px rgba(201,168,76,.28);
+
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --safe-b:env(safe-area-inset-bottom, 0px);
+}
+
+/* ---------- Reset básico ---------- */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(201,168,76,.10), transparent 60%),
+    linear-gradient(180deg,#12110e 0%, #0a0a0a 40%);
+  color:var(--text);
+  min-height:100dvh;
+  line-height:1.5;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%;display:block}
+button{font-family:inherit;cursor:pointer}
+input,textarea,select,button{font-family:inherit;font-size:16px}/* 16px evita zoom no iOS */
+
+/* ---------- App shell ---------- */
+.app{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;position:relative}
+
+/* ---------- Topo ---------- */
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;gap:12px;
+  padding:calc(14px + env(safe-area-inset-top,0px)) 18px 14px;
+  background:linear-gradient(180deg, rgba(10,10,10,.92), rgba(10,10,10,.72));
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border-soft);
+}
+.topbar .logo{
+  width:38px;height:38px;border-radius:var(--r-pill);object-fit:cover;
+  border:1.5px solid var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.12);
+  background:#000;flex:0 0 auto;
+}
+.topbar .brand{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.topbar .brand b{font-size:16px;letter-spacing:.3px;font-weight:800;
+  background:linear-gradient(90deg,var(--gold-soft),var(--gold));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.topbar .brand span{font-size:11px;color:var(--muted);letter-spacing:.4px}
+.topbar .back{
+  margin-left:auto;background:var(--panel);border:1px solid var(--border);
+  color:var(--text);border-radius:var(--r-pill);width:40px;height:40px;
+  display:none;align-items:center;justify-content:center;font-size:20px;flex:0 0 auto;
+  transition:transform .12s var(--ease), background .12s;
+}
+.topbar .back:active{transform:scale(.92);background:var(--panel-2)}
+.topbar .back.show{display:inline-flex}
+
+/* ---------- Barra de progresso das etapas ---------- */
+.steps{display:flex;gap:6px;padding:12px 18px 4px}
+.steps .dot{flex:1;height:4px;border-radius:var(--r-pill);background:var(--border);overflow:hidden;position:relative}
+.steps .dot.done{background:var(--gold)}
+.steps .dot.active{background:linear-gradient(90deg,var(--gold),var(--gold-soft))}
+@media (prefers-reduced-motion:no-preference){
+  .steps .dot.active::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.25);
+    animation:pulse 1.6s var(--ease) infinite}
+  @keyframes pulse{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}
+}
+
+/* ---------- Conteúdo / telas ---------- */
+main{flex:1 1 auto;padding:8px 18px 140px}
+.screen{display:none}
+.screen.active{display:block}
+@media (prefers-reduced-motion:no-preference){
+  .screen.active{animation:fadeUp .32s var(--ease) both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+}
+
+.h1{font-size:22px;font-weight:800;letter-spacing:.2px;margin:14px 0 2px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+/* ---------- Grid de sabores ---------- */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.card{
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:14px 12px 12px;position:relative;overflow:hidden;
+  transition:border-color .18s var(--ease), transform .1s var(--ease);
+}
+@media (prefers-reduced-motion:no-preference){
+  .card{animation:cardIn .4s var(--ease) both}
+  .card:nth-child(2n){animation-delay:.04s}
+  @keyframes cardIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+}
+.card.has-qty{border-color:var(--gold)}
+.card .swatch{display:block;width:34px;height:34px;border-radius:var(--r-pill);margin-bottom:10px;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.14), 0 2px 8px rgba(0,0,0,.4)}
+.card .nome{font-size:14px;font-weight:700;line-height:1.2;min-height:34px;display:flex;align-items:flex-start}
+.card .preco{font-size:12px;color:var(--gold-soft);font-weight:700;margin-top:2px}
+.card .preco small{color:var(--muted);font-weight:500}
+
+/* Stepper de quantidade */
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.stepper button{
+  width:38px;height:38px;border-radius:12px;border:1px solid var(--border);
+  background:var(--panel);color:var(--text);font-size:22px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .1s var(--ease), background .12s, border-color .12s;
+}
+.stepper button:active{transform:scale(.9)}
+.stepper button.plus{background:linear-gradient(180deg,var(--gold-soft),var(--gold));
+  color:#1a1508;border-color:transparent;font-weight:700}
+.stepper .qty{font-size:17px;font-weight:800;min-width:26px;text-align:center;font-variant-numeric:tabular-nums}
+.stepper button:disabled{opacity:.35}
+
+/* Card "combo" com leve destaque */
+.card.combo{background:linear-gradient(180deg,rgba(201,168,76,.12),var(--panel));
+  border-color:var(--gold-deep)}
+.badge-combo{position:absolute;top:10px;right:10px;font-size:9px;font-weight:800;letter-spacing:.1em;
+  color:#1a1508;background:linear-gradient(180deg,var(--gold-soft),var(--gold));
+  padding:3px 8px;border-radius:var(--r-pill)}
+
+.section-label{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);margin:26px 2px 12px;display:flex;align-items:center;gap:10px}
+.section-label::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* ---------- Carrinho fixo ---------- */
+.cartbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  padding:12px 18px calc(12px + var(--safe-b));
+  background:linear-gradient(180deg, rgba(10,10,10,.4), rgba(10,10,10,.96) 40%);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-top:1px solid var(--border-soft);
+  transform:translateY(120%);transition:transform .3s var(--ease);
+}
+.cartbar.show{transform:none}
+.cartbar .inner{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.cartbar .info{line-height:1.2;min-width:0}
+.cartbar .info small{color:var(--muted);font-size:11px;display:block}
+.cartbar .info b{font-size:18px;font-variant-numeric:tabular-nums}
+.btn-primary{
+  margin-left:auto;flex:0 0 auto;
+  background:linear-gradient(180deg,var(--gold-soft),var(--gold));
+  color:#1a1508;font-weight:800;border:none;border-radius:var(--r-md);
+  padding:14px 22px;font-size:15px;box-shadow:var(--halo);
+  display:inline-flex;align-items:center;gap:8px;
+  transition:transform .1s var(--ease), filter .12s;
+}
+.btn-primary:active{transform:scale(.97)}
+.btn-primary:disabled{filter:grayscale(.6) brightness(.8);box-shadow:none;opacity:.7}
+
+/* ---------- Formulários ---------- */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:10px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field input,.field textarea,.field select{
+  width:100%;background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--r-sm);color:var(--text);padding:13px 14px;
+  transition:border-color .15s var(--ease), box-shadow .15s;
+}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted-2)}
+.field input:focus,.field textarea:focus,.field select:focus{
+  outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.16)}
+.field textarea{resize:vertical;min-height:76px}
+.field.err input,.field.err textarea{border-color:var(--red);box-shadow:0 0 0 3px var(--red-bg)}
+.field .hint{font-size:11px;color:var(--muted);margin-top:6px}
+.field .hint.state-ok{color:var(--green)}
+.field .hint.state-err{color:var(--red)}
+.row{display:flex;gap:12px}
+.row .field{flex:1}
+.field .with-btn{display:flex;gap:8px}
+.field .with-btn input{flex:1}
+.mini-btn{
+  background:var(--panel-2);border:1px solid var(--border);color:var(--gold-soft);
+  border-radius:var(--r-sm);padding:0 14px;font-weight:700;font-size:13px;white-space:nowrap;
+  transition:background .12s, transform .1s;
+}
+.mini-btn:active{transform:scale(.95)}
+.mini-btn.loading{opacity:.6;pointer-events:none}
+
+/* ---------- Aviso / notas ---------- */
+.note{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--r-md);
+  padding:12px 14px;font-size:12.5px;color:var(--muted);margin:14px 0;
+}
+.note .ic{flex:0 0 auto;font-size:16px;line-height:1.2}
+.note.pay{border-color:var(--gold-deep);background:linear-gradient(180deg,rgba(201,168,76,.08),var(--panel))}
+.note.pay b{color:var(--gold-soft)}
+
+/* ---------- Datas rápidas ---------- */
+.dates{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.dates::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--r-md);padding:10px 12px;text-align:center;line-height:1.15;
+  transition:border-color .12s, background .12s, transform .1s;color:var(--text);
+}
+.chip:active{transform:scale(.96)}
+.chip.active{border-color:var(--gold);background:linear-gradient(180deg,rgba(201,168,76,.16),var(--panel))}
+.chip small{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.chip b{font-size:16px;font-variant-numeric:tabular-nums}
+.chip.active small{color:var(--gold-soft)}
+
+/* ---------- Resumo ---------- */
+.summary{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.summary .line{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border-soft);font-size:14px}
+.summary .line:last-child{border-bottom:none}
+.summary .line .l{color:var(--muted)}
+.summary .line b{font-variant-numeric:tabular-nums}
+.summary .items{padding:6px 16px}
+.summary .items .it{display:flex;justify-content:space-between;padding:7px 0;font-size:13.5px;border-bottom:1px dashed var(--border-soft)}
+.summary .items .it:last-child{border-bottom:none}
+.summary .items .it .q{color:var(--gold-soft);font-weight:700;font-variant-numeric:tabular-nums}
+.summary .total-line{background:linear-gradient(180deg,var(--panel-2),var(--panel));padding:14px 16px;
+  display:flex;justify-content:space-between;align-items:center}
+.summary .total-line small{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+.summary .total-line b{font-size:22px;color:var(--gold-soft);font-variant-numeric:tabular-nums}
+.block{margin:16px 0}
+.block h3{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.block .box{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;font-size:13.5px}
+.block .box .muted{color:var(--muted)}
+
+/* ---------- Botões largos ---------- */
+.btn-wide{width:100%;border:none;border-radius:var(--r-md);padding:16px;font-size:16px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .1s var(--ease),filter .12s}
+.btn-wide:active{transform:scale(.98)}
+.btn-gold{background:linear-gradient(180deg,var(--gold-soft),var(--gold));color:#1a1508;box-shadow:var(--halo)}
+.btn-gold:disabled{filter:grayscale(.5) brightness(.85);opacity:.7;box-shadow:none}
+.btn-ghost{background:var(--panel);border:1px solid var(--border);color:var(--text)}
+.btn-green{background:linear-gradient(180deg,#57c98d,var(--green));color:#062012}
+
+/* ---------- Tela de sucesso ---------- */
+.success{text-align:center;padding:36px 8px 0}
+.success .check{width:96px;height:96px;margin:0 auto 20px;border-radius:var(--r-pill);
+  background:radial-gradient(circle at 30% 30%, rgba(70,177,123,.35), rgba(70,177,123,.1));
+  border:2px solid var(--green);display:flex;align-items:center;justify-content:center}
+.success .check svg{width:48px;height:48px}
+@media (prefers-reduced-motion:no-preference){
+  .success .check{animation:pop .5s var(--ease) both}
+  @keyframes pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+  .success .check svg path{stroke-dasharray:48;stroke-dashoffset:48;animation:draw .5s .2s var(--ease) forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+}
+.success h2{font-size:24px;margin:0 0 6px}
+.success p{color:var(--muted);font-size:14px;margin:0 auto 22px;max-width:340px}
+.success .protocolo{display:inline-block;background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--r-pill);padding:6px 16px;font-size:12px;color:var(--muted);margin-bottom:24px}
+.success .protocolo b{color:var(--gold-soft);font-variant-numeric:tabular-nums}
+
+/* ---------- Rodapé LGPD ---------- */
+.foot{color:var(--muted-2);font-size:11px;text-align:center;padding:20px 12px 8px;line-height:1.5}
+.foot a{color:var(--muted)}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%) translateY(20px);
+  background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+  padding:12px 18px;border-radius:var(--r-pill);font-size:13px;font-weight:600;z-index:60;
+  box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.toast.err{border-color:var(--red);color:#ffd9d1}
+.toast.ok{border-color:var(--green)}
+
+/* ---------- Spinner ---------- */
+.spin{width:18px;height:18px;border:2.5px solid rgba(26,21,8,.3);border-top-color:#1a1508;
+  border-radius:50%;animation:rot .7s linear infinite;display:inline-block}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ---------- Empty state carrinho ---------- */
+.cart-empty{color:var(--muted);text-align:center;font-size:13px;padding:8px 0}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ TOPO ============ -->
+  <header class="topbar">
+    <img class="logo" src="./logo-gngelo.png" alt="GN Gelo" onerror="this.src='./icon-192.png'">
+    <div class="brand">
+      <b>GN GELO</b>
+      <span>Gelo gourmet · peça pelo app</span>
+    </div>
+    <button class="back" id="btnBack" aria-label="Voltar">‹</button>
+  </header>
+
+  <!-- Progresso -->
+  <div class="steps" id="steps" aria-hidden="true">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+
+  <main>
+    <!-- ============ ETAPA 1 · CARDÁPIO ============ -->
+    <section class="screen active" id="s-cardapio">
+      <h1 class="h1">Escolha seus sabores</h1>
+      <p class="sub">Toque em <b>+</b> pra adicionar. O carrinho aparece embaixo. 🍧</p>
+      <div class="grid" id="gridSabores"></div>
+      <div class="section-label">Combos com desconto</div>
+      <div class="grid" id="gridCombos"></div>
+      <div class="foot" style="padding-bottom:0">
+        Preços podem variar. O valor final é confirmado na entrega.
+      </div>
+    </section>
+
+    <!-- ============ ETAPA 2 · DADOS ============ -->
+    <section class="screen" id="s-dados">
+      <h1 class="h1">Seus dados</h1>
+      <p class="sub">Pra gente entregar certinho no seu endereço.</p>
+
+      <div class="field" id="f-nome">
+        <label for="in-nome">Seu nome *</label>
+        <input id="in-nome" type="text" autocomplete="name" placeholder="Ex.: Maria Silva" enterkeyhint="next">
+      </div>
+
+      <div class="field" id="f-whats">
+        <label for="in-whats">WhatsApp *</label>
+        <input id="in-whats" type="tel" inputmode="numeric" autocomplete="tel" placeholder="(00) 00000-0000" enterkeyhint="next">
+        <div class="hint">A gente confirma seu pedido por aqui.</div>
+      </div>
+
+      <div class="field" id="f-cep">
+        <label for="in-cep">CEP</label>
+        <div class="with-btn">
+          <input id="in-cep" type="tel" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" enterkeyhint="search">
+          <button class="mini-btn" id="btnCep" type="button">Buscar</button>
+        </div>
+        <div class="hint" id="cepHint">Preenche rua e bairro automaticamente.</div>
+      </div>
+
+      <div class="row">
+        <div class="field" id="f-rua" style="flex:2">
+          <label for="in-rua">Rua / Logradouro *</label>
+          <input id="in-rua" type="text" autocomplete="address-line1" placeholder="Rua...">
+        </div>
+        <div class="field" id="f-num" style="flex:1">
+          <label for="in-num">Nº *</label>
+          <input id="in-num" type="text" inputmode="numeric" placeholder="123">
+        </div>
+      </div>
+
+      <div class="field" id="f-compl">
+        <label for="in-compl">Complemento / Referência</label>
+        <input id="in-compl" type="text" placeholder="Apto, bloco, perto de...">
+      </div>
+
+      <div class="row">
+        <div class="field" id="f-bairro" style="flex:1.4">
+          <label for="in-bairro">Bairro *</label>
+          <input id="in-bairro" type="text" autocomplete="address-level3" placeholder="Bairro">
+        </div>
+        <div class="field" id="f-cidade" style="flex:1">
+          <label for="in-cidade">Cidade *</label>
+          <input id="in-cidade" type="text" autocomplete="address-level2" placeholder="Cidade">
+        </div>
+      </div>
+
+      <div class="note">
+        <span class="ic">🔒</span>
+        <span>Seus dados são usados <b style="color:var(--text)">só para a entrega</b> e contato do seu pedido. Não compartilhamos com ninguém (LGPD).</span>
+      </div>
+    </section>
+
+    <!-- ============ ETAPA 3 · ENTREGA ============ -->
+    <section class="screen" id="s-entrega">
+      <h1 class="h1">Quando você quer receber?</h1>
+      <p class="sub">Escolha a data desejada da entrega.</p>
+
+      <div class="dates" id="dateChips"></div>
+
+      <div class="field" id="f-data" style="margin-top:8px">
+        <label for="in-data">Ou escolha outra data</label>
+        <input id="in-data" type="date">
+      </div>
+
+      <div class="field" id="f-obs">
+        <label for="in-obs">Observação (opcional)</label>
+        <textarea id="in-obs" placeholder="Ex.: entregar depois das 18h, tocar a campainha..."></textarea>
+      </div>
+
+      <div class="note pay">
+        <span class="ic">💵</span>
+        <span><b>Pagamento na entrega</b> — em dinheiro ou Pix na hora que receber. (Pagamento online chega em breve.)</span>
+      </div>
+    </section>
+
+    <!-- ============ ETAPA 4 · RESUMO ============ -->
+    <section class="screen" id="s-resumo">
+      <h1 class="h1">Confira seu pedido</h1>
+      <p class="sub">Está tudo certo? É só enviar.</p>
+
+      <div class="summary">
+        <div class="items" id="sumItens"></div>
+        <div class="total-line">
+          <small>Total do pedido</small>
+          <b id="sumTotal">R$ 0,00</b>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Entrega para</h3>
+        <div class="box" id="sumEndereco"></div>
+      </div>
+
+      <div class="block">
+        <h3>Data desejada</h3>
+        <div class="box" id="sumData"></div>
+      </div>
+
+      <div class="block" id="blockObs" hidden>
+        <h3>Observação</h3>
+        <div class="box" id="sumObs"></div>
+      </div>
+
+      <div class="note pay">
+        <span class="ic">💵</span>
+        <span>Pagamento <b>na entrega</b> (dinheiro ou Pix na hora).</span>
+      </div>
+
+      <button class="btn-wide btn-gold" id="btnEnviar" style="margin-top:8px">Enviar pedido</button>
+      <div class="foot">Ao enviar, seu pedido vai direto pra GN Gelo confirmar. 💛</div>
+    </section>
+
+    <!-- ============ ETAPA 5 · SUCESSO ============ -->
+    <section class="screen" id="s-sucesso">
+      <div class="success">
+        <div class="check">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6.5" stroke="#46b17b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h2>Pedido enviado! 🎉</h2>
+        <p>A GN Gelo recebeu seu pedido e vai confirmar pelo WhatsApp. Obrigado!</p>
+        <div class="protocolo">Protocolo <b id="protocolo">—</b></div>
+        <button class="btn-wide btn-green" id="btnWhats" style="margin-bottom:12px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.9-4.44 9.9-9.9S17.5 2 12.04 2zm0 18.02c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 01-1.26-4.36c0-4.54 3.7-8.23 8.24-8.23 4.53 0 8.23 3.69 8.23 8.23 0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.78.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28z"/></svg>
+          Falar no WhatsApp
+        </button>
+        <button class="btn-wide btn-ghost" id="btnNovo">Fazer outro pedido</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ CARRINHO FIXO ============ -->
+  <div class="cartbar" id="cartbar">
+    <div class="inner">
+      <div class="info">
+        <small id="cartCount">0 itens</small>
+        <b id="cartTotal">R$ 0,00</b>
+      </div>
+      <button class="btn-primary" id="btnContinuar">Continuar →</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+/* =====================================================================
+   ⚙️  CONFIGURAÇÃO — ajuste aqui no topo
+   ===================================================================== */
+
+// --- Supabase (mesmo projeto do sistema de gestão) ---
+const SUPABASE_URL  = "https://wuqymzfzkxnxnddnrefa.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cXltemZ6a3hueG5kZG5yZWZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDQ4MzMsImV4cCI6MjA5NzAyMDgzM30.m-CTQhw9N1bsaeFQ3R-VxuqMl4aPPID_2Rt0KZQN838";
+
+// --- Loja ---
+const LOJA          = "gngelo";
+const LOJA_WHATSAPP = "5599999999999"; // ⚠️ TROQUE pelo WhatsApp da loja: 55 + DDD + número (só dígitos)
+
+// --- Preços (R$) ---
+const PRECO_UN = 1.10;              // preço por unidade dos sabores avulsos
+const PRECO_COMBO = {               // preço fechado de cada combo
+  "combo-10":  10.00,
+  "combo-20":  18.00,
+  "combo-50":  45.00,
+  "combo-100": 85.00,
+};
+
+// --- Geocodificação ---
+const LOCATIONIQ_TOKEN = "pk.4422e3d8a9e92587e8a1a1e1115c9ac5";
+
+// --- Catálogo de sabores (nome + cor temática) ---
+const SABORES = [
+  { id:"coco",             nome:"Coco",                cor:"#eef0e8" },
+  { id:"morango",          nome:"Morango",             cor:"#e0526b" },
+  { id:"maracuja",         nome:"Maracujá",            cor:"#f0b429" },
+  { id:"maca-verde",       nome:"Maçã Verde",          cor:"#8bc34a" },
+  { id:"manga",            nome:"Manga",               cor:"#f4991a" },
+  { id:"melancia",         nome:"Melancia",            cor:"#ff6b7a" },
+  { id:"limao",            nome:"Limão",               cor:"#c3d64a" },
+  { id:"ice-blue",         nome:"Ice Blue",            cor:"#4aa3df" },
+  { id:"energetico",       nome:"Energético",          cor:"#e8a33d" },
+  { id:"frutas-vermelhas", nome:"Frutas Vermelhas",    cor:"#b5303f" },
+  { id:"blackberry",       nome:"Blackberry (Amora)",  cor:"#6a3f9c" },
+  { id:"abacaxi",          nome:"Abacaxi",             cor:"#e6c34a" },
+  { id:"sal-limao",        nome:"Sal e Limão",         cor:"#bcd85f" },
+  { id:"uva-verde",        nome:"Uva Verde",           cor:"#9acb4a" },
+  { id:"chiclete",         nome:"Chiclete",            cor:"#ff8fc7" },
+  { id:"cereja",           nome:"Cereja",              cor:"#c62828" },
+  { id:"morango-pessego",  nome:"Morango c/ Pêssego",  cor:"#f28d7a" },
+  { id:"brasil",           nome:"Brasil",              cor:"#3aa856" },
+  { id:"bob-marley",       nome:"Bob Marley",          cor:"#d4a017" },
+  { id:"laranja",          nome:"Laranja",             cor:"#f57c00" },
+  { id:"bala-house",       nome:"Bala House",          cor:"#7e57c2" },
+];
+
+const COMBOS = [
+  { id:"combo-10",  nome:"Combo 10",  desc:"10 unidades" },
+  { id:"combo-20",  nome:"Combo 20",  desc:"20 unidades" },
+  { id:"combo-50",  nome:"Combo 50",  desc:"50 unidades" },
+  { id:"combo-100", nome:"Combo 100", desc:"100 unidades" },
+];
+
+/* =====================================================================
+   Estado
+   ===================================================================== */
+const STEPS = ["cardapio","dados","entrega","resumo","sucesso"];
+let stepIndex = 0;
+
+// Carrinho: { [id]: qtd }
+let cart = {};
+// Dados do cliente / entrega
+let dados = { nome:"", whatsapp:"", cep:"", rua:"", num:"", compl:"", bairro:"", cidade:"", lat:null, lng:null };
+let entrega = { data:"", obs:"" };
+
+const DRAFT_KEY = "gngelo_pedido_draft_v1";
+
+// Supabase client
+let sb = null;
+try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON); }
+catch(e){ console.error("Supabase não carregou:", e); }
+
+/* =====================================================================
+   Helpers
+   ===================================================================== */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const catalogo = [...SABORES, ...COMBOS];
+const itemById = id => catalogo.find(x => x.id === id);
+const precoDe = id => id.startsWith("combo-") ? (PRECO_COMBO[id] ?? 0) : PRECO_UN;
+
+const BRL = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
+const fmt = v => BRL.format(v || 0);
+
+// Data local (Brasil) — nunca UTC cru
+function hojeLocalISO(){
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off*60000).toISOString().slice(0,10);
+}
+function isoToLocal(iso){ // "2026-07-20" -> Date local
+  const [y,m,d] = iso.split("-").map(Number);
+  return new Date(y, m-1, d);
+}
+function fmtDataBR(iso){
+  if(!iso) return "";
+  const d = isoToLocal(iso);
+  return d.toLocaleDateString("pt-BR", { weekday:"long", day:"2-digit", month:"long" });
+}
+
+function toast(msg, type=""){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.className = "toast " + type; }, 3200);
+}
+
+/* =====================================================================
+   Cálculos do carrinho
+   ===================================================================== */
+function qtdTotal(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
+function totalPedido(){
+  return Object.entries(cart).reduce((sum,[id,q]) => sum + precoDe(id)*q, 0);
+}
+function itensPedido(){
+  return Object.entries(cart).filter(([,q])=>q>0).map(([id,qtd]) => {
+    const it = itemById(id);
+    return { sabor:id, nome:it ? it.nome : id, qtd, preco:precoDe(id) };
+  });
+}
+
+/* =====================================================================
+   Render — cardápio
+   ===================================================================== */
+function cardHTML(item, isCombo){
+  const q = cart[item.id] || 0;
+  const preco = precoDe(item.id);
+  const precoTxt = isCombo
+    ? fmt(preco)
+    : `${fmt(preco)} <small>/un</small>`;
+  return `
+    <div class="card ${isCombo?'combo':''} ${q>0?'has-qty':''}" data-id="${item.id}">
+      ${isCombo?'<span class="badge-combo">COMBO</span>':''}
+      ${isCombo?'' : `<span class="swatch" style="background:${item.cor}"></span>`}
+      <div class="nome">${item.nome}</div>
+      <div class="preco">${precoTxt}${isCombo?` <small>· ${item.desc}</small>`:''}</div>
+      <div class="stepper">
+        <button class="minus" data-act="minus" aria-label="Diminuir" ${q<=0?'disabled':''}>–</button>
+        <span class="qty" data-qty="${item.id}">${q}</span>
+        <button class="plus"  data-act="plus"  aria-label="Aumentar">+</button>
+      </div>
+    </div>`;
+}
+function renderCatalogo(){
+  $("#gridSabores").innerHTML = SABORES.map(s => cardHTML(s,false)).join("");
+  $("#gridCombos").innerHTML  = COMBOS.map(c => cardHTML(c,true)).join("");
+}
+
+function updateCard(id){
+  const q = cart[id] || 0;
+  const card = $(`.card[data-id="${id}"]`);
+  if(!card) return;
+  $(`[data-qty="${id}"]`, card).textContent = q;
+  card.classList.toggle("has-qty", q>0);
+  $(".minus", card).disabled = q<=0;
+}
+
+function updateCartBar(){
+  const n = qtdTotal();
+  const bar = $("#cartbar");
+  $("#cartCount").textContent = n === 1 ? "1 item" : `${n} itens`;
+  $("#cartTotal").textContent = fmt(totalPedido());
+  // só mostra a barra na tela do cardápio e quando há itens
+  bar.classList.toggle("show", n>0 && STEPS[stepIndex]==="cardapio");
+  $("#btnContinuar").disabled = n<=0;
+}
+
+function addItem(id, delta){
+  const cur = cart[id] || 0;
+  const next = Math.max(0, cur + delta);
+  if(next===0) delete cart[id]; else cart[id] = next;
+  updateCard(id);
+  updateCartBar();
+  saveDraft();
+}
+
+/* =====================================================================
+   Navegação entre etapas
+   ===================================================================== */
+function goTo(index){
+  stepIndex = Math.max(0, Math.min(STEPS.length-1, index));
+  const name = STEPS[stepIndex];
+  $$(".screen").forEach(s => s.classList.remove("active"));
+  $(`#s-${name}`).classList.add("active");
+
+  // Progresso (só nas 4 primeiras etapas)
+  $$("#steps .dot").forEach((d,i)=>{
+    d.className = "dot" + (i<stepIndex?" done":"") + (i===stepIndex?" active":"");
+  });
+  $("#steps").style.display = name==="sucesso" ? "none" : "flex";
+
+  // Botão voltar
+  $("#btnBack").classList.toggle("show", stepIndex>0 && name!=="sucesso");
+
+  updateCartBar();
+  window.scrollTo({ top:0, behavior:"instant" in window ? "instant" : "auto" });
+
+  // Preenche telas específicas
+  if(name==="entrega") renderDateChips();
+  if(name==="resumo")  renderResumo();
+}
+
+/* Avança validando a etapa atual */
+function next(){
+  const name = STEPS[stepIndex];
+  if(name==="cardapio"){
+    if(qtdTotal()<=0){ toast("Seu carrinho está vazio 🛒","err"); return; }
+  }
+  if(name==="dados"){
+    if(!validarDados()) return;
+  }
+  if(name==="entrega"){
+    if(!entrega.data){ toast("Escolha a data da entrega 📅","err"); return; }
+  }
+  goTo(stepIndex+1);
+}
+
+/* =====================================================================
+   Etapa 2 — validação de dados + máscaras + CEP + geocode
+   ===================================================================== */
+function maskWhats(v){
+  v = v.replace(/\D/g,"").slice(0,11);
+  if(v.length<=2)  return v.length?`(${v}`:"";
+  if(v.length<=6)  return `(${v.slice(0,2)}) ${v.slice(2)}`;
+  if(v.length<=10) return `(${v.slice(0,2)}) ${v.slice(2,6)}-${v.slice(6)}`;
+  return `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+}
+function maskCep(v){
+  v = v.replace(/\D/g,"").slice(0,8);
+  return v.length>5 ? `${v.slice(0,5)}-${v.slice(5)}` : v;
+}
+
+function setErr(fieldId, on){ $(fieldId).classList.toggle("err", !!on); }
+
+function coletarDados(){
+  dados.nome    = $("#in-nome").value.trim();
+  dados.whatsapp= $("#in-whats").value.trim();
+  dados.cep     = $("#in-cep").value.trim();
+  dados.rua     = $("#in-rua").value.trim();
+  dados.num     = $("#in-num").value.trim();
+  dados.compl   = $("#in-compl").value.trim();
+  dados.bairro  = $("#in-bairro").value.trim();
+  dados.cidade  = $("#in-cidade").value.trim();
+}
+
+function validarDados(){
+  coletarDados();
+  let ok = true;
+  const whatsDigits = dados.whatsapp.replace(/\D/g,"");
+  const checks = [
+    ["#f-nome",   dados.nome.length>=2],
+    ["#f-whats",  whatsDigits.length>=10],
+    ["#f-rua",    dados.rua.length>=2],
+    ["#f-num",    dados.num.length>=1],
+    ["#f-bairro", dados.bairro.length>=2],
+    ["#f-cidade", dados.cidade.length>=2],
+  ];
+  let firstErr = null;
+  checks.forEach(([f,valid])=>{
+    setErr(f, !valid);
+    if(!valid && !firstErr) firstErr = f;
+  });
+  ok = checks.every(c=>c[1]);
+  if(!ok){
+    toast("Preencha os campos destacados","err");
+    if(firstErr) $(firstErr).querySelector("input")?.focus();
+    return false;
+  }
+  // Geocodifica em segundo plano (não bloqueia o avanço)
+  geocodificar();
+  saveDraft();
+  return true;
+}
+
+// --- ViaCEP: auto-preenche rua/bairro/cidade ---
+async function buscarCep(){
+  const cep = $("#in-cep").value.replace(/\D/g,"");
+  const hint = $("#cepHint");
+  if(cep.length!==8){ hint.textContent="Digite os 8 números do CEP."; hint.className="hint state-err"; return; }
+  const btn = $("#btnCep"); btn.classList.add("loading"); btn.textContent="...";
+  hint.textContent="Buscando endereço..."; hint.className="hint";
+  try{
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const j = await r.json();
+    if(j.erro){ hint.textContent="CEP não encontrado. Preencha manualmente."; hint.className="hint state-err"; return; }
+    if(j.logradouro) $("#in-rua").value    = j.logradouro;
+    if(j.bairro)     $("#in-bairro").value = j.bairro;
+    if(j.localidade) $("#in-cidade").value = j.localidade;
+    setErr("#f-rua",false); setErr("#f-bairro",false); setErr("#f-cidade",false);
+    hint.textContent="Endereço preenchido! Confira o número. ✓"; hint.className="hint state-ok";
+    $("#in-num").focus();
+  }catch(e){
+    hint.textContent="Sem internet? Preencha o endereço manualmente."; hint.className="hint state-err";
+  }finally{
+    btn.classList.remove("loading"); btn.textContent="Buscar";
+  }
+}
+
+// --- Geocodificação: LocationIQ com fallback Nominatim ---
+async function geocodificar(){
+  const q = `${dados.rua}, ${dados.num}, ${dados.bairro}, ${dados.cidade}, Brasil`;
+  // 1) LocationIQ
+  try{
+    const url = `https://us1.locationiq.com/v1/search?key=${LOCATIONIQ_TOKEN}&q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=br`;
+    const r = await fetch(url);
+    if(r.ok){
+      const j = await r.json();
+      if(Array.isArray(j) && j[0]){ dados.lat=+j[0].lat; dados.lng=+j[0].lon; saveDraft(); return; }
+    }
+  }catch(e){ /* cai pro fallback */ }
+  // 2) Nominatim (fallback)
+  try{
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=br`;
+    const r = await fetch(url, { headers:{ "Accept":"application/json" } });
+    if(r.ok){
+      const j = await r.json();
+      if(Array.isArray(j) && j[0]){ dados.lat=+j[0].lat; dados.lng=+j[0].lon; saveDraft(); }
+    }
+  }catch(e){ /* segue sem lat/lng — não é obrigatório */ }
+}
+
+/* =====================================================================
+   Etapa 3 — datas
+   ===================================================================== */
+function renderDateChips(){
+  const box = $("#dateChips");
+  const hoje = new Date();
+  let html = "";
+  for(let i=0;i<7;i++){
+    const d = new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate()+i);
+    const off = d.getTimezoneOffset();
+    const iso = new Date(d.getTime()-off*60000).toISOString().slice(0,10);
+    const rot = i===0 ? "Hoje" : i===1 ? "Amanhã"
+      : d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","");
+    const active = entrega.data===iso ? "active" : "";
+    html += `<button class="chip ${active}" data-date="${iso}" type="button">
+      <small>${rot}</small><b>${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</b>
+    </button>`;
+  }
+  box.innerHTML = html;
+  // input date: min = hoje
+  $("#in-data").min = hojeLocalISO();
+  if(entrega.data) $("#in-data").value = entrega.data;
+}
+function escolherData(iso){
+  if(iso < hojeLocalISO()){ toast("Não dá pra escolher uma data passada 😉","err"); return; }
+  entrega.data = iso;
+  $("#in-data").value = iso;
+  $$("#dateChips .chip").forEach(c => c.classList.toggle("active", c.dataset.date===iso));
+  saveDraft();
+}
+
+/* =====================================================================
+   Etapa 4 — resumo
+   ===================================================================== */
+function renderResumo(){
+  const itens = itensPedido();
+  $("#sumItens").innerHTML = itens.map(it => `
+    <div class="it"><span><span class="q">${it.qtd}×</span> ${it.nome}</span>
+    <b>${fmt(it.preco*it.qtd)}</b></div>`).join("");
+  $("#sumTotal").textContent = fmt(totalPedido());
+
+  const compl = dados.compl ? ` — ${dados.compl}` : "";
+  $("#sumEndereco").innerHTML =
+    `<b>${dados.nome}</b> · ${dados.whatsapp}<br>` +
+    `${dados.rua}, ${dados.num}${compl}<br>` +
+    `<span class="muted">${dados.bairro} · ${dados.cidade}${dados.cep?` · ${dados.cep}`:""}</span>`;
+
+  $("#sumData").innerHTML = `<b style="text-transform:capitalize">${fmtDataBR(entrega.data)}</b>`;
+
+  entrega.obs = $("#in-obs").value.trim();
+  if(entrega.obs){
+    $("#blockObs").hidden = false;
+    $("#sumObs").textContent = entrega.obs;
+  } else {
+    $("#blockObs").hidden = true;
+  }
+}
+
+/* =====================================================================
+   Envio do pedido → Supabase
+   ===================================================================== */
+let enviando = false;
+async function enviarPedido(){
+  if(enviando) return;
+  if(!sb){ toast("Erro ao conectar. Tente recarregar a página.","err"); return; }
+
+  entrega.obs = $("#in-obs").value.trim();
+  const itens = itensPedido();
+  if(itens.length===0){ toast("Carrinho vazio 🛒","err"); goTo(0); return; }
+
+  const enderecoCompleto =
+    `${dados.rua}, ${dados.num}${dados.compl?` (${dados.compl})`:""}, ${dados.bairro}, ${dados.cidade}`;
+
+  const pedido = {
+    cliente:       dados.nome,
+    whatsapp:      dados.whatsapp,
+    endereco:      enderecoCompleto,
+    cep:           dados.cep || null,
+    lat:           dados.lat,
+    lng:           dados.lng,
+    data_desejada: entrega.data,
+    obs:           entrega.obs || null,
+    itens:         itens,
+    total:         +totalPedido().toFixed(2),
+    qtd_total:     qtdTotal(),
+    // status e loja são definidos pelo default/RLS no banco (status='novo', loja='gngelo')
+    loja:          LOJA,
+  };
+
+  enviando = true;
+  const btn = $("#btnEnviar");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spin"></span> Enviando...`;
+
+  try{
+    const { data, error } = await sb.from("pedidos").insert(pedido).select("id").single();
+    if(error) throw error;
+
+    // Sucesso!
+    ultimoPedido = { ...pedido, id: data?.id };
+    $("#protocolo").textContent = data?.id ? ("#"+String(data.id).slice(0,8).toUpperCase()) : "OK";
+    clearDraft();
+    goTo(STEPS.indexOf("sucesso"));
+  }catch(e){
+    console.error(e);
+    toast("Não deu pra enviar. Verifique a internet e tente de novo.","err");
+    btn.disabled = false;
+    btn.textContent = "Tentar enviar de novo";
+  }finally{
+    enviando = false;
+    if(STEPS[stepIndex]!=="sucesso"){ /* mantém texto de retry */ }
+    else { btn.disabled=false; btn.textContent="Enviar pedido"; }
+  }
+}
+
+/* =====================================================================
+   Tela de sucesso — link do WhatsApp
+   ===================================================================== */
+let ultimoPedido = null;
+function abrirWhats(){
+  const p = ultimoPedido;
+  if(!p){ window.open(`https://wa.me/${LOJA_WHATSAPP}`,"_blank"); return; }
+  const linhas = p.itens.map(it => `• ${it.qtd}× ${it.nome}`).join("\n");
+  const texto =
+`Olá! Acabei de fazer um pedido no site da GN Gelo 🍧
+
+*Itens:*
+${linhas}
+
+*Total:* ${fmt(p.total)} (pagamento na entrega)
+*Entrega:* ${fmtDataBR(p.data_desejada)}
+*Endereço:* ${p.endereco}
+*Nome:* ${p.cliente}${p.obs?`\n*Obs:* ${p.obs}`:""}
+
+Protocolo: ${$("#protocolo").textContent}`;
+  window.open(`https://wa.me/${LOJA_WHATSAPP}?text=${encodeURIComponent(texto)}`,"_blank");
+}
+
+/* =====================================================================
+   Rascunho (localStorage) — não perde o carrinho ao recarregar
+   ===================================================================== */
+function saveDraft(){
+  try{
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ cart, dados, entrega, ts:Date.now() }));
+  }catch(e){}
+}
+function loadDraft(){
+  try{
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    // Expira rascunho com mais de 2 dias
+    if(d.ts && Date.now()-d.ts > 2*24*3600*1000){ clearDraft(); return; }
+    if(d.cart)    cart = d.cart;
+    if(d.dados)   dados = { ...dados, ...d.dados };
+    if(d.entrega) entrega = { ...entrega, ...d.entrega };
+    // Não reidrata data passada
+    if(entrega.data && entrega.data < hojeLocalISO()) entrega.data = "";
+  }catch(e){}
+}
+function clearDraft(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} }
+
+function preencherCamposDoDraft(){
+  if(dados.nome)   $("#in-nome").value   = dados.nome;
+  if(dados.whatsapp)$("#in-whats").value = dados.whatsapp;
+  if(dados.cep)    $("#in-cep").value    = dados.cep;
+  if(dados.rua)    $("#in-rua").value    = dados.rua;
+  if(dados.num)    $("#in-num").value    = dados.num;
+  if(dados.compl)  $("#in-compl").value  = dados.compl;
+  if(dados.bairro) $("#in-bairro").value = dados.bairro;
+  if(dados.cidade) $("#in-cidade").value = dados.cidade;
+  if(entrega.obs)  $("#in-obs").value    = entrega.obs;
+}
+
+function novoPedido(){
+  cart = {};
+  dados = { nome:"", whatsapp:"", cep:"", rua:"", num:"", compl:"", bairro:"", cidade:"", lat:null, lng:null };
+  entrega = { data:"", obs:"" };
+  ultimoPedido = null;
+  clearDraft();
+  $$("input,textarea").forEach(el => el.value="");
+  renderCatalogo();
+  goTo(0);
+}
+
+/* =====================================================================
+   Eventos
+   ===================================================================== */
+function bindEvents(){
+  // Cardápio (delegação)
+  $("main").addEventListener("click", (e)=>{
+    const btn = e.target.closest("[data-act]");
+    if(!btn) return;
+    const card = e.target.closest(".card");
+    if(!card) return;
+    addItem(card.dataset.id, btn.dataset.act==="plus" ? 1 : -1);
+  });
+
+  // Navegação
+  $("#btnContinuar").addEventListener("click", next);
+  $("#btnBack").addEventListener("click", ()=> goTo(stepIndex-1));
+
+  // Dados — máscaras
+  $("#in-whats").addEventListener("input", e => e.target.value = maskWhats(e.target.value));
+  $("#in-cep").addEventListener("input", e => e.target.value = maskCep(e.target.value));
+  $("#in-cep").addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); buscarCep(); }});
+  $("#btnCep").addEventListener("click", buscarCep);
+
+  // Datas
+  $("#dateChips").addEventListener("click", e=>{
+    const chip = e.target.closest(".chip"); if(chip) escolherData(chip.dataset.date);
+  });
+  $("#in-data").addEventListener("change", e=> e.target.value && escolherData(e.target.value));
+
+  // Rodapé de cada etapa: avançar tocando fora não; usamos a barra.
+  // Botão "Continuar" em dados/entrega: reaproveitamos a cartbar? Não — usamos botões próprios abaixo.
+
+  // Envio
+  $("#btnEnviar").addEventListener("click", enviarPedido);
+
+  // Sucesso
+  $("#btnWhats").addEventListener("click", abrirWhats);
+  $("#btnNovo").addEventListener("click", novoPedido);
+
+  // Salva rascunho ao digitar dados
+  ["#in-nome","#in-whats","#in-cep","#in-rua","#in-num","#in-compl","#in-bairro","#in-cidade","#in-obs"]
+    .forEach(sel => $(sel).addEventListener("input", ()=>{ coletarDados(); entrega.obs=$("#in-obs").value.trim(); saveDraft(); }));
+}
+
+/* =====================================================================
+   Barra de "Continuar" nas etapas 2 e 3
+   (reaproveita a cartbar como barra de ação contextual)
+   ===================================================================== */
+// Botões de avançar dentro das telas dados/entrega
+function injectStepButtons(){
+  const mkBtn = (label) => {
+    const b = document.createElement("button");
+    b.className = "btn-wide btn-gold";
+    b.textContent = label;
+    b.style.marginTop = "8px";
+    b.addEventListener("click", next);
+    return b;
+  };
+  $("#s-dados").appendChild(mkBtn("Continuar →"));
+  $("#s-entrega").appendChild(mkBtn("Revisar pedido →"));
+}
+
+/* =====================================================================
+   Init
+   ===================================================================== */
+function init(){
+  loadDraft();
+  renderCatalogo();
+  preencherCamposDoDraft();
+  injectStepButtons();
+  bindEvents();
+  updateCartBar();
+  goTo(0);
+
+  // Service worker (PWA)
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  }
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
