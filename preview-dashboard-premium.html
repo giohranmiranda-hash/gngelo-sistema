@@ -473,6 +473,7 @@
     <div class="kpis">
       <div class="kpi"><div class="ic"><span class="sym">request_quote</span></div><div class="k-lbl">Faturamento</div><div class="k-val" id="vv-fat">—</div><div class="k-foot" id="vv-liq">—</div></div>
       <div class="kpi"><div class="ic"><span class="sym">savings</span></div><div class="k-lbl">Lucro</div><div class="k-val" id="vv-luc">—</div><div class="k-foot"><b id="vv-marg">—</b> de margem</div></div>
+      <div class="kpi"><div class="ic"><span class="sym">ac_unit</span></div><div class="k-lbl">Unidades vendidas</div><div class="k-val" id="vv-un">—</div><div class="k-foot">gelos no mês</div></div>
       <div class="kpi"><div class="ic"><span class="sym">shopping_bag</span></div><div class="k-lbl">Pedidos</div><div class="k-val" id="vv-n">—</div><div class="k-foot">no mês</div></div>
       <div class="kpi"><div class="ic"><span class="sym">confirmation_number</span></div><div class="k-lbl">Ticket médio</div><div class="k-val" id="vv-tk">—</div><div class="k-foot">por pedido</div></div>
     </div>
@@ -480,6 +481,11 @@
       <h3><span class="sym">hub</span>Vendas por canal <span style="font-size:11px;color:var(--muted);font-weight:500">— de onde veio cada venda</span></h3>
       <div class="csub">Quanto cada canal trouxe no mês. Ótimo pra medir o tráfego (WhatsApp, iFood).</div>
       <div id="vv-canal" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h3><span class="sym">ac_unit</span>Unidades vendidas por sabor <span style="font-size:11px;color:var(--muted);font-weight:500">— quantos gelos de cada sabor sairam no mês</span></h3>
+      <div class="csub"><b id="vv-un-tot">—</b> unidades no total · do que mais vende pro que menos vende</div>
+      <div id="vv-sabor" style="margin-top:12px"></div>
     </div>
     <div class="card">
       <h3><span class="sym">receipt_long</span>Todos os pedidos</h3>
@@ -1892,10 +1898,21 @@ function renderVendas(){
   const {m,nome}=mesCtx();
   const vMes=getV().filter(v=>(v.data||"").startsWith(m));
   const fat=vMes.reduce((a,v)=>a+(v.bruto||0),0), luc=vMes.reduce((a,v)=>a+(v.lucro||0),0),
-        liq=vMes.reduce((a,v)=>a+(v.liq||0),0), n=vMes.length;
+        liq=vMes.reduce((a,v)=>a+(v.liq||0),0), n=vMes.length,
+        un=vMes.reduce((a,v)=>a+(+v.qtd||0),0);
   T("vv-mes",nome); fillMesNav("vv-mesnav"); T("vv-fat",R0(fat)); T("vv-liq","Receita líquida "+R0(liq));
   T("vv-luc",R0(luc)); T("vv-marg",(fat?Math.round(luc/fat*100):0)+"%");
   T("vv-n",n); T("vv-tk",R0(n?fat/n:0));
+  T("vv-un",un.toLocaleString("pt-BR")); T("vv-un-tot",un.toLocaleString("pt-BR"));
+  // unidades vendidas por sabor
+  const ps={}; vMes.forEach(v=>{const k=v.produto||"—"; ps[k]=(ps[k]||0)+(+v.qtd||0);});
+  const arrS=Object.entries(ps).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]); const maxS=arrS.length?arrS[0][1]:1;
+  document.getElementById("vv-sabor").innerHTML=arrS.map(([k,q])=>`
+    <div class="bar"><span class="fl" style="background:${CC[k]||'#888'}"></span>
+    <span class="nm" style="min-width:130px">${SB[k]||k}</span>
+    <span class="track"><span class="fill" style="width:${Math.max(6,(q/maxS)*100)}%"></span></span>
+    <span class="vl" style="white-space:nowrap">${q.toLocaleString("pt-BR")} un${un?` · ${Math.round(q/un*100)}%`:""}</span></div>`).join("")
+    ||'<div class="csub" style="padding:6px 0">Sem vendas no mês ainda.</div>';
   // por canal (marketing) — de onde veio cada venda
   const pc={}; vMes.forEach(v=>{const c=v.canal||"Venda direta";(pc[c]=pc[c]||{n:0,fat:0,luc:0});pc[c].n++;pc[c].fat+=v.bruto||0;pc[c].luc+=v.lucro||0;});
   const arrC=Object.entries(pc).sort((a,b)=>b[1].fat-a[1].fat); const maxC=arrC.length?arrC[0][1].fat:1;
