@@ -533,7 +533,10 @@
         <h1>Entregas <b>& rotas</b></h1>
         <p>Cada entrega na sua data real. Acompanhe rotas e status no mapa.</p>
       </div>
-      <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent;cursor:pointer" onclick="abrirEntrega()"><span class="sym" style="color:#1a1408">add_location_alt</span> Agendar rota</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div class="chip" style="cursor:pointer" onclick="abrirImportPedido()" title="Cole a mensagem do pedido (WhatsApp) e o sistema agenda a entrega sozinho">📋 Colar pedido</div>
+        <div class="chip" style="background:linear-gradient(135deg,var(--gold),#a07f2e);color:#1a1408;border-color:transparent;cursor:pointer" onclick="abrirEntrega()"><span class="sym" style="color:#1a1408">add_location_alt</span> Agendar rota</div>
+      </div>
     </div>
     <div class="kpis">
       <div class="kpi"><div class="ic"><span class="sym">inventory</span></div><div class="k-lbl">Entregas hoje</div><div class="k-val" id="lg-tot">—</div><div class="k-foot">no total</div></div>
@@ -1219,6 +1222,16 @@
 </div>
 
 <!-- ===== MODAL: NOVA ENTREGA ===== -->
+<div class="modal-bg" id="modal-import" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3>Colar pedido do WhatsApp</h3><span class="sym x" onclick="fecharModal()">close</span></div>
+    <div class="modal-body">
+      <div class="csub" style="margin-bottom:8px">Cole aqui a mensagem de <b>Confirmação do Pedido</b>. O sistema lê sozinho o cliente, endereço, sabores, quantidades, valor e prazo — e já abre o agendamento preenchido pra você só conferir e salvar.</div>
+      <textarea class="f-in" id="imp-txt" rows="10" placeholder="Cole aqui a mensagem completa do pedido…" style="resize:vertical;font-family:inherit;line-height:1.55;min-height:180px"></textarea>
+      <button class="btn-gold" style="margin-top:10px" onclick="lerPedidoImport()">🪄 Ler e preencher agendamento</button>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="modal-entrega" style="display:none">
   <div class="modal">
     <div class="modal-head"><h3>Agendar entrega</h3><span class="sym x" onclick="fecharModal()">close</span></div>
@@ -3271,6 +3284,55 @@ const lixo=fn=>`<span class="sym" style="font-size:18px;color:var(--muted);curso
 
 /* ===== ENTREGA (agendar / avançar status / apagar) ===== */
 const STATUS_ORDER=["Aguardando carga","Pendente","Em rota","Concluída"];
+/* ===== COLAR PEDIDO (WhatsApp) -> lê o texto e preenche o agendamento ===== */
+function abrirImportPedido(){ const t=document.getElementById("imp-txt"); if(t)t.value=""; document.getElementById("modal-import").style.display="flex"; }
+const _padN=x=>String(x).padStart(2,"0");
+function _fmtLocalDate(d){ return d.getFullYear()+"-"+_padN(d.getMonth()+1)+"-"+_padN(d.getDate()); }
+function _addDias(n,uteis){ const d=new Date(); let add=0; while(add<n){ d.setDate(d.getDate()+1); const wd=d.getDay(); if(!uteis||(wd!==0&&wd!==6))add++; } return _fmtLocalDate(d); }
+function _normTxt(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,""); }
+function _acharSabor(nome){ const n=_normTxt(nome); if(!n)return null;
+  let k=SABORES_VENDA.find(k=>_normTxt(SB[k])===n);
+  if(!k) k=SABORES_VENDA.find(k=>{ const s=_normTxt(SB[k]); return s.startsWith(n)||n.startsWith(s)||s.includes(n)||n.includes(s); });
+  return k||null;
+}
+function parsePedido(txt){
+  const out={cliente:"",endereco:"",rota:"",data:"",preco:0,itens:[],naoLidos:[]};
+  const linhas=(txt||"").split(/\r?\n/);
+  const pega=(re)=>{ for(const l of linhas){ const m=l.match(re); if(m)return (m[1]||"").trim(); } return ""; };
+  out.cliente=pega(/cliente\s*[:\-]\s*(.+)/i);
+  out.endereco=pega(/endere[çc]o\s*[:\-]\s*(.+)/i);
+  out.rota=pega(/refer[êe]ncia\s*[:\-]\s*(.+)/i) || pega(/bairro\s*[:\-]\s*(.+)/i);
+  const pv=pega(/valor\s+por\s+unidade[^\d]*([\d.,]+)/i);
+  if(pv) out.preco=parseFloat(pv.replace(/\./g,"").replace(",","."))||0;
+  for(const l of linhas){ const m=l.match(/prazo[^:]*:?\s*.*?(\d+)\s*dia/i); if(m){ const n=+m[1]||0; if(n>0){ out.data=_addDias(n,/[úu]te(l|is)/i.test(l)); } break; } }
+  for(const l of linhas){
+    const m=l.match(/([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 ()\/.'-]*?)\s*[:\-]\s*([\d.]+)\s*un/i);
+    if(!m)continue;
+    const nome=m[1].trim(), qtd=parseInt(m[2].replace(/\D/g,""),10)||0;
+    if(qtd<=0 || _normTxt(nome)==="total")continue;
+    const sab=_acharSabor(nome);
+    if(sab) out.itens.push({sabor:sab,qtd}); else out.naoLidos.push(nome);
+  }
+  return out;
+}
+function lerPedidoImport(){
+  const txt=(document.getElementById("imp-txt")||{}).value||"";
+  if(!txt.trim()){ alert("Cole a mensagem do pedido primeiro."); return; }
+  const p=parsePedido(txt);
+  if(!p.cliente && !p.itens.length){ alert("Hmm, não consegui identificar o pedido.\n\nConfira se colou a mensagem completa (com Cliente, Endereço e os sabores)."); return; }
+  fecharModal();
+  abrirEntrega();
+  if(p.cliente) document.getElementById("e-cliente").value=p.cliente;
+  if(p.endereco) document.getElementById("e-end").value=p.endereco;
+  if(p.rota) document.getElementById("e-rota").value=p.rota;
+  if(p.data) document.getElementById("e-data").value=p.data;
+  if(p.preco>0) document.getElementById("e-preco").value=p.preco;
+  document.getElementById("e-linhas").innerHTML="";
+  if(p.itens.length) p.itens.forEach(it=>addLinhaE(it.sabor,it.qtd)); else addLinhaE();
+  calcFrete(); calcTotalE();
+  if(typeof toast==="function") toast("✅ Pedido lido — confira e toque em Agendar");
+  if(p.naoLidos.length) setTimeout(()=>alert("⚠️ Não reconheci este(s) sabor(es): "+p.naoLidos.join(", ")+".\n\nAdicione manualmente pelo botão 'Adicionar sabor', se precisar."),300);
+}
 function abrirEntrega(){
   EDIT_E=null; preencherDatalistCli();
   document.querySelector("#modal-entrega h3").textContent="Agendar entrega";
