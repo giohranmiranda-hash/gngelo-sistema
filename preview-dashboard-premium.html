@@ -1111,6 +1111,7 @@
       <div class="f-row"><label>Receita usada</label><select class="f-in" id="p-receita" onchange="calcP()">
         <option value="padrao">Padrão</option>
         <option value="economica">Econômica (mais barata)</option>
+        <option value="coco5">Coco 5g/L</option>
       </select></div>
       <label style="font-size:12px;color:var(--muted);font-weight:600">Sabores produzidos</label>
       <div id="p-linhas" style="margin-top:6px"></div>
@@ -1619,7 +1620,7 @@ function getReceitas(){
 function getReceita(id){const a=getReceitas();return a[id]||a.padrao;}
 // ===== Econômica: base em pó POR SABOR (cada sabor = 1 insumo separado) =====
 // Dose editável na tela Receitas: 20g de pó por litro (25g no Coco), gelo de 200ml => 4g/gelo (5g Coco)
-function poGramasGelo(sabor){const e=getReceita("economica");
+function poGramasGelo(sabor,id){const e=getReceita(id||"economica");
   const gl=(sabor==="coco")?(+e.poCocoGL||25):(+e.poGL||20), ml=+e.mlGelo||200;
   return gl*ml/1000;}
 function poInsumoNome(sabor){return "Base "+(SB[sabor]||sabor);} // ex: "Base Coco"
@@ -1627,9 +1628,9 @@ function embInsumoNome(sabor){return "Embalagem "+(SB[sabor]||sabor);} // embala
 const PO_REV={}, EMB_REV={}; Object.keys(SB).filter(k=>!k.startsWith("combo")).forEach(s=>{PO_REV[poInsumoNome(s)]=s;EMB_REV[embInsumoNome(s)]=s;});
 const GERAIS_INSUMOS=["Base Líquida","Glicose","Goma Xantana","Açúcar"]; // compartilhados (receita Padrão/líquida)
 // qual insumo de base 1 gelo usa, e quanto, pela receita
-function baseInsumoDe(id,sabor){return id==="economica"?poInsumoNome(sabor):(getReceita(id).baseInsumo||"Base Líquida");}
-// Padrão (base líquida): todos os sabores usam a MESMA base. O "Base do Coco" só vale na Econômica (pó).
-function baseGramasDe(id,sabor){return id==="economica"?poGramasGelo(sabor):(+getReceita(id).base||0);}
+function baseInsumoDe(id,sabor){return (id==="economica"||id==="coco5")?poInsumoNome(sabor):(getReceita(id).baseInsumo||"Base Líquida");}
+// Padrão (base líquida): todos os sabores usam a MESMA base. O "Base do Coco"/pó só vale nas receitas de pó (Econômica, Coco 5g/L).
+function baseGramasDe(id,sabor){return (id==="economica"||id==="coco5")?poGramasGelo(sabor,id):(+getReceita(id).base||0);}
 // preço médio da embalagem (uniforme entre sabores; só conta quem TEM estoque/preço real)
 function precoEmbalagem(){ const ie=getInsE(); let soma=0,n=0;
   Object.keys(ie).forEach(k=>{ if(EMB_REV[k]!==undefined && (ie[k].qtd||0)>0){ const c=+ie[k].custoUnit||0; if(c>0){soma+=c;n++;} } });
@@ -1640,7 +1641,7 @@ function precoPo(){ const ie=getInsE(); let soma=0,n=0;
   return n?soma/n:0.0424; }
 // custo de produzir 1 gelo com a receita escolhida, a preço ATUAL dos insumos
 function custoReceita(id,sabor){const r=getReceita(id),P=PARAMS();
-  const precoBase = id==="economica" ? precoPo() : custoInsumoUn(baseInsumoDe(id,sabor));
+  const precoBase = id==="economica" ? precoPo() : (id==="coco5" ? ((+r.precoKg||56)/1000) : custoInsumoUn(baseInsumoDe(id,sabor)));
   return baseGramasDe(id,sabor)*precoBase+(+r.glicose||0)*custoInsumoUn("Glicose")+
     (+r.xantana||0)*custoInsumoUn("Goma Xantana")+(+r.embalagem||1)*precoEmbalagem()+
     (+r.acucar||0)*(P.acucar||0);}
