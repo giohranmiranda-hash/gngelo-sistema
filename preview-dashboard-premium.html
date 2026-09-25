@@ -818,12 +818,14 @@
         <div class="f-row" style="margin-top:10px"><label>Receita</label><select class="f-in" id="rc-which" onchange="renderReceitas()">
           <option value="padrao">Padrão</option>
           <option value="economica">Econômica (mais barata)</option>
+          <option value="coco5">Coco 5g/L (nova)</option>
         </select></div>
         <div class="f-grid2" style="margin-top:6px">
           <div class="f-row" id="rc-baserow"><label>Base líquida (ml por gelo)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-base" oninput="calcReceita()"></div>
           <div class="f-row" id="rc-poglrow"><label>Pó por litro — sabores (g)</label><input type="number" step="0.5" class="f-in rc-in" id="rc-pogl" oninput="calcReceita()"></div>
           <div class="f-row" id="rc-pococorow"><label>Pó por litro — Coco (g)</label><input type="number" step="0.5" class="f-in rc-in" id="rc-pococogl" oninput="calcReceita()"></div>
           <div class="f-row" id="rc-mlgelorow"><label>Tamanho do gelo (ml)</label><input type="number" step="10" class="f-in rc-in" id="rc-mlgelo" oninput="calcReceita()"></div>
+          <div class="f-row" id="rc-precokgrow"><label>Valor do kg do pó (R$)</label><input type="number" step="0.5" class="f-in rc-in" id="rc-precokg" oninput="calcReceita()"></div>
           <div class="f-row"><label>Glicose (g)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-glicose" oninput="calcReceita()"></div>
           <div class="f-row" id="rc-acucarrow"><label>Açúcar (g)</label><input type="number" step="0.1" class="f-in rc-in" id="rc-acucar" oninput="calcReceita()"></div>
           <div class="f-row"><label>Goma Xantana (g)</label><input type="number" step="0.01" class="f-in rc-in" id="rc-xantana" oninput="calcReceita()"></div>
@@ -1604,12 +1606,14 @@ function custoInsumoUn(nome){const ie=getInsE();return (ie[nome]&&ie[nome].custo
 
 // ===== RECEITAS (Padrão + Econômica) — custo recalcula sozinho pelo preço dos insumos =====
 const RECEITA_ECONOMICA={glicose:0,acucar:0,xantana:0,embalagem:1,poGL:20,poCocoGL:25,mlGelo:200}; // base em pó c/ adoçante (dose por litro)
-const RECEITAS_NOMES={padrao:"Padrão",economica:"Econômica"};
+const RECEITA_COCO5={glicose:0,acucar:0,xantana:0,embalagem:1,poGL:5,poCocoGL:5,mlGelo:200,precoKg:56}; // pó bem diluído (5g por litro) c/ preço do kg próprio
+const RECEITAS_NOMES={padrao:"Padrão",economica:"Econômica",coco5:"Coco 5g/L"};
 function getReceitas(){
   const sv=get("receitas",null)||{};
   return {
     padrao:Object.assign({},RECEITA_PADRAO,get("receitaPadrao",null)||{},sv.padrao||{}),
-    economica:Object.assign({},RECEITA_ECONOMICA,sv.economica||{})
+    economica:Object.assign({},RECEITA_ECONOMICA,sv.economica||{}),
+    coco5:Object.assign({},RECEITA_COCO5,sv.coco5||{})
   };
 }
 function getReceita(id){const a=getReceitas();return a[id]||a.padrao;}
@@ -3499,7 +3503,7 @@ function delEntrega(id){
 function renderReceitas(){
   if(!document.getElementById("rc-base")){return;}
   const which=(document.getElementById("rc-which")||{}).value||"padrao";
-  const r=getReceita(which), eco=(which==="economica");
+  const r=getReceita(which), pw=(which==="economica"||which==="coco5"), isCoco5=(which==="coco5");
   document.getElementById("rc-base").value=r.base||0;
   document.getElementById("rc-pogl").value=+r.poGL||20;
   document.getElementById("rc-pococogl").value=+r.poCocoGL||25;
@@ -3508,24 +3512,26 @@ function renderReceitas(){
   document.getElementById("rc-acucar").value=r.acucar||0;
   document.getElementById("rc-xantana").value=r.xantana||0;
   document.getElementById("rc-embalagem").value=r.embalagem||1;
-  // Padrão: base líquida + açúcar. Econômica: dose do pó por litro (adoçante já incluso).
-  document.getElementById("rc-baserow").style.display=eco?"none":"";
-  document.getElementById("rc-acucarrow").style.display=eco?"none":"";
-  ["rc-poglrow","rc-pococorow","rc-mlgelorow"].forEach(id=>document.getElementById(id).style.display=eco?"":"none");
+  const pk=document.getElementById("rc-precokg"); if(pk)pk.value=+r.precoKg||56;
+  // Padrão: base líquida + açúcar. Econômica/Coco 5g: dose do pó por litro (adoçante já incluso).
+  document.getElementById("rc-baserow").style.display=pw?"none":"";
+  document.getElementById("rc-acucarrow").style.display=pw?"none":"";
+  ["rc-poglrow","rc-pococorow","rc-mlgelorow"].forEach(id=>document.getElementById(id).style.display=pw?"":"none");
+  const pkr=document.getElementById("rc-precokgrow"); if(pkr)pkr.style.display=isCoco5?"":"none";
   calcReceita();
 }
 function calcReceita(){
   if(!document.getElementById("rc-base"))return;
   const which=(document.getElementById("rc-which")||{}).value||"padrao";
-  const P=PARAMS(), eco=(which==="economica");
+  const P=PARAMS(), eco=(which==="economica"||which==="coco5"), isCoco5=(which==="coco5");
   const glicose=+rcV("rc-glicose"), xantana=+rcV("rc-xantana"), embalagem=+rcV("rc-embalagem")||1;
   const comuns=[["Glicose",glicose+" g",glicose*custoInsumoUn("Glicose")],
     ["Goma Xantana",xantana+" g",xantana*custoInsumoUn("Goma Xantana")],
     ["Embalagem",embalagem+" un (média dos sabores)",embalagem*precoEmbalagem()]];
   let itens,totOutros,totCoco=null;
   if(eco){
-    const gl=+rcV("rc-pogl")||20, glCoco=+rcV("rc-pococogl")||25, ml=+rcV("rc-mlgelo")||200;
-    const gOutros=gl*ml/1000, gCoco=glCoco*ml/1000, pp=precoPo();
+    const gl=+rcV("rc-pogl")||(isCoco5?5:20), glCoco=+rcV("rc-pococogl")||(isCoco5?5:25), ml=+rcV("rc-mlgelo")||200;
+    const gOutros=gl*ml/1000, gCoco=glCoco*ml/1000, pp=isCoco5?((+rcV("rc-precokg")||56)/1000):precoPo();
     itens=[["Base em pó (c/ adoçante)",gOutros.toFixed(1).replace(".",",")+" g × "+R(pp).replace("R$ ","R$")+"/g",gOutros*pp],
       ["Adoçante","incluído na base",0],...comuns];
     totOutros=itens.reduce((a,i)=>a+i[2],0);
@@ -3553,10 +3559,10 @@ function calcReceita(){
 function rcV(id){const el=document.getElementById(id);return el?(el.value||0):0;}
 function salvarReceita(){
   const which=(document.getElementById("rc-which")||{}).value||"padrao";
-  const eco=(which==="economica");
-  const r=eco
-    ? {poGL:+rcV("rc-pogl")||20,poCocoGL:+rcV("rc-pococogl")||25,mlGelo:+rcV("rc-mlgelo")||200,glicose:+rcV("rc-glicose"),acucar:0,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")||1}
-    : {base:+rcV("rc-base"),glicose:+rcV("rc-glicose"),acucar:+rcV("rc-acucar"),xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")||1,baseInsumo:"Base Líquida"};
+  let r;
+  if(which==="coco5") r={poGL:+rcV("rc-pogl")||5,poCocoGL:+rcV("rc-pococogl")||5,mlGelo:+rcV("rc-mlgelo")||200,precoKg:+rcV("rc-precokg")||56,glicose:+rcV("rc-glicose"),acucar:0,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")||1};
+  else if(which==="economica") r={poGL:+rcV("rc-pogl")||20,poCocoGL:+rcV("rc-pococogl")||25,mlGelo:+rcV("rc-mlgelo")||200,glicose:+rcV("rc-glicose"),acucar:0,xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")||1};
+  else r={base:+rcV("rc-base"),glicose:+rcV("rc-glicose"),acucar:+rcV("rc-acucar"),xantana:+rcV("rc-xantana"),embalagem:+rcV("rc-embalagem")||1,baseInsumo:"Base Líquida"};
   const sv=get("receitas",null)||{}; sv[which]=r; set("receitas",sv);
   if(which==="padrao") set("receitaPadrao",r); // mantém compatibilidade com o resto do sistema
   rerenderAll(); alert("Receita "+(RECEITAS_NOMES[which]||which)+" salva. O custo real foi atualizado em todo o sistema.");
